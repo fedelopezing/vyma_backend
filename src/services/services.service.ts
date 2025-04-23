@@ -28,8 +28,14 @@ export class ServicesService {
     }
   }
 
-  async findAll() {
-    return await this.serviceRepository.find();
+  async findAll(name?: string) {
+    const query = this.serviceRepository.createQueryBuilder('service');
+
+    if (name) {
+      query.where('LOWER(service.name) LIKE :name', { name: `%${name.toLowerCase()}%` });
+    }
+
+    return await query.getMany();
   }
 
   async findOne(id: number) {

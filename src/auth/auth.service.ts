@@ -55,7 +55,8 @@ export class AuthService {
     // Buscar usuario por correo
     const user = await this.userRepository.findOne({
       where: { email },
-      select: { email: true, passwordHash: true, isActive: true, id: true },
+      select: { email: true, passwordHash: true, isActive: true, id: true, name: true, role: true },
+      relations: ['profile'],
     });
 
     if (!user) {
@@ -74,6 +75,14 @@ export class AuthService {
     }
 
     return {
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        avatar: user.profile.avatarUrl,
+        gender: user.profile.gender,
+        birthdate: user.profile.birthDate,
+      },
       access_token: this.getJwtToken({ id: user.id }),
     };
   }
