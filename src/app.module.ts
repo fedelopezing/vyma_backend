@@ -11,6 +11,7 @@ import { ServicesModule } from './services/services.module';
 import { CommonModule } from './common/common.module';
 import { SchedulesModule } from './schedules/schedules.module';
 import { ScheduleBreaksModule } from './schedule-breaks/schedule-breaks.module';
+import { EmailModule } from './email/email.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { ScheduleBreaksModule } from './schedule-breaks/schedule-breaks.module';
     CommonModule,
     SchedulesModule,
     ScheduleBreaksModule,
+    EmailModule,
   ],
   controllers: [],
   providers: [],
