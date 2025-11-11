@@ -14,7 +14,13 @@ export class WhatsappService implements OnModuleInit {
 
   private initializeClient() {
     // Create a new client instance
-    this.client = new Client({});
+    this.client = new Client({
+      puppeteer: {
+        executablePath: '/usr/bin/chromium-browser',
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      },
+    });
 
     // When the client is ready, run this code (only once)
     this.client.once('ready', () => {
