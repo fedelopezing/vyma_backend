@@ -5,10 +5,23 @@ import { EmailService } from './email.service';
 describe('EmailController', () => {
   let controller: EmailController;
 
+  // Mock EmailService
+  const mockEmailService = {
+    sendEmail: jest.fn().mockResolvedValue({
+      message: 'El correo ha sido enviado correctamente!',
+      email: { id: 'test-email-id' },
+    }),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [EmailController],
-      providers: [EmailService],
+      providers: [
+        {
+          provide: EmailService,
+          useValue: mockEmailService,
+        },
+      ],
     }).compile();
 
     controller = module.get<EmailController>(EmailController);
