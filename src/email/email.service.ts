@@ -37,12 +37,12 @@ export class EmailService {
   async sendMessage(data: CreateEmailDto) {
     const phoneNumber = process.env.WHATSAPP_TO || '+595981789843';
     const message = `*Asunto:* Esta persona ha solicitado un presupuesto
-          *Nombre:* ${data.name}
-          *Email:* ${data.email}
-          *Numero:* ${data.phone}
-          *Ciudad:* ${data.city}
-          *Dirección:* ${data.address}
-          *Detalle:* ${data.details}`;
+    *Nombre:* ${data.name}
+    *Email:* ${data.email}
+    *Numero:* ${data.phone}
+    *Ciudad:* ${data.city}
+    *Dirección:* ${data.address}
+    *Detalle:* ${data.details}`;
 
     return await this.whatsappService.sendMessage(phoneNumber, message);
   }
