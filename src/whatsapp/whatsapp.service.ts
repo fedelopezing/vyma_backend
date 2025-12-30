@@ -1,4 +1,5 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Client } from 'whatsapp-web.js';
 import * as qrcode from 'qrcode-terminal';
 
@@ -8,18 +9,33 @@ export class WhatsappService implements OnModuleInit {
   private client: Client;
   private isReady: boolean = false;
 
+  constructor(private configService: ConfigService) {}
+
   async onModuleInit() {
     this.initializeClient();
   }
 
   private initializeClient() {
+    const stage = this.configService.get<string>('STAGE', 'dev');
+
+    // Configuración según el entorno
+    const puppeteerConfig =
+      stage === 'dev'
+        ? {
+            // Configuración para Windows (desarrollo)
+            headless: true,
+            args: ['--no-sandbox', '--disable-setuid-sandbox'],
+          }
+        : {
+            // Configuración para Linux (producción)
+            executablePath: '/usr/bin/chromium-browser',
+            headless: true,
+            args: ['--no-sandbox', '--disable-setuid-sandbox'],
+          };
+
     // Create a new client instance
     this.client = new Client({
-      puppeteer: {
-        executablePath: '/usr/bin/chromium-browser',
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],
-      },
+      puppeteer: puppeteerConfig,
     });
 
     // When the client is ready, run this code (only once)
@@ -66,7 +82,6 @@ export class WhatsappService implements OnModuleInit {
     }
 
     try {
-      // Format phone number (remove special characters and add country code if needed)
       const formattedNumber = phoneNumber.replace(/[^0-9]/g, '');
       const chatId = `${formattedNumber}@c.us`;
 
