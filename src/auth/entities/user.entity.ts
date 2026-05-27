@@ -4,11 +4,14 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
+  ManyToOne,
   OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { Profile } from '../../profiles/entities/profile.entity';
+import { Role } from './role.entity';
 
 @Entity('users')
 export class User {
@@ -57,11 +60,9 @@ export class User {
   })
   tokenExpiry: Date | null;
 
-  @Column('enum', {
-    enum: ['client', 'professional', 'admin'],
-    default: 'client',
-  })
-  role: 'client' | 'professional' | 'admin';
+  @ManyToOne(() => Role)
+  @JoinColumn({ name: 'role_id' })
+  role: Role;
 
   @Column('boolean', { default: true })
   isActive: boolean;
