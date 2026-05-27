@@ -1,30 +1,21 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { SeedController } from './seed.controller';
 import { SeedService } from './seed.service';
-import { getRepositoryToken } from '@nestjs/typeorm';
-import { Role } from '../auth/entities/role.entity';
-import { Permission } from '../auth/entities/permission.entity';
-import { User } from '../auth/entities/user.entity';
+import { createMock, DeepMocked } from '@golevelup/ts-jest';
 
 describe('SeedController', () => {
   let controller: SeedController;
+  let mockSeedService: DeepMocked<SeedService>;
 
   beforeEach(async () => {
+    mockSeedService = createMock<SeedService>();
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [SeedController],
       providers: [
-        SeedService,
         {
-          provide: getRepositoryToken(Role),
-          useValue: {},
-        },
-        {
-          provide: getRepositoryToken(Permission),
-          useValue: {},
-        },
-        {
-          provide: getRepositoryToken(User),
-          useValue: {},
+          provide: SeedService,
+          useValue: mockSeedService,
         },
       ],
     }).compile();
@@ -34,5 +25,13 @@ describe('SeedController', () => {
 
   it('should be defined', () => {
     expect(controller).toBeDefined();
+  });
+
+  it('should execute seed successfully', async () => {
+    const expectedResult = { message: 'Seed executed successfully' };
+    mockSeedService.executeSeed.mockResolvedValue(expectedResult as any);
+
+    expect(await controller.execute()).toEqual(expectedResult);
+    expect(mockSeedService.executeSeed).toHaveBeenCalled();
   });
 });

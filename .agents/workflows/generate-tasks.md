@@ -77,18 +77,20 @@ The generated task file must strictly use the following markdown template. Notic
 
 ## 🔌 Layer 3: API & Controllers (Self-Tested Phase)
 ### Task 3.1: Create Input and Output DTOs
-- **Description:** Define DTOs for request payloads and responses using `class-validator` and `class-transformer`.
+- **Description:** Define DTOs for request payloads and responses using `class-validator`, `class-transformer`, and `@nestjs/swagger`.
 - **Files to create/modify:** `src/.../dto/*.dto.ts`
 - **Acceptance Criteria:**
   - All properties are fully typed and decorated with validations (e.g., `@IsString()`, `@IsUUID()`).
+  - All properties are documented using `@ApiProperty()` with examples and descriptions.
 
 ### Task 3.2: Create Controller and Endpoints
-- **Description:** Define the controller exposing the REST endpoints. Inject the service layer.
+- **Description:** Define the controller exposing the REST endpoints. Inject the service layer and document with Swagger.
 - **Files to create/modify:** `src/.../controllers/*.controller.ts`
 - **Acceptance Criteria:**
   - Proper route prefixes.
   - Proper HTTP verbs (GET, POST, etc.) and semantic status codes (e.g., 201 for POST).
   - Use of appropriate guards (`@UseGuards(JwtAuthGuard, RolesGuard)`).
+  - Controller is decorated with `@ApiTags()`, and endpoints with `@ApiOperation()` and `@ApiResponse()`.
 
 ### Task 3.3: Write Controller Unit Tests
 - **Description:** Create controller unit tests mocking the service layer dependencies.

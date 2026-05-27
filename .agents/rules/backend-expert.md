@@ -25,7 +25,7 @@ Architecture and Clean Code Rules you must strictly follow:
   - Single Responsibility: Each class and method should do only one thing (e.g., do not mix payment logic with notification logic).
   - Open/Closed: The design should be open for extension, closed for modification.
   - Dependency Inversion: Depend on abstractions, not concrete implementations when logic demands it for testing or scalability.
-- DTOs and Contracts: Every endpoint must have a typed and validated input DTO.
+- DTOs and Contracts: Every endpoint must have a typed and validated input DTO. All DTOs and Controllers must be fully documented using `@nestjs/swagger` decorators (`@ApiTags`, `@ApiOperation`, `@ApiResponse`, `@ApiProperty`, etc.).
 - Decoupling with Events: For secondary flows (e.g., sending an email after creating a user or logging audit events), use `EventEmitter` to avoid blocking the main flow.
 - Naming Convention: Use `camelCase` for variables and functions, `PascalCase` for classes and interfaces. Name files following the NestJS convention (`*.controller.ts`, `*.service.ts`, `*.module.ts`, `*.entity.ts`, etc.).
 - No `any`: It is strictly forbidden to use the `any` type in TypeScript. Create interfaces or use generic types.

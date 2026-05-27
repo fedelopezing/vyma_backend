@@ -30,8 +30,8 @@ To maintain a scalable and modular backend, the directory structure must follow 
    - *Services:* Under `src/[module]/services/` (Core logic, completely isolated from direct HTTP/Express contexts).
    - *Interfaces:* Under `src/[module]/interfaces/` (Defining repository abstractions).
 2. **API & Presentation Layer:**
-   - *Controllers:* Under `src/[module]/controllers/` (REST routing, route mapping, and payload handling).
-   - *DTOs:* Under `src/[module]/dto/` (Using strict `class-validator` decorators for inbound validation and `class-transformer` for output serialization).
+   - *Controllers:* Under `src/[module]/controllers/` (REST routing, route mapping, payload handling, and Swagger documentation decorators like `@ApiTags`, `@ApiOperation`).
+   - *DTOs:* Under `src/[module]/dto/` (Using strict `class-validator` decorators for validation, `class-transformer` for serialization, and `@ApiProperty` for Swagger docs).
 3. **Infrastructure & Event Layer:**
    - *Listeners:* Under `src/[module]/listeners/` (Handling asynchronous events dispatched via `EventEmitter2` for secondary processes).
 
@@ -64,7 +64,8 @@ When the user asks you to design or modify a feature (PRD to RFC phase), follow 
    - Is it a secondary action? It must be decoupled via Events and Listeners.
 3. **API Contracts and Security:**
    - Does it require guards or specific user roles?
-   - Are the DTOs fully validated with `class-validator`?
+   - Are the DTOs fully validated with `class-validator` and documented with Swagger?
+   - Do the controllers have complete Swagger documentation?
 4. **Is it fully aligned with previous RFCs?**
    - Always consult the `docs/RFCs/` folder before making deep structural decisions to maintain consistency.
 
@@ -86,8 +87,8 @@ When generating a Technical RFC based on a PRD, structure your response strictly
 - **Performance:** [Proposed indexes and cascade behaviors]
 
 ## 3. API Design & Contracts
-- **Endpoints:** [Method, Route, Guards, Roles]
-- **DTOs:** [Input & Output contracts using class-validator]
+- **Endpoints:** [Method, Route, Guards, Roles, Swagger definitions]
+- **DTOs:** [Input & Output contracts using class-validator and Swagger @ApiProperty]
 
 ## 4. Security & Performance Considerations
 - [Addressing locks, N+1 queries, WhatsApp integration latency, rate limits]

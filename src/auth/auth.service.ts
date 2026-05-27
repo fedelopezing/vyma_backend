@@ -146,20 +146,34 @@ export class AuthService {
    * @throws BadRequestException If the error is a duplicate key error
    * @throws InternalServerErrorException If the error is not a duplicate key error
    */
-  handleDBErrors(error: any): never {
-    if (error.code === '23505')
+  handleDBErrors(error: unknown): never {
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      (error as Record<string, unknown>).code === '23505'
+    ) {
       throw new ConflictException(
         'El email ya está en uso. Por favor, usa otro.',
       );
+    }
 
-    if (error.code === '23503')
-      throw new BadRequestException('La profesión proporcionada no existe.');
+    if (typeof error === 'object' && error !== null && 'response' in error) {
+      const response = (error as Record<string, unknown>).response;
+      if (
+        typeof response === 'object' &&
+        response !== null &&
+        'message' in response
+      ) {
+        throw new BadRequestException(
+          (response as Record<string, unknown>).message,
+        );
+      }
+    }
 
-    if (error.response?.message)
-      throw new BadRequestException(error.response.message);
-
+    console.error(error);
     throw new InternalServerErrorException(
-      'Error inesperado en la base de datos',
+      'Error inesperado, revise los logs del servidor',
     );
   }
 
