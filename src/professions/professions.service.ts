@@ -40,7 +40,10 @@ export class ProfessionsService {
 
   async update(id: number, updateProfessionDto: UpdateProfessionDto) {
     try {
-      const profession = await this.professionRepository.update(id, updateProfessionDto);
+      const profession = await this.professionRepository.update(
+        id,
+        updateProfessionDto,
+      );
       if (profession.affected === 0) handleDBErrors('La profesión');
 
       return {
@@ -57,11 +60,8 @@ export class ProfessionsService {
       const profession = await this.professionRepository.findOneBy({ id });
       await this.professionRepository.softRemove(profession);
       return { message: `La profesión fue eliminado correctamente!` };
-
     } catch (error) {
       handleDBErrors('La profesión', error);
     }
   }
-
-
 }

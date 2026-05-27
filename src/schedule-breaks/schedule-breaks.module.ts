@@ -8,8 +8,6 @@ import { ScheduleBreak } from './entities/schedule-break.entity';
 @Module({
   controllers: [ScheduleBreaksController],
   providers: [ScheduleBreaksService],
-  imports: [
-    TypeOrmModule.forFeature([ScheduleBreak]),
-  ],
+  imports: [TypeOrmModule.forFeature([ScheduleBreak])],
 })
 export class ScheduleBreaksModule {}

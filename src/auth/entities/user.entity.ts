@@ -3,7 +3,8 @@ import {
   BeforeUpdate,
   Column,
   CreateDateColumn,
-  Entity, OneToOne,
+  Entity,
+  OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';

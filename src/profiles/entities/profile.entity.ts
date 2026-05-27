@@ -7,12 +7,12 @@ import {
   OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
-  UpdateDateColumn
-} from "typeorm";
+  UpdateDateColumn,
+} from 'typeorm';
 
 import { User } from '../../auth/entities/user.entity';
 import { Profession } from '../../professions/entities/profession.entity';
-import { Schedule } from "../../schedules/entities/schedule.entity";
+import { Schedule } from '../../schedules/entities/schedule.entity';
 
 @Entity('profiles')
 export class Profile {
@@ -23,7 +23,7 @@ export class Profile {
   document: string | null;
 
   @Column('enum', {
-    enum: ['RUC','CI','PASSPORT','OTHER'],
+    enum: ['RUC', 'CI', 'PASSPORT', 'OTHER'],
     default: 'CI',
   })
   documentType: 'RUC' | 'CI' | 'PASSPORT' | 'OTHER';

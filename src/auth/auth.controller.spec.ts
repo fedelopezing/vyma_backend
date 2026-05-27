@@ -25,9 +25,11 @@ describe('AuthController', () => {
 
   // Mock DataSource
   const mockDataSource = {
-    transaction: jest.fn((callback) => callback({
-      getRepository: jest.fn(),
-    })),
+    transaction: jest.fn((callback) =>
+      callback({
+        getRepository: jest.fn(),
+      }),
+    ),
     manager: {
       getRepository: jest.fn(),
     },

@@ -15,22 +15,30 @@ module.exports = {
     node: true,
     jest: true,
   },
-  ignorePatterns: ['.eslintrc.js'],
+  ignorePatterns: ['.eslintrc.js', 'dist', 'coverage', 'ecosystem.config.js'],
   rules: {
     '@typescript-eslint/interface-name-prefix': 'off',
     '@typescript-eslint/explicit-function-return-type': 'off',
     '@typescript-eslint/explicit-module-boundary-types': 'off',
-    '@typescript-eslint/no-explicit-any': 'off',
+    '@typescript-eslint/no-explicit-any': 'warn',
+    '@typescript-eslint/no-unused-vars': [
+      'warn',
+      {
+        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^_',
+        ignoreRestSiblings: true,
+      },
+    ],
+    'max-len': [
+      'error',
+      {
+        code: 80,
+        ignoreUrls: true,
+        ignoreComments: true,
+        ignoreTrailingComments: true,
+        ignoreStrings: true,
+        ignoreTemplateLiterals: true,
+      },
+    ],
   },
-  'max-len': [
-    'error',
-    {
-      code: 85,  // Esto hará que las líneas se dividan después de 90 caracteres
-      ignoreUrls: true,  // No aplica esta regla a URLs largas
-      ignoreComments: false,  // Considera los comentarios también
-      ignoreTrailingComments: false,  // No ignorará los comentarios al final de una línea
-      ignoreStrings: false,  // Considera las cadenas en la validación
-      ignoreTemplateLiterals: false,  // Considera las plantillas literales
-    },
-  ],
 };

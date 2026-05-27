@@ -1,8 +1,11 @@
 import {
-  BadRequestException, ConflictException,
+  BadRequestException,
+  ConflictException,
   Injectable,
   InternalServerErrorException,
   UnauthorizedException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { DataSource, Repository } from 'typeorm';
@@ -12,6 +15,8 @@ import { JwtService } from '@nestjs/jwt';
 import { CreateUserDto, LoginUserDto } from './dto';
 import { JwtPayload } from './interfaces';
 import { User } from './entities/user.entity';
+import { ProfilesService } from '../profiles/profiles.service';
+import { CreateUserWithProfileDto } from '../profiles/dto';
 
 @Injectable()
 export class AuthService {
@@ -19,6 +24,8 @@ export class AuthService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly jwtService: JwtService,
+    @Inject(forwardRef(() => ProfilesService))
+    private readonly profileService: ProfilesService,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -28,7 +35,10 @@ export class AuthService {
    * @param manager - Optional manager instance to use for database operations. Defaults to `this.dataSource.manager`.
    * @returns An object containing the created user and a JWT token.
    */
-  async create(createUserDto: CreateUserDto, manager = this.dataSource.manager) {
+  async create(
+    createUserDto: CreateUserDto,
+    manager = this.dataSource.manager,
+  ) {
     const repo = manager.getRepository(User);
 
     const user = repo.create({
@@ -44,6 +54,34 @@ export class AuthService {
   }
 
   /**
+   * Registers a new user and creates their profile within a single transaction.
+   * @param createUserDto - Data Transfer Object containing user and profile creation details.
+   * @returns An object containing the created user and a JWT token.
+   */
+  async registerWithProfile(createUserDto: CreateUserWithProfileDto) {
+    return this.dataSource.transaction(async (manager) => {
+      try {
+        // Create user
+        createUserDto.role = 'client';
+        const user = await this.create(createUserDto, manager);
+
+        // Create profile to attach to user
+        await this.profileService.create(
+          { userId: user.id, professionId: createUserDto.professionId },
+          manager,
+        );
+
+        return {
+          user,
+          token: this.getJwtToken({ id: user.id }),
+        };
+      } catch (error) {
+        this.handleDBErrors(error);
+      }
+    });
+  }
+
+  /**
    * Authenticate a user and generate an access token
    * @param loginUserDto - DTO containing the user's email and password
    * @returns An object containing the access token
@@ -55,7 +93,14 @@ export class AuthService {
     // Buscar usuario por correo
     const user = await this.userRepository.findOne({
       where: { email },
-      select: { email: true, passwordHash: true, isActive: true, id: true, name: true, role: true },
+      select: {
+        email: true,
+        passwordHash: true,
+        isActive: true,
+        id: true,
+        name: true,
+        role: true,
+      },
       relations: ['profile'],
     });
 
@@ -95,7 +140,9 @@ export class AuthService {
    */
   handleDBErrors(error: any): never {
     if (error.code === '23505')
-      throw new ConflictException('El email ya está en uso. Por favor, usa otro.');
+      throw new ConflictException(
+        'El email ya está en uso. Por favor, usa otro.',
+      );
 
     if (error.code === '23503')
       throw new BadRequestException('La profesión proporcionada no existe.');
@@ -103,7 +150,9 @@ export class AuthService {
     if (error.response?.message)
       throw new BadRequestException(error.response.message);
 
-    throw new InternalServerErrorException('Error inesperado en la base de datos');
+    throw new InternalServerErrorException(
+      'Error inesperado en la base de datos',
+    );
   }
 
   public getJwtToken(payload: JwtPayload) {

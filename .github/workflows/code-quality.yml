@@ -1,0 +1,34 @@
+name: Code Quality Check
+
+# Se ejecuta al hacer push a develop o abrir un PR dirigido a main
+on:
+  push:
+    branches: ['develop']
+  pull_request:
+    branches: ['main']
+
+jobs:
+  quality-scan:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.15.1'
+          cache: 'npm'
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Verificar formato (Prettier)
+        run: npx prettier --check .
+
+      - name: Analizar código (ESLint)
+        run: npm run lint
+
+      - name: Ejecutar pruebas unitarias (Jest)
+        run: npm run test

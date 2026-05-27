@@ -10,7 +10,7 @@ Esta guía documenta el flujo de trabajo centralizado para el desarrollo de soft
 
 ## 🔄 El Ciclo de Desarrollo Extremo a Extremo (E2E)
 
-El flujo de trabajo óptimo sigue una metodología estructurada en tres grandes etapas: **Diseño Técnico (RFC)**, **Desglose de Tareas (Tickets)** y **Construcción de Software (Desarrollo)**.
+El flujo de trabajo óptimo sigue una metodología estructurada en grandes etapas: **Diseño Técnico (RFC)**, **Desglose de Tareas**, **Construcción de Software** y **Auditoría de Calidad**.
 
 ```mermaid
 graph TD
@@ -22,67 +22,68 @@ graph TD
     E -->|Workflow: generate-tasks| F[Agente Tech-Lead]
     F -->|Crea Checklist Técnico| G[Tareas en docs/tasks]
     G --> H[Agente Desarrollador Backend]
-    H -->|Implementación por Capas con Unit Tests| I[Código + Tests Unitarios - NestJS]
-    I -->|Pruebas Manuales E2E| J(Verificación E2E)
+    H -->|Implementación por Capas| I[Código + Tests Unitarios]
+    I -->|Workflow: architecture-audit| J(Auditoría y Code Review)
 ```
 
 ---
 
 ## 🟢 Etapa 1: Diseño Técnico con el Agente Arquitecto
 
-El objetivo de esta etapa es procesar un documento de requerimientos de producto (PRD) y transformarlo en una especificación técnica de arquitectura detallada (RFC) libre de ambigüedades.
+El objetivo de esta etapa es procesar un documento de requerimientos de producto (PRD) y transformarlo en una especificación técnica de arquitectura detallada (RFC).
 
 ### Paso 1.1: Ingesta del PRD (Kickoff)
-Cuando tengas un PRD listo en tu carpeta `docs/PRDs/` (o si copias el texto del PRD), inicia la conversación con el **Agente Arquitecto** adjuntando el archivo y enviando el siguiente mensaje:
+Inicia la conversación con el **Agente Arquitecto** adjuntando tu PRD en `docs/PRDs/`:
+> *"Here is the PRD for the new [Nombre del Módulo] module. Please read it carefully. **Do not start designing the RFC yet**. First, ask me any technical questions you consider necessary about edge cases, concurrency, or business rules that are not clear..."*
 
-> **Mensaje de Soporte:**
-> *"Here is the PRD for the new [Nombre del Módulo] module. Please read it carefully. **Do not start designing the RFC yet**. First, ask me any technical questions you consider necessary about edge cases, concurrency, or business rules that are not clear in the document for this NestJS backend."*
+### Paso 1.2: Resolución de Dudas (Q&A) y Aprobación
+Responde detalladamente a las preguntas del agente y cuando todo esté claro, dile:
+> *"All my answers are above. Now, please generate the Technical RFC draft in a new markdown file inside `docs/RFCs/` following your required system prompt structure."*
 
-### Paso 1.2: Resolución de Dudas (Q&A)
-El agente te devolverá una lista de preguntas críticas sobre aspectos que el PRD no contemplaba (ej. qué hacer ante fallas de APIs externas, cómo estructurar logs, límites de tasa).
-- **Acción:** Responde detalladamente a cada una de sus preguntas en el chat.
-- Una vez respondidas, dile: *"All my answers are above. Now, please generate the Technical RFC draft in a new markdown file inside `docs/RFCs/` following your required system prompt structure."*
-
-### Paso 1.3: Revisión y Aprobación del RFC
-El Arquitecto generará un RFC en `docs/RFCs/` (por ejemplo, `003-notificaciones-whatsapp.md`) con diagramas de flujo en Mermaid, entidades TypeORM, endpoints REST y DTOs.
-- Revisa el archivo propuesto. Si requieres cambios (ej. *"I want you to use NestJS Events instead of synchronous HTTP calls"*), pídelo directamente.
-- Cuando estés conforme con el diseño técnico final, aprueba el RFC.
+Aprueba el RFC generado cuando estés conforme con el diseño propuesto.
 
 ---
 
 ## 🟡 Etapa 2: Desglose de Tareas Técnico (Handoff)
 
-Una vez que el RFC está aprobado, el **Agente Tech-Lead** debe traducir ese diseño a un plan detallado de tareas ordenado secuencialmente en base a **Clean Architecture**.
+Una vez aprobado el RFC, el **Agente Tech-Lead** debe traducir ese diseño a un plan detallado de tareas ordenado secuencialmente en base a **Clean Architecture**.
 
 ### Paso 2.1: Disparar el Workflow de Tareas
-Inicia la conversación para la creación de tareas con el Agente Tech-Lead pidiéndole ejecutar el workflow [generate-tasks.md](file:///c:/Users/fedel/NestJs/vyma_backend/.agents/workflows/generate-tasks.md):
+> *"The RFC is approved. Please follow the `.agents/workflows/generate-tasks.md` workflow to generate the structured and sequential checklist of tasks for the developer. Save the output in `docs/tasks/XXX-feature-tasks.md`."*
 
-> **Mensaje de Soporte:**
-> *"The RFC is approved. Please follow the `.agents/workflows/generate-tasks.md` workflow to generate the structured and sequential checklist of tasks for the developer. Save the output in a new file inside `docs/tasks/XXX-feature-tasks.md`."*
-
-### Paso 2.2: Contrato de Desarrollo Listo
-El agente creará un archivo específico dentro de `docs/tasks/` (ej. `003-notificaciones-whatsapp-tasks.md`) usando la plantilla base definida en `docs/tasks/TEMPLATE.md`.
-Este archivo funcionará como el "contrato de trabajo" exacto y por capas que el desarrollador seguirá ciegamente.
+El archivo resultante (`docs/tasks/...`) funcionará como el "contrato de trabajo" auto-testeado que el desarrollador seguirá ciegamente.
 
 ---
 
 ## 🔵 Etapa 3: Implementación con el Agente Desarrollador Backend
 
-Con el archivo de tareas generado en `docs/tasks/`, entra en juego el **Agente Desarrollador Backend Experto** (`.agents/rules/backend-expert.md`).
+Con el archivo de tareas en mano, entra en juego el **Agente Desarrollador Backend Experto** (`.agents/rules/backend-expert.md`).
 
 ### Paso 3.1: Kickoff del Desarrollo
-Entrega el archivo de tareas al Desarrollador para que comience:
+> *"Here are the tasks in `docs/tasks/XXX-feature-tasks.md` for implementing [Nombre del Módulo]. Please review them and briefly list the files you are going to modify or create."*
+
+### Paso 3.2: Construcción por Capas Auto-testeada
+El Desarrollador completará el checklist capa por capa. Al finalizar cada capa, escribirá y pasará las pruebas unitarias:
+1. **Persistencia:** Entidades TypeORM y migración.
+2. **Dominio:** Interfaces y lógica en servicios (`.service.ts`) con unit tests (`.service.spec.ts`).
+3. **API:** DTOs con `class-validator` y controladores con unit tests.
+4. **Integraciones:** Listeners de eventos y sus unit tests.
+
+---
+
+## 🟣 Etapa 4: Auditoría de Calidad y Arquitectura (Code Review)
+
+Una vez que el desarrollador finaliza (o en cualquier momento que desees verificar el estado del código), puedes ejecutar un rol de inspector implacable usando el workflow de auditoría.
+
+### Paso 4.1: Ejecutar la Auditoría
+Inicia una conversación (preferiblemente con el **Agente Arquitecto**) pidiéndole que evalúe tu código bajo el workflow de auditoría:
 
 > **Mensaje de Soporte:**
-> *"Here are the tasks in `docs/tasks/XXX-feature-tasks.md` for implementing [Nombre del Módulo]. Please review them and, before writing the code, briefly list the files you are going to modify or create."*
+> *"I have just finished the implementation of [Nombre del Módulo] and ran `npm run lint` and `npm run test:cov`. Here are the outputs. Please follow the `.agents/workflows/architecture-audit.md` workflow to perform a rigorous architectural and clean code inspection of the modified files."*
 
-### Paso 3.2: Construcción por Capas (Clean Architecture Auto-testeada)
-El Desarrollador irá completando el checklist técnico de forma secuencial de adentro hacia afuera, **desarrollando y validando las pruebas unitarias en cada fase**. Esto facilita la creación de **Pull Requests (PRs) independientes por capa**:
-
-1. **Persistencia:** Entidades TypeORM y migración de base de datos SQL. (Listos para PR de Base de Datos).
-2. **Dominio:** Interfaces de repositorios, lógica de negocio en servicios (`.service.ts`) **y sus respectivas pruebas unitarias** (`.service.spec.ts`). (Listos para PR de Lógica de Negocio, totalmente testeado en aislamiento).
-3. **Controladores e Integración (API):** Creación de DTOs validados con `class-validator`, controladores REST (`.controller.ts`) **y sus respectivas pruebas unitarias** (`.controller.spec.ts`). (Listos para PR de API).
-4. **Listeners:** Consumidores de eventos asíncronos para tareas secundarias **y sus pruebas unitarias** (`.listener.spec.ts`). (Listos para PR de Integraciones/Eventos).
-5. **Verificación E2E:** Pruebas de integración manuales de los endpoints usando Postman/cURL y comprobación final en PostgreSQL.
-
-*Consejo: En cada capa, haz una pausa para revisar su código. Pídele correcciones si detectas código redundante o si viola los principios SOLID.*
+### Paso 4.2: Acción del Inspector
+El agente:
+1. Revisará que el test coverage sea de **mínimo 80%**. Si es menor, te dará las tareas para crear los tests faltantes.
+2. Validará si hay violaciones de **Clean Architecture** (ej. controladores con lógica de negocio).
+3. Buscará **N+1 queries** u otros problemas de TypeORM.
+4. Te devolverá un **Reporte de Auditoría** estructurado con sugerencias, snippets de corrección y un plan de acción (*Action Plan*) que puedes pasarle al Agente Desarrollador para que aplique los arreglos finales antes del Merge o PR.
