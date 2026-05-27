@@ -2,7 +2,7 @@ import { DataSource } from 'typeorm';
 import * as dotenv from 'dotenv';
 import { join } from 'path';
 
-dotenv.config(); // Carga las variables de entorno desde el .env
+dotenv.config();
 
 export const AppDataSource = new DataSource({
   type: 'postgres', // Cambia a tu motor de base de datos (mysql, sqlite, etc.)

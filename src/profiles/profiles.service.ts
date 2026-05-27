@@ -1,9 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 
 import { CreateProfileDto, UpdateProfileDto } from './dto';
 import { Profile } from './entities/profile.entity';
+import { AuthService } from '../auth/auth.service';
 
 @Injectable()
 export class ProfilesService {
@@ -11,9 +12,14 @@ export class ProfilesService {
     @InjectRepository(Profile)
     private readonly profileRepository: Repository<Profile>,
     private readonly dataSource: DataSource,
+    @Inject(forwardRef(() => AuthService))
+    private readonly authService: AuthService,
   ) {}
 
-  async create(createProfileDto: CreateProfileDto, manager = this.dataSource.manager) {
+  async create(
+    createProfileDto: CreateProfileDto,
+    manager = this.dataSource.manager,
+  ) {
     const repo = manager.getRepository(Profile);
 
     const profile = repo.create({
@@ -33,7 +39,7 @@ export class ProfilesService {
     return `This action returns a #${id} profile`;
   }
 
-  update(id: number, updateProfileDto: UpdateProfileDto) {
+  update(id: number, _updateProfileDto: UpdateProfileDto) {
     return `This action updates a #${id} profile`;
   }
 

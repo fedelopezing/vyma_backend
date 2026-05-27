@@ -5,47 +5,31 @@ import {
   Body,
   Patch,
   Param,
-  Delete, UseGuards,
+  Delete,
+  UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { DataSource } from 'typeorm';
 
-import { AuthService } from '../auth/auth.service';
 import { CreateUserWithProfileDto, UpdateProfileDto } from './dto';
 import { ProfilesService } from './profiles.service';
+import { AuthService } from '../auth/auth.service';
 import { RoleProtected } from '../auth/decorators/role-protected.decorator';
 import { UserRoleGuard } from '../auth/guards/user-role.guard';
 import { ValidRoles } from '../auth/interfaces';
 
 @Controller('profiles')
-@UseGuards(AuthGuard('jwt') )
+@UseGuards(AuthGuard('jwt'))
 export class ProfilesController {
   constructor(
-    private readonly authService: AuthService,
     private readonly profilesService: ProfilesService,
-    private readonly dataSource: DataSource,
+    private readonly authService: AuthService,
   ) {}
 
   @Post()
   @RoleProtected(ValidRoles.admin)
   @UseGuards(UserRoleGuard)
-  async create(@Body() createUserDto: CreateUserWithProfileDto)
-  {
-    return this.dataSource.transaction(async (manager) => {
-      try {
-        // Create the user
-        const userCreated = await this.authService.create(createUserDto, manager);
-
-        // Create the profile
-        const profileDto = { userId: userCreated.id, professionId: createUserDto.professionId };
-        const profileCreate = await this.profilesService.create(profileDto, manager);
-
-        return { user: userCreated, profile: profileCreate };
-
-      } catch (error) {
-        this.authService.handleDBErrors(error);
-      }
-    });
+  async create(@Body() createUserDto: CreateUserWithProfileDto) {
+    return this.authService.registerWithProfile(createUserDto);
   }
 
   @Get()

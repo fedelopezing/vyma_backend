@@ -4,7 +4,7 @@ import { UpdateScheduleDto } from './dto/update-schedule.dto';
 
 @Injectable()
 export class SchedulesService {
-  create(createScheduleDto: CreateScheduleDto) {
+  create(_createScheduleDto: CreateScheduleDto) {
     return 'This action adds a new schedule';
   }
 
@@ -16,7 +16,7 @@ export class SchedulesService {
     return `This action returns a #${id} schedule`;
   }
 
-  update(id: number, updateScheduleDto: UpdateScheduleDto) {
+  update(id: number, _updateScheduleDto: UpdateScheduleDto) {
     return `This action updates a #${id} schedule`;
   }
 

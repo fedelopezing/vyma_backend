@@ -32,7 +32,9 @@ export class ServicesService {
     const query = this.serviceRepository.createQueryBuilder('service');
 
     if (name) {
-      query.where('LOWER(service.name) LIKE :name', { name: `%${name.toLowerCase()}%` });
+      query.where('LOWER(service.name) LIKE :name', {
+        name: `%${name.toLowerCase()}%`,
+      });
     }
 
     return await query.getMany();
@@ -65,7 +67,6 @@ export class ServicesService {
       const service = await this.serviceRepository.findOneBy({ id });
       await this.serviceRepository.softRemove(service);
       return { message: `El servicio fue eliminado correctamente!` };
-
     } catch (error) {
       handleDBErrors('El servicio', error);
     }

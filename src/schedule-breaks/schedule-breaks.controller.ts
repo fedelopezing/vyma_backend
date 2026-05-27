@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+} from '@nestjs/common';
 import { ScheduleBreaksService } from './schedule-breaks.service';
 import { CreateScheduleBreakDto } from './dto/create-schedule-break.dto';
 import { UpdateScheduleBreakDto } from './dto/update-schedule-break.dto';
@@ -23,7 +31,10 @@ export class ScheduleBreaksController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateScheduleBreakDto: UpdateScheduleBreakDto) {
+  update(
+    @Param('id') id: string,
+    @Body() updateScheduleBreakDto: UpdateScheduleBreakDto,
+  ) {
     return this.scheduleBreaksService.update(+id, updateScheduleBreakDto);
   }
 

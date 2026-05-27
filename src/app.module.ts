@@ -18,7 +18,8 @@ import { WhatsappModule } from './whatsapp/whatsapp.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: process.env.NODE_ENV === 'production' ? '.env.production' : '.env',
+      envFilePath:
+        process.env.NODE_ENV === 'production' ? '.env.production' : '.env',
     }),
     EventEmitterModule.forRoot(),
 

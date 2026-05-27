@@ -9,4 +9,3 @@ export class SendMessageDto {
   @IsString()
   message: string;
 }
-

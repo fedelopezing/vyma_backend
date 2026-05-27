@@ -1,13 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { EmailService } from './email.service';
-import { WhatsappService } from '../whatsapp/whatsapp.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 describe('EmailService', () => {
   let service: EmailService;
 
-  // Mock WhatsappService
-  const mockWhatsappService = {
-    sendMessage: jest.fn().mockResolvedValue({ success: true }),
+  const mockEventEmitter = {
+    emit: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -18,8 +17,8 @@ describe('EmailService', () => {
       providers: [
         EmailService,
         {
-          provide: WhatsappService,
-          useValue: mockWhatsappService,
+          provide: EventEmitter2,
+          useValue: mockEventEmitter,
         },
       ],
     }).compile();

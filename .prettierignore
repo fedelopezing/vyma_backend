@@ -1,0 +1,17 @@
+# Ignorar carpetas de compilación y dependencias
+dist/
+node_modules/
+coverage/
+
+# Ignorar archivos de configuración y documentación que no requieren formateo estricto
+.agents/
+docs/
+*.json
+*.yml
+*.yaml
+*.md
+.eslintrc.js
+.prettierrc
+.prettierignore
+ecosystem.config.js
+nest-cli.json

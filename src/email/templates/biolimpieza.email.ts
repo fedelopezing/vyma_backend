@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 export const biolimpiezaEmailTemplate = (data: {
   name: string;
   email: string;

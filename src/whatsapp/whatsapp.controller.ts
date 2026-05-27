@@ -1,29 +1,36 @@
-import { Controller, Get, Post, Body, HttpException, HttpStatus } from '@nestjs/common';
-import { WhatsappService } from './whatsapp.service';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  HttpException,
+  HttpStatus,
+  UseGuards,
+} from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import { WhatsappMessagingService } from './whatsapp-messaging.service';
 import { SendMessageDto } from './dto/send-message.dto';
 
 @Controller('whatsapp')
 export class WhatsappController {
-  constructor(private readonly whatsappService: WhatsappService) {}
+  constructor(
+    private readonly whatsappMessagingService: WhatsappMessagingService,
+  ) {}
 
   @Get('status')
   getStatus() {
-    return this.whatsappService.getClientStatus();
+    return this.whatsappMessagingService.getClientStatus();
   }
 
   @Post('send-message')
+  @UseGuards(AuthGuard('jwt'))
   async sendMessage(@Body() sendMessageDto: SendMessageDto) {
     try {
       const { phoneNumber, message } = sendMessageDto;
-      
-      if (!phoneNumber || !message) {
-        throw new HttpException(
-          'Phone number and message are required',
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-
-      return await this.whatsappService.sendMessage(phoneNumber, message);
+      return await this.whatsappMessagingService.sendMessage(
+        phoneNumber,
+        message,
+      );
     } catch (error) {
       throw new HttpException(
         error.message || 'Failed to send message',
@@ -33,9 +40,10 @@ export class WhatsappController {
   }
 
   @Get('chats')
+  @UseGuards(AuthGuard('jwt'))
   async getChats() {
     try {
-      return await this.whatsappService.getChats();
+      return await this.whatsappMessagingService.getChats();
     } catch (error) {
       throw new HttpException(
         error.message || 'Failed to get chats',
@@ -44,4 +52,3 @@ export class WhatsappController {
     }
   }
 }
-
