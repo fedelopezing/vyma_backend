@@ -19,7 +19,7 @@ export class EmailService {
         html: biolimpiezaEmailTemplate(data),
       });
 
-      this.eventEmitter.emit('email.sent', data);
+      //this.eventEmitter.emit('email.sent', data);
 
       return {
         message: `El correo ha sido enviado correctamente!`,

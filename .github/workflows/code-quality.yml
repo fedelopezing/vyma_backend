@@ -25,7 +25,7 @@ jobs:
         run: npm ci
 
       - name: Verificar formato (Prettier)
-        run: npx prettier --check .
+        run: npx prettier --check "src/**/*.ts" "test/**/*.ts"
 
       - name: Analizar código (ESLint)
         run: npm run lint

@@ -4,6 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { User } from './entities/user.entity';
+import { ProfilesService } from '../profiles/profiles.service';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -44,6 +45,10 @@ describe('AuthService', () => {
         {
           provide: DataSource,
           useValue: mockDataSource,
+        },
+        {
+          provide: ProfilesService,
+          useValue: { create: jest.fn() },
         },
       ],
     }).compile();

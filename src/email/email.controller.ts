@@ -1,5 +1,4 @@
-import { Controller, Post, Body, UseGuards } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
+import { Controller, Post, Body } from '@nestjs/common';
 import { EmailService } from './email.service';
 import { CreateEmailDto } from './dto/create-email.dto';
 
@@ -8,7 +7,6 @@ export class EmailController {
   constructor(private readonly emailService: EmailService) {}
 
   @Post('budget')
-  @UseGuards(AuthGuard('jwt'))
   sendBudget(@Body() createEmailDto: CreateEmailDto) {
     const emailTo =
       process.env.EMAIL_BIOLIMPIEZA_TO.split(',').map((email) =>
