@@ -1,10 +1,11 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { CreateProfessionDto, UpdateProfessionDto } from './dto';
 import { Profession } from './entities/profession.entity';
 import { handleDBErrors } from '../common/helpers';
+import { ProfessionNotFoundException } from './exceptions/profession-not-found.exception';
 
 @Injectable()
 export class ProfessionsService {
@@ -33,7 +34,7 @@ export class ProfessionsService {
 
   async findOne(id: number) {
     const profession = await this.professionRepository.findOneBy({ id });
-    if (!profession) throw new BadRequestException('La profesión no existe');
+    if (!profession) throw new ProfessionNotFoundException(id);
 
     return profession;
   }
@@ -44,20 +45,21 @@ export class ProfessionsService {
         id,
         updateProfessionDto,
       );
-      if (profession.affected === 0) handleDBErrors('La profesión');
+      if (profession.affected === 0) throw new ProfessionNotFoundException(id);
 
       return {
         message: `La profesión ha sido actualizado correctamente!`,
         data: updateProfessionDto,
       };
     } catch (error) {
+      if (error instanceof ProfessionNotFoundException) throw error;
       handleDBErrors('La profesión', error);
     }
   }
 
   async remove(id: number) {
+    const profession = await this.findOne(id);
     try {
-      const profession = await this.professionRepository.findOneBy({ id });
       await this.professionRepository.softRemove(profession);
       return { message: `La profesión fue eliminado correctamente!` };
     } catch (error) {

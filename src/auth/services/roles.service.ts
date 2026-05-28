@@ -1,10 +1,12 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Role } from '../entities/role.entity';
 import { UsersService } from '../../users/users.service';
 import { CacheService } from '../../common/services/cache.service';
 import { AuthCacheKeys } from '../constants/cache-keys.constant';
+import { RoleNotFoundException } from '../exceptions/role-not-found.exception';
+import { UserNotFoundException } from '../../users/exceptions/user-not-found.exception';
 
 @Injectable()
 export class RolesService {
@@ -25,7 +27,7 @@ export class RolesService {
       relations: ['permissions'],
     });
     if (!role) {
-      throw new NotFoundException(`Role with id ${id} not found`);
+      throw new RoleNotFoundException(id);
     }
     return role;
   }
@@ -46,7 +48,7 @@ export class RolesService {
     const user = await this.usersService.findOneWithPermissions(userId);
 
     if (!user) {
-      throw new NotFoundException(`User with id ${userId} not found`);
+      throw new UserNotFoundException(userId);
     }
 
     const permissions = user.role?.permissions?.map((p) => p.action) || [];

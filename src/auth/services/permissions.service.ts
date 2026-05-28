@@ -1,5 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { PermissionNotFoundException } from '../exceptions/permission-not-found.exception';
 import { Repository } from 'typeorm';
 import { Permission } from '../entities/permission.entity';
 
@@ -19,7 +20,7 @@ export class PermissionsService {
       where: { id },
     });
     if (!permission) {
-      throw new NotFoundException(`Permission with id ${id} not found`);
+      throw new PermissionNotFoundException(id);
     }
     return permission;
   }

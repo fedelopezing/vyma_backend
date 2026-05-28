@@ -6,7 +6,7 @@ import { Role } from '../entities/role.entity';
 import { User } from '../../users/entities/user.entity';
 import { UsersService } from '../../users/users.service';
 import { CacheService } from '../../common/services/cache.service';
-import { NotFoundException } from '@nestjs/common';
+import { UserNotFoundException } from '../../users/exceptions/user-not-found.exception';
 import { createMock } from '@golevelup/ts-jest';
 import { AuthCacheKeys } from '../constants/cache-keys.constant';
 
@@ -97,7 +97,7 @@ describe('RolesService', () => {
         .mockResolvedValue(null);
 
       await expect(service.getUserPermissions(999)).rejects.toThrow(
-        NotFoundException,
+        UserNotFoundException,
       );
     });
   });

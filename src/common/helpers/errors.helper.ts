@@ -1,4 +1,7 @@
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 
 export const handleDBErrors = (message: string, error?: unknown): never => {
   if (
@@ -12,5 +15,7 @@ export const handleDBErrors = (message: string, error?: unknown): never => {
     );
   }
 
-  throw new NotFoundException(`${message} no existe`);
+  throw new InternalServerErrorException(
+    `Error inesperado al procesar ${message}`,
+  );
 };

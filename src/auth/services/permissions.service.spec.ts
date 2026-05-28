@@ -4,7 +4,7 @@ import { Repository } from 'typeorm';
 import { PermissionsService } from './permissions.service';
 import { Permission } from '../entities/permission.entity';
 import { createMock } from '@golevelup/ts-jest';
-import { NotFoundException } from '@nestjs/common';
+import { PermissionNotFoundException } from '../exceptions/permission-not-found.exception';
 
 describe('PermissionsService', () => {
   let service: PermissionsService;
@@ -56,10 +56,12 @@ describe('PermissionsService', () => {
       expect(repository.findOne).toHaveBeenCalledWith({ where: { id: 1 } });
     });
 
-    it('should throw NotFoundException if permission not found', async () => {
+    it('should throw PermissionNotFoundException if permission not found', async () => {
       jest.spyOn(repository, 'findOne').mockResolvedValue(null);
 
-      await expect(service.findOne(999)).rejects.toThrow(NotFoundException);
+      await expect(service.findOne(999)).rejects.toThrow(
+        PermissionNotFoundException,
+      );
     });
   });
 });

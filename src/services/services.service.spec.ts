@@ -2,16 +2,12 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ServicesService } from './services.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Service } from './entities/service.entity';
-import {
-  BadRequestException,
-  ConflictException,
-  NotFoundException,
-} from '@nestjs/common';
+import { ConflictException } from '@nestjs/common';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { faker } from '@faker-js/faker';
 import { Repository, SelectQueryBuilder } from 'typeorm';
 import { CreateServiceDto } from './dto/create-service.dto';
-
+import { ServiceNotFoundException } from './exceptions/service-not-found.exception';
 describe('ServicesService', () => {
   let service: ServicesService;
   let mockRepository: DeepMocked<Repository<Service>>;
@@ -121,10 +117,10 @@ describe('ServicesService', () => {
       expect(mockRepository.findOneBy).toHaveBeenCalledWith({ id });
     });
 
-    it('should throw BadRequestException if service not found', async () => {
+    it('should throw ServiceNotFoundException if service not found', async () => {
       mockRepository.findOneBy.mockResolvedValue(null);
-      await expect(service.findOne(faker.number.int())).rejects.toThrow(
-        BadRequestException,
+      await expect(service.findOne(999)).rejects.toThrow(
+        ServiceNotFoundException,
       );
     });
   });
@@ -144,17 +140,16 @@ describe('ServicesService', () => {
       expect(mockRepository.update).toHaveBeenCalledWith(id, dto);
     });
 
-    it('should throw NotFoundException if affected is 0', async () => {
+    it('should throw ServiceNotFoundException if affected is 0', async () => {
       mockRepository.update.mockResolvedValue({
         affected: 0,
-        raw: {},
+        raw: [],
         generatedMaps: [],
       });
+
       await expect(
-        service.update(faker.number.int(), {
-          name: faker.commerce.productName(),
-        }),
-      ).rejects.toThrow(NotFoundException);
+        service.update(999, { name: faker.commerce.productName() }),
+      ).rejects.toThrow(ServiceNotFoundException);
     });
   });
 
