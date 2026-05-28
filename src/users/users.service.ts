@@ -54,4 +54,11 @@ export class UsersService {
       },
     });
   }
+
+  async findUsersByRoleId(roleId: number): Promise<{ id: number }[]> {
+    return this.userRepository.find({
+      where: { role: { id: roleId } },
+      select: ['id'],
+    });
+  }
 }

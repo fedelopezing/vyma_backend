@@ -12,9 +12,11 @@ import { CommonModule } from '../common/common.module';
 import { RolesModule } from '../roles/roles.module';
 import { PermissionsModule } from '../permissions/permissions.module';
 
+import { RoleCacheListener } from './listeners/role-cache.listener';
+
 @Module({
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
+  providers: [AuthService, JwtStrategy, RoleCacheListener],
   imports: [
     ConfigModule,
     forwardRef(() => ProfilesModule),

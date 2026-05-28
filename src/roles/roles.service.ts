@@ -10,6 +10,8 @@ import { CacheService } from '../common/services/cache.service';
 import { AuthCacheKeys } from '../auth/constants/cache-keys.constant';
 import { RoleNotFoundException } from './exceptions/role-not-found.exception';
 import { UserNotFoundException } from '../users/exceptions/user-not-found.exception';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { RoleUpdatedEvent } from '../auth/events/role-updated.event';
 
 @Injectable()
 export class RolesService {
@@ -18,6 +20,7 @@ export class RolesService {
     private readonly roleRepository: Repository<Role>,
     private readonly usersService: UsersService,
     private readonly cacheService: CacheService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async findAll(): Promise<Role[]> {
@@ -67,7 +70,10 @@ export class RolesService {
       role.permissions = perms;
     }
 
-    return this.roleRepository.save(role);
+    const savedRole = await this.roleRepository.save(role);
+    this.eventEmitter.emit('role.updated', new RoleUpdatedEvent(savedRole.id));
+
+    return savedRole;
   }
 
   async getUserPermissions(userId: number): Promise<string[]> {

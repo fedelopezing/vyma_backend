@@ -2,10 +2,10 @@
 
 ## Resumen del Estado
 - [ ] Total de Tareas (14 tareas)
-- [ ] Base de Datos y Persistencia (2 tareas)
-- [ ] Dominio y Lógica de Negocio (inc. Pruebas Unitarias) (4 tareas)
-- [ ] API y Controladores (inc. Pruebas Unitarias) (5 tareas)
-- [ ] Eventos e Integraciones (inc. Pruebas Unitarias) (2 tareas)
+- [x] Base de Datos y Persistencia (2 tareas)
+- [x] Dominio y Lógica de Negocio (inc. Pruebas Unitarias) (4 tareas)
+- [x] API y Controladores (inc. Pruebas Unitarias) (5 tareas)
+- [x] Eventos e Integraciones (inc. Pruebas Unitarias) (2 tareas)
 - [ ] Verificación Manual E2E y API (1 tarea)
 
 ---
