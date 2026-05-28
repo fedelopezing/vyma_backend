@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "typescript-clean-code": {
+      "source": "bmad-labs/skills",
+      "sourceType": "github",
+      "skillPath": "skills/typescript-clean-code/SKILL.md",
+      "computedHash": "32dd11d590211d7098dfefe206e10acf929d6fcea28151a3994a1823b04df239"
+    }
+  }
+}

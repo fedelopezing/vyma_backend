@@ -12,13 +12,17 @@ import { AuthGuard } from '@nestjs/passport';
 
 import { ProfessionsService } from './professions.service';
 import { CreateProfessionDto, UpdateProfessionDto } from './dto';
+import { UserRoleGuard } from '../auth/guards/user-role.guard';
+import { RoleProtected } from '../auth/decorators/role-protected.decorator';
+import { ValidRoles } from '../auth/interfaces/valid-roles';
 
 @Controller('professions')
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), UserRoleGuard)
 export class ProfessionsController {
   constructor(private readonly professionsService: ProfessionsService) {}
 
   @Post()
+  @RoleProtected(ValidRoles.admin)
   create(@Body() createProfessionDto: CreateProfessionDto) {
     return this.professionsService.create(createProfessionDto);
   }
@@ -34,6 +38,7 @@ export class ProfessionsController {
   }
 
   @Patch(':id')
+  @RoleProtected(ValidRoles.admin)
   update(
     @Param('id') id: string,
     @Body() updateProfessionDto: UpdateProfessionDto,
@@ -42,6 +47,7 @@ export class ProfessionsController {
   }
 
   @Delete(':id')
+  @RoleProtected(ValidRoles.admin)
   remove(@Param('id') id: string) {
     return this.professionsService.remove(+id);
   }

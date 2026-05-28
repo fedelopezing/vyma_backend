@@ -77,18 +77,20 @@ The generated task file must strictly use the following markdown template. Notic
 
 ## 🔌 Layer 3: API & Controllers (Self-Tested Phase)
 ### Task 3.1: Create Input and Output DTOs
-- **Description:** Define DTOs for request payloads and responses using `class-validator` and `class-transformer`.
+- **Description:** Define DTOs for request payloads and responses using `class-validator`, `class-transformer`, and `@nestjs/swagger`.
 - **Files to create/modify:** `src/.../dto/*.dto.ts`
 - **Acceptance Criteria:**
   - All properties are fully typed and decorated with validations (e.g., `@IsString()`, `@IsUUID()`).
+  - All properties are documented using `@ApiProperty()` with examples and descriptions.
 
 ### Task 3.2: Create Controller and Endpoints
-- **Description:** Define the controller exposing the REST endpoints. Inject the service layer.
+- **Description:** Define the controller exposing the REST endpoints. Inject the service layer and document with Swagger.
 - **Files to create/modify:** `src/.../controllers/*.controller.ts`
 - **Acceptance Criteria:**
   - Proper route prefixes.
   - Proper HTTP verbs (GET, POST, etc.) and semantic status codes (e.g., 201 for POST).
   - Use of appropriate guards (`@UseGuards(JwtAuthGuard, RolesGuard)`).
+  - Controller is decorated with `@ApiTags()`, and endpoints with `@ApiOperation()` and `@ApiResponse()`.
 
 ### Task 3.3: Write Controller Unit Tests
 - **Description:** Create controller unit tests mocking the service layer dependencies.
@@ -122,5 +124,15 @@ The generated task file must strictly use the following markdown template. Notic
 ```
 
 ## Phase 3: Developer Handoff
-Once the task markdown file is generated in `docs/tasks/`, the Tech-Lead agent will output a brief summary in the chat and tell the user:
-*"I have generated the structured task list in `docs/tasks/XXX-feature-tasks.md`. It includes unit tests within each architectural layer to facilitate phased development and PRs. You can now hand this file over to the Backend Expert Developer agent to begin the step-by-step implementation."*
+Once the task markdown file is generated in `docs/tasks/`, the Tech-Lead (Arquitecto) agent must not only save the markdown file but **must strictly write in the chat the exact prompt** to initialize the Developer Agent. This saves the user from having to write intermediate explanations.
+
+### Strict Handoff Prompt Rule:
+The agent must provide a clear, copy-pasteable prompt block in the chat formatted exactly like this:
+
+```text
+Activa el rol de Desarrollador Experto (`.agents/rules/backend-expert.md`) y el workflow `/develop-feature`.
+Tu objetivo es implementar las tareas descritas en el archivo `docs/tasks/XXX-feature-tasks.md`.
+Comienza leyendo el archivo de tareas y la guía del workflow para estructurar tu plan de desarrollo en `task.md`.
+```
+
+*(Make sure to replace `XXX-feature-tasks.md` with the actual filename generated).*

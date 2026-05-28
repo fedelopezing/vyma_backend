@@ -9,6 +9,8 @@ import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { ProfilesModule } from '../profiles/profiles.module';
 import { User } from './entities/user.entity';
+import { Role } from './entities/role.entity';
+import { Permission } from './entities/permission.entity';
 
 @Module({
   controllers: [AuthController],
@@ -17,7 +19,7 @@ import { User } from './entities/user.entity';
     ConfigModule,
     forwardRef(() => ProfilesModule),
 
-    TypeOrmModule.forFeature([User]),
+    TypeOrmModule.forFeature([User, Role, Permission]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
 
     JwtModule.registerAsync({

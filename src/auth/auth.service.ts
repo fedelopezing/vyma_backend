@@ -15,6 +15,7 @@ import { JwtService } from '@nestjs/jwt';
 import { CreateUserDto, LoginUserDto } from './dto';
 import { JwtPayload } from './interfaces';
 import { User } from './entities/user.entity';
+import { Role } from './entities/role.entity';
 import { ProfilesService } from '../profiles/profiles.service';
 import { CreateUserWithProfileDto } from '../profiles/dto';
 
@@ -40,11 +41,18 @@ export class AuthService {
     manager = this.dataSource.manager,
   ) {
     const repo = manager.getRepository(User);
+    const roleRepo = manager.getRepository(Role);
+    const roleName = createUserDto.role || 'client';
+    const role = await roleRepo.findOne({ where: { name: roleName } });
+
+    if (!role) {
+      throw new BadRequestException(`Role '${roleName}' not found`);
+    }
 
     const user = repo.create({
       email: createUserDto.email,
       name: createUserDto.name,
-      role: createUserDto.role,
+      role: role,
       passwordHash: bcrypt.hashSync(createUserDto.password, 10),
     });
 
@@ -99,9 +107,9 @@ export class AuthService {
         isActive: true,
         id: true,
         name: true,
-        role: true,
+        role: { id: true, name: true },
       },
-      relations: ['profile'],
+      relations: ['profile', 'role'],
     });
 
     if (!user) {
@@ -138,20 +146,34 @@ export class AuthService {
    * @throws BadRequestException If the error is a duplicate key error
    * @throws InternalServerErrorException If the error is not a duplicate key error
    */
-  handleDBErrors(error: any): never {
-    if (error.code === '23505')
+  handleDBErrors(error: unknown): never {
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      (error as Record<string, unknown>).code === '23505'
+    ) {
       throw new ConflictException(
         'El email ya está en uso. Por favor, usa otro.',
       );
+    }
 
-    if (error.code === '23503')
-      throw new BadRequestException('La profesión proporcionada no existe.');
+    if (typeof error === 'object' && error !== null && 'response' in error) {
+      const response = (error as Record<string, unknown>).response;
+      if (
+        typeof response === 'object' &&
+        response !== null &&
+        'message' in response
+      ) {
+        throw new BadRequestException(
+          (response as Record<string, unknown>).message,
+        );
+      }
+    }
 
-    if (error.response?.message)
-      throw new BadRequestException(error.response.message);
-
+    console.error(error);
     throw new InternalServerErrorException(
-      'Error inesperado en la base de datos',
+      'Error inesperado, revise los logs del servidor',
     );
   }
 

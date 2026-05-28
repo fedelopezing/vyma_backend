@@ -5,6 +5,9 @@ description: Workflow for developing features with the Backend Expert Agent
 # Workflow with the Expert Backend Developer Agent
 You will work with the agent: `.agents/rules/backend-expert.md`
 
+## Core Guidelines
+- **Clean Code & Quality Standards:** Throughout all implementation phases, the agent must rely on and actively consult the guidelines defined in [.agents/skills/typescript-clean-code/guidelines.md](file:///c:/Users/fedel/NestJs/vyma_backend/.agents/skills/typescript-clean-code/guidelines.md) to strictly evaluate code legibility, modularity, and cyclomatic complexity, ensuring all developed code is clean and highly maintainable.
+
 ## Phase 1: Task Assignment (Kickoff)
 The cycle begins when the Architect has generated an approved RFC or there is a clear development ticket.
 **User Action:** You pass the RFC, user story, or specific tasks to the Agent.
