@@ -7,21 +7,25 @@ import { User } from '../../users/entities/user.entity';
 import { UsersService } from '../../users/users.service';
 import { CacheService } from '../../common/services/cache.service';
 import { UserNotFoundException } from '../../users/exceptions/user-not-found.exception';
-import { createMock } from '@golevelup/ts-jest';
+import { RoleNotFoundException } from '../exceptions/role-not-found.exception';
+import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { AuthCacheKeys } from '../constants/cache-keys.constant';
 
 describe('RolesService', () => {
   let service: RolesService;
+  let mockRoleRepository: DeepMocked<Repository<Role>>;
   let usersService: UsersService;
   let cacheService: CacheService;
 
   beforeEach(async () => {
+    mockRoleRepository = createMock<Repository<Role>>();
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         RolesService,
         {
           provide: getRepositoryToken(Role),
-          useValue: createMock<Repository<Role>>(),
+          useValue: mockRoleRepository,
         },
         {
           provide: UsersService,
@@ -41,6 +45,57 @@ describe('RolesService', () => {
 
   it('should be defined', () => {
     expect(service).toBeDefined();
+  });
+
+  describe('findAll', () => {
+    it('should return all roles with permissions relation', async () => {
+      const mockRoles = [{ id: 1, name: 'admin', permissions: [] } as Role];
+      mockRoleRepository.find.mockResolvedValue(mockRoles);
+
+      const result = await service.findAll();
+
+      expect(result).toEqual(mockRoles);
+      expect(mockRoleRepository.find).toHaveBeenCalledWith({
+        relations: ['permissions'],
+      });
+    });
+  });
+
+  describe('findOne', () => {
+    it('should return a role by id', async () => {
+      const mockRole = { id: 1, name: 'admin', permissions: [] } as Role;
+      mockRoleRepository.findOne.mockResolvedValue(mockRole);
+
+      const result = await service.findOne(1);
+
+      expect(result).toEqual(mockRole);
+      expect(mockRoleRepository.findOne).toHaveBeenCalledWith({
+        where: { id: 1 },
+        relations: ['permissions'],
+      });
+    });
+
+    it('should throw RoleNotFoundException if role not found', async () => {
+      mockRoleRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.findOne(999)).rejects.toThrow(RoleNotFoundException);
+    });
+  });
+
+  describe('remove', () => {
+    it('should find and remove a role', async () => {
+      const mockRole = { id: 1, name: 'admin', permissions: [] } as Role;
+      mockRoleRepository.findOne.mockResolvedValue(mockRole);
+      mockRoleRepository.remove.mockResolvedValue(mockRole);
+
+      await service.remove(1);
+
+      expect(mockRoleRepository.findOne).toHaveBeenCalledWith({
+        where: { id: 1 },
+        relations: ['permissions'],
+      });
+      expect(mockRoleRepository.remove).toHaveBeenCalledWith(mockRole);
+    });
   });
 
   describe('getUserPermissions', () => {
@@ -98,6 +153,50 @@ describe('RolesService', () => {
 
       await expect(service.getUserPermissions(999)).rejects.toThrow(
         UserNotFoundException,
+      );
+    });
+
+    it('should return empty array if user has no role', async () => {
+      jest.spyOn(cacheService, 'get').mockReturnValue(null);
+      const mockUser = {
+        id: 1,
+        role: null,
+      } as User;
+      jest
+        .spyOn(usersService, 'findOneWithPermissions')
+        .mockResolvedValue(mockUser);
+
+      const result = await service.getUserPermissions(1);
+
+      expect(result).toEqual([]);
+      expect(cacheService.set).toHaveBeenCalledWith(
+        AuthCacheKeys.userPermissions(1),
+        [],
+        3600,
+      );
+    });
+
+    it('should return empty array if user role has no permissions', async () => {
+      jest.spyOn(cacheService, 'get').mockReturnValue(null);
+      const mockUser = {
+        id: 1,
+        role: {
+          id: 1,
+          name: 'user',
+          permissions: null,
+        },
+      } as User;
+      jest
+        .spyOn(usersService, 'findOneWithPermissions')
+        .mockResolvedValue(mockUser);
+
+      const result = await service.getUserPermissions(1);
+
+      expect(result).toEqual([]);
+      expect(cacheService.set).toHaveBeenCalledWith(
+        AuthCacheKeys.userPermissions(1),
+        [],
+        3600,
       );
     });
   });
