@@ -11,13 +11,17 @@ import { ProfilesModule } from '../profiles/profiles.module';
 import { User } from './entities/user.entity';
 import { Role } from './entities/role.entity';
 import { Permission } from './entities/permission.entity';
+import { RolesService } from './services/roles.service';
+import { PermissionsService } from './services/permissions.service';
+import { CommonModule } from '../common/common.module';
 
 @Module({
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
+  providers: [AuthService, JwtStrategy, RolesService, PermissionsService],
   imports: [
     ConfigModule,
     forwardRef(() => ProfilesModule),
+    CommonModule,
 
     TypeOrmModule.forFeature([User, Role, Permission]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
@@ -35,6 +39,14 @@ import { Permission } from './entities/permission.entity';
       },
     }),
   ],
-  exports: [TypeOrmModule, JwtStrategy, PassportModule, JwtModule, AuthService],
+  exports: [
+    TypeOrmModule,
+    JwtStrategy,
+    PassportModule,
+    JwtModule,
+    AuthService,
+    RolesService,
+    PermissionsService,
+  ],
 })
 export class AuthModule {}
