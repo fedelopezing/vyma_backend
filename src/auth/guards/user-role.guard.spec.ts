@@ -1,4 +1,8 @@
-import { ExecutionContext, BadRequestException, ForbiddenException } from '@nestjs/common';
+import {
+  ExecutionContext,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { UserRoleGuard } from './user-role.guard';
 import { createMock } from '@golevelup/ts-jest';
@@ -26,7 +30,10 @@ describe('UserRoleGuard', () => {
       const result = guard.canActivate(context);
 
       expect(result).toBe(true);
-      expect(reflector.get).toHaveBeenCalledWith(META_ROLES, context.getHandler());
+      expect(reflector.get).toHaveBeenCalledWith(
+        META_ROLES,
+        context.getHandler(),
+      );
     });
 
     it('should return true if validRoles is undefined', () => {
@@ -41,7 +48,7 @@ describe('UserRoleGuard', () => {
     it('should throw BadRequestException if user is not found in request', () => {
       const context = createMock<ExecutionContext>();
       jest.spyOn(reflector, 'get').mockReturnValue(['admin']);
-      
+
       const mockRequest = { user: undefined };
       context.switchToHttp().getRequest.mockReturnValue(mockRequest);
 
@@ -52,12 +59,12 @@ describe('UserRoleGuard', () => {
     it('should return true if user role matches one of the valid roles', () => {
       const context = createMock<ExecutionContext>();
       jest.spyOn(reflector, 'get').mockReturnValue(['admin', 'user']);
-      
-      const mockRequest = { 
-        user: { 
+
+      const mockRequest = {
+        user: {
           name: faker.person.fullName(),
-          role: { name: 'admin' } 
-        } 
+          role: { name: 'admin' },
+        },
       };
       context.switchToHttp().getRequest.mockReturnValue(mockRequest);
 
@@ -70,18 +77,20 @@ describe('UserRoleGuard', () => {
       const context = createMock<ExecutionContext>();
       const validRoles = ['admin'];
       jest.spyOn(reflector, 'get').mockReturnValue(validRoles);
-      
+
       const userName = faker.person.fullName();
-      const mockRequest = { 
-        user: { 
+      const mockRequest = {
+        user: {
           name: userName,
-          role: { name: 'user' } 
-        } 
+          role: { name: 'user' },
+        },
       };
       context.switchToHttp().getRequest.mockReturnValue(mockRequest);
 
       expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
-      expect(() => guard.canActivate(context)).toThrow(`${userName} no tiene el rol: [${validRoles}]`);
+      expect(() => guard.canActivate(context)).toThrow(
+        `${userName} no tiene el rol: [${validRoles}]`,
+      );
     });
   });
 });

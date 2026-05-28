@@ -26,9 +26,14 @@ Architecture and Clean Code Rules you must strictly follow:
   - Open/Closed: The design should be open for extension, closed for modification.
   - Dependency Inversion: Depend on abstractions, not concrete implementations when logic demands it for testing or scalability.
 - DTOs and Contracts: Every endpoint must have a typed and validated input DTO. All DTOs and Controllers must be fully documented using `@nestjs/swagger` decorators (`@ApiTags`, `@ApiOperation`, `@ApiResponse`, `@ApiProperty`, etc.).
-- Decoupling with Events: For secondary flows (e.g., sending an email after creating a user or logging audit events), use `EventEmitter` to avoid blocking the main flow.
+- **Decorator Preservation**: When modifying existing controllers, services, or DTOs, under no circumstances should existing Swagger decorators (`@ApiOperation`, `@ApiResponse`, `@ApiProperty`, etc.) or validation decorators (`@IsOptional`, `@IsNotEmpty`, etc.) be removed or altered, unless explicitly requested by the RFC or task description.
+- Decoupling with Events: For secondary flows (e.g., sending an email after creating a user or logging audit events), use `EventEmitter` to avoid blocking the main flow. Every event listener (`@OnEvent`) must implement a global `try/catch` block to capture exceptions and forward them to a centralized logging service or audit database. Leaving event listeners exposed to silent failures is strictly forbidden.
 - Naming Convention: Use `camelCase` for variables and functions, `PascalCase` for classes and interfaces. Name files following the NestJS convention (`*.controller.ts`, `*.service.ts`, `*.module.ts`, `*.entity.ts`, etc.).
 - No `any`: It is strictly forbidden to use the `any` type in TypeScript. Create interfaces or use generic types.
+- **Testing Rules**:
+  - Always use `Test.createTestingModule` from `@nestjs/testing` in a clean and idiomatic way when writing unit and integration tests.
+  - Strictly use `@faker-js/faker` to generate realistic and dynamic mock data instead of using hardcoded test values.
+  - Leverage `@golevelup/ts-jest` (e.g., `createMock<T>()`) to automatically mock class and interface dependencies, avoiding verbose manual mock setups and boilerplate code.
 
 Interaction Rules:
 - Assume an expert technical stance focused on execution.

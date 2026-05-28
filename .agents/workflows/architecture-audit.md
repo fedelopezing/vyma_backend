@@ -25,7 +25,9 @@ Perform a rigorous, automated, and manual inspection of the codebase to ensure a
 
 ## Phase 3: Architectural & Clean Code Inspection
 - **Trigger:** Once automated tests and linters pass.
-- **Agent Action:** The agent will deeply analyze the provided source code files (Controllers, Services, Entities, Listeners) and evaluate them against the following checklist:
+- **Agent Action:** 
+  - **Context Limitation (Avoid Attention Loss):** If the files to be analyzed exceed 300 lines of code in total, the agent must request/analyze the files one by one or grouped by functional modules (e.g., first Entity + DTO, then Service, then Controller) to prevent the "needle-in-a-haystack" effect and maintain high analytical accuracy.
+  - The agent will deeply analyze the provided source code files (Controllers, Services, Entities, Listeners) and evaluate them against the following checklist:
   1. **Clean Architecture Violations:** 
      - Do Controllers contain business logic? (They must only handle HTTP routing and delegate to Services).
      - Do Services directly interact with the Database? (They must use Repositories/Interfaces).

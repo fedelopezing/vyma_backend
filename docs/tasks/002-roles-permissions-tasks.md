@@ -195,3 +195,14 @@
   - Actualizar los permisos del rol `professional` usando `PUT /api/v1/roles/:id` para eliminar `create:news`.
   - Volver a verificar inmediatamente: `professional` debe obtener ahora una respuesta `403 Forbidden` sin necesidad de cerrar e iniciar sesión, demostrando que la invalidación de caché funciona.
   - Inspeccionar las tablas de la base de datos PostgreSQL directamente para confirmar que las relaciones y los índices se formaron correctamente.
+
+---
+
+## 🚀 Handoff & Inicialización del Desarrollador
+Para iniciar la ejecución de esta especificación con el Desarrollador Experto, ejecuta el siguiente prompt en el chat:
+
+```text
+Activa el rol de Desarrollador Experto (`.agents/rules/backend-expert.md`) y el workflow `/develop-feature`.
+Tu objetivo es implementar las tareas descritas en el archivo `docs/tasks/002-roles-permissions-tasks.md`.
+Comienza leyendo el archivo de tareas y la guía del workflow para estructurar tu plan de desarrollo en `task.md`.
+```
