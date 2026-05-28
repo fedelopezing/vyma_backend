@@ -14,6 +14,8 @@ import { ScheduleBreaksModule } from './schedule-breaks/schedule-breaks.module';
 import { EmailModule } from './email/email.module';
 import { WhatsappModule } from './whatsapp/whatsapp.module';
 import { UsersModule } from './users/users.module';
+import { RolesModule } from './roles/roles.module';
+import { PermissionsModule } from './permissions/permissions.module';
 
 @Module({
   imports: [
@@ -37,6 +39,8 @@ import { UsersModule } from './users/users.module';
 
     SeedModule,
     AuthModule,
+    RolesModule,
+    PermissionsModule,
     ProfessionsModule,
     ProfilesModule,
     ServicesModule,

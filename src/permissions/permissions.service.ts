@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { PermissionNotFoundException } from '../exceptions/permission-not-found.exception';
+import { PermissionNotFoundException } from './exceptions/permission-not-found.exception';
 import { Repository } from 'typeorm';
-import { Permission } from '../entities/permission.entity';
+import { Permission } from './entities/permission.entity';
 
 @Injectable()
 export class PermissionsService {

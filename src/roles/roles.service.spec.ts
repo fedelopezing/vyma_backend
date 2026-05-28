@@ -2,14 +2,14 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { RolesService } from './roles.service';
-import { Role } from '../entities/role.entity';
-import { User } from '../../users/entities/user.entity';
-import { UsersService } from '../../users/users.service';
-import { CacheService } from '../../common/services/cache.service';
-import { UserNotFoundException } from '../../users/exceptions/user-not-found.exception';
-import { RoleNotFoundException } from '../exceptions/role-not-found.exception';
+import { Role } from './entities/role.entity';
+import { User } from '../users/entities/user.entity';
+import { UsersService } from '../users/users.service';
+import { CacheService } from '../common/services/cache.service';
+import { UserNotFoundException } from '../users/exceptions/user-not-found.exception';
+import { RoleNotFoundException } from './exceptions/role-not-found.exception';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
-import { AuthCacheKeys } from '../constants/cache-keys.constant';
+import { AuthCacheKeys } from '../auth/constants/cache-keys.constant';
 
 describe('RolesService', () => {
   let service: RolesService;

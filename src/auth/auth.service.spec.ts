@@ -1,7 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from './auth.service';
 import { JwtService } from '@nestjs/jwt';
-import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { UsersService } from '../users/users.service';
 import { ProfilesService } from '../profiles/profiles.service';
@@ -13,7 +12,10 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
-import { Role } from './entities/role.entity';
+import { Role } from '../roles/entities/role.entity';
+import { User } from '../users/entities/user.entity';
+import { Profile } from '../profiles/entities/profile.entity';
+import { CreateUserWithProfileDto } from '../profiles/dto';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { faker } from '@faker-js/faker';
 
@@ -97,8 +99,8 @@ describe('AuthService', () => {
         role,
       };
 
-      mockRoleRepository.findOne.mockResolvedValue(role as any);
-      mockUsersService.create.mockResolvedValue(user as any);
+      mockRoleRepository.findOne.mockResolvedValue(role as Role);
+      mockUsersService.create.mockResolvedValue(user as unknown as User);
       (bcrypt.hashSync as jest.Mock).mockReturnValue('hashedpassword');
 
       const result = await service.create(
@@ -139,11 +141,38 @@ describe('AuthService', () => {
     it('should throw UnauthorizedException if user is not active', async () => {
       mockUsersService.findOneByEmailForLogin.mockResolvedValue({
         isActive: false,
-      } as any);
+      } as unknown as User);
       await expect(
         service.login({
           email: faker.internet.email(),
           password: faker.internet.password(),
+        }),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('should throw UnauthorizedException if password is invalid', async () => {
+      const email = faker.internet.email();
+      const mockUser = {
+        id: faker.number.int(),
+        email,
+        name: faker.person.fullName(),
+        passwordHash: 'hashedpassword',
+        isActive: true,
+        profile: {
+          avatarUrl: faker.image.avatar(),
+          gender: 'other',
+          birthDate: faker.date.birthdate(),
+        },
+      };
+      mockUsersService.findOneByEmailForLogin.mockResolvedValue(
+        mockUser as unknown as User,
+      );
+      (bcrypt.compare as jest.Mock).mockResolvedValue(false);
+
+      await expect(
+        service.login({
+          email,
+          password: 'wrongpassword',
         }),
       ).rejects.toThrow(UnauthorizedException);
     });
@@ -164,7 +193,7 @@ describe('AuthService', () => {
         },
       };
       mockUsersService.findOneByEmailForLogin.mockResolvedValue(
-        mockUser as any,
+        mockUser as unknown as User,
       );
       mockJwtService.sign.mockReturnValue('mock-jwt-token');
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
@@ -176,6 +205,59 @@ describe('AuthService', () => {
 
       expect(result).toHaveProperty('access_token', 'mock-jwt-token');
       expect(result.user).toHaveProperty('email', email);
+    });
+  });
+
+  describe('registerWithProfile', () => {
+    it('should register a user with profile successfully', async () => {
+      const email = faker.internet.email();
+      const name = faker.person.fullName();
+      const professionId = faker.number.int();
+      const createUserDto = {
+        email,
+        name,
+        password: faker.internet.password(),
+        professionId,
+      };
+
+      const mockRole = { id: 1, name: 'client' };
+      const mockUser = { id: 123, email, name, role: mockRole };
+
+      mockRoleRepository.findOne.mockResolvedValue(mockRole as Role);
+      mockUsersService.create.mockResolvedValue(mockUser as unknown as User);
+      mockProfilesService.create.mockResolvedValue({
+        id: 1,
+      } as unknown as Profile);
+      mockJwtService.sign.mockReturnValue('mock-jwt-token');
+      (bcrypt.hashSync as jest.Mock).mockReturnValue('hashedpassword');
+
+      const result = await service.registerWithProfile(
+        createUserDto as unknown as CreateUserWithProfileDto,
+      );
+
+      expect(result).toHaveProperty('user');
+      expect(result).toHaveProperty('token', 'mock-jwt-token');
+      expect(mockProfilesService.create).toHaveBeenCalledWith(
+        { userId: mockUser.id, professionId },
+        mockDataSource.manager,
+      );
+    });
+
+    it('should throw ConflictException if database error occurs', async () => {
+      const createUserDto = {
+        email: faker.internet.email(),
+        name: faker.person.fullName(),
+        password: faker.internet.password(),
+        professionId: faker.number.int(),
+      };
+
+      mockRoleRepository.findOne.mockRejectedValue({ code: '23505' });
+
+      await expect(
+        service.registerWithProfile(
+          createUserDto as unknown as CreateUserWithProfileDto,
+        ),
+      ).rejects.toThrow(ConflictException);
     });
   });
 

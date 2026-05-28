@@ -1,5 +1,4 @@
 import { forwardRef, Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { PassportModule } from '@nestjs/passport';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
@@ -8,23 +7,22 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { ProfilesModule } from '../profiles/profiles.module';
-import { Role } from './entities/role.entity';
-import { Permission } from './entities/permission.entity';
 import { UsersModule } from '../users/users.module';
-import { RolesService } from './services/roles.service';
-import { PermissionsService } from './services/permissions.service';
 import { CommonModule } from '../common/common.module';
+import { RolesModule } from '../roles/roles.module';
+import { PermissionsModule } from '../permissions/permissions.module';
 
 @Module({
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, RolesService, PermissionsService],
+  providers: [AuthService, JwtStrategy],
   imports: [
     ConfigModule,
     forwardRef(() => ProfilesModule),
     CommonModule,
     UsersModule,
+    RolesModule,
+    PermissionsModule,
 
-    TypeOrmModule.forFeature([Role, Permission]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
 
     JwtModule.registerAsync({
@@ -41,13 +39,12 @@ import { CommonModule } from '../common/common.module';
     }),
   ],
   exports: [
-    TypeOrmModule,
     JwtStrategy,
     PassportModule,
     JwtModule,
     AuthService,
-    RolesService,
-    PermissionsService,
+    RolesModule,
+    PermissionsModule,
   ],
 })
 export class AuthModule {}

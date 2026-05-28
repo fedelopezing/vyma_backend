@@ -9,6 +9,9 @@ import { Observable } from 'rxjs';
 import { Reflector } from '@nestjs/core';
 import { META_ROLES } from '../decorators/role-protected.decorator';
 
+/**
+ * @deprecated Usa `PermissionsGuard` y `@RequirePermissions` en su lugar para validación RBAC dinámica.
+ */
 @Injectable()
 export class UserRoleGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
