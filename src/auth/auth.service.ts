@@ -14,7 +14,7 @@ import { JwtService } from '@nestjs/jwt';
 
 import { CreateUserDto, LoginUserDto } from './dto';
 import { JwtPayload } from './interfaces';
-import { User } from './entities/user.entity';
+import { UsersService } from '../users/users.service';
 import { Role } from './entities/role.entity';
 import { ProfilesService } from '../profiles/profiles.service';
 import { CreateUserWithProfileDto } from '../profiles/dto';
@@ -22,8 +22,7 @@ import { CreateUserWithProfileDto } from '../profiles/dto';
 @Injectable()
 export class AuthService {
   constructor(
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
+    private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
     @Inject(forwardRef(() => ProfilesService))
     private readonly profileService: ProfilesService,
@@ -40,7 +39,6 @@ export class AuthService {
     createUserDto: CreateUserDto,
     manager = this.dataSource.manager,
   ) {
-    const repo = manager.getRepository(User);
     const roleRepo = manager.getRepository(Role);
     const roleName = createUserDto.role || 'client';
     const role = await roleRepo.findOne({ where: { name: roleName } });
@@ -49,14 +47,15 @@ export class AuthService {
       throw new BadRequestException(`Role '${roleName}' not found`);
     }
 
-    const user = repo.create({
-      email: createUserDto.email,
-      name: createUserDto.name,
-      role: role,
-      passwordHash: bcrypt.hashSync(createUserDto.password, 10),
-    });
-
-    await repo.save(user);
+    const user = await this.usersService.create(
+      {
+        email: createUserDto.email,
+        name: createUserDto.name,
+        role: role,
+        passwordHash: bcrypt.hashSync(createUserDto.password, 10),
+      },
+      manager,
+    );
     delete user.passwordHash;
     return user;
   }
@@ -99,18 +98,7 @@ export class AuthService {
     const { password, email } = loginUserDto;
 
     // Buscar usuario por correo
-    const user = await this.userRepository.findOne({
-      where: { email },
-      select: {
-        email: true,
-        passwordHash: true,
-        isActive: true,
-        id: true,
-        name: true,
-        role: { id: true, name: true },
-      },
-      relations: ['profile', 'role'],
-    });
+    const user = await this.usersService.findOneByEmailForLogin(email);
 
     if (!user) {
       throw new UnauthorizedException('Credentials are not valid');

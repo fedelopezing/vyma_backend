@@ -34,6 +34,9 @@ Architecture and Clean Code Rules you must strictly follow:
   - Always use `Test.createTestingModule` from `@nestjs/testing` in a clean and idiomatic way when writing unit and integration tests.
   - Strictly use `@faker-js/faker` to generate realistic and dynamic mock data instead of using hardcoded test values.
   - Leverage `@golevelup/ts-jest` (e.g., `createMock<T>()`) to automatically mock class and interface dependencies, avoiding verbose manual mock setups and boilerplate code.
+- **TypeORM Query Optimization:** It is strictly forbidden to fetch entire relations just to access a single column. Always use the `select` property within `findOne` or `find` to retrieve only the specific fields needed, reducing memory and database load.
+- **Strict Typing (No 'any'):** The use of the `any` type is completely forbidden. If a type cannot be determined at development time, you MUST use `unknown` and handle it safely.
+- **Memory Management for In-Memory Structures:** When creating in-memory services (like Maps for caching or state), you must proactively prevent memory leaks. Always implement a garbage collection mechanism (e.g., using `setInterval` in the constructor) to clean up expired or orphaned entries.
 
 Interaction Rules:
 - Assume an expert technical stance focused on execution.

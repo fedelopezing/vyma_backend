@@ -30,8 +30,11 @@ describe('WhatsappController', () => {
     const dto = new SendMessageDto();
     dto.phoneNumber = faker.phone.number();
     dto.message = faker.lorem.sentence();
-    const expectedResult = { success: true };
-    messagingService.sendMessage.mockResolvedValue(expectedResult as any);
+    const expectedResult = {
+      success: true,
+      message: 'Message sent successfully',
+    };
+    messagingService.sendMessage.mockResolvedValue(expectedResult);
 
     const result = await controller.sendMessage(dto);
     expect(messagingService.sendMessage).toHaveBeenCalledWith(

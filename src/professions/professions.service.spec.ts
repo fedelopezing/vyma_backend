@@ -2,11 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ProfessionsService } from './professions.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Profession } from './entities/profession.entity';
-import {
-  BadRequestException,
-  ConflictException,
-  NotFoundException,
-} from '@nestjs/common';
+import { ConflictException } from '@nestjs/common';
+import { ProfessionNotFoundException } from './exceptions/profession-not-found.exception';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { faker } from '@faker-js/faker';
 import { Repository } from 'typeorm';
@@ -91,10 +88,10 @@ describe('ProfessionsService', () => {
       expect(mockRepository.findOneBy).toHaveBeenCalledWith({ id });
     });
 
-    it('should throw BadRequestException if profession not found', async () => {
+    it('should throw ProfessionNotFoundException if profession not found', async () => {
       mockRepository.findOneBy.mockResolvedValue(null);
       await expect(service.findOne(faker.number.int())).rejects.toThrow(
-        BadRequestException,
+        ProfessionNotFoundException,
       );
     });
   });
@@ -114,7 +111,7 @@ describe('ProfessionsService', () => {
       expect(mockRepository.update).toHaveBeenCalledWith(id, dto);
     });
 
-    it('should throw NotFoundException if affected is 0', async () => {
+    it('should throw ProfessionNotFoundException if affected is 0', async () => {
       mockRepository.update.mockResolvedValue({
         affected: 0,
         raw: {},
@@ -122,7 +119,7 @@ describe('ProfessionsService', () => {
       });
       await expect(
         service.update(faker.number.int(), { name: faker.word.noun() }),
-      ).rejects.toThrow(NotFoundException);
+      ).rejects.toThrow(ProfessionNotFoundException);
     });
   });
 

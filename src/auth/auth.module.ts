@@ -8,18 +8,23 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { ProfilesModule } from '../profiles/profiles.module';
-import { User } from './entities/user.entity';
 import { Role } from './entities/role.entity';
 import { Permission } from './entities/permission.entity';
+import { UsersModule } from '../users/users.module';
+import { RolesService } from './services/roles.service';
+import { PermissionsService } from './services/permissions.service';
+import { CommonModule } from '../common/common.module';
 
 @Module({
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
+  providers: [AuthService, JwtStrategy, RolesService, PermissionsService],
   imports: [
     ConfigModule,
     forwardRef(() => ProfilesModule),
+    CommonModule,
+    UsersModule,
 
-    TypeOrmModule.forFeature([User, Role, Permission]),
+    TypeOrmModule.forFeature([Role, Permission]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
 
     JwtModule.registerAsync({
@@ -35,6 +40,14 @@ import { Permission } from './entities/permission.entity';
       },
     }),
   ],
-  exports: [TypeOrmModule, JwtStrategy, PassportModule, JwtModule, AuthService],
+  exports: [
+    TypeOrmModule,
+    JwtStrategy,
+    PassportModule,
+    JwtModule,
+    AuthService,
+    RolesService,
+    PermissionsService,
+  ],
 })
 export class AuthModule {}

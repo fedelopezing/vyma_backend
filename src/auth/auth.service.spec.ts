@@ -3,7 +3,7 @@ import { AuthService } from './auth.service';
 import { JwtService } from '@nestjs/jwt';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
-import { User } from './entities/user.entity';
+import { UsersService } from '../users/users.service';
 import { ProfilesService } from '../profiles/profiles.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import {
@@ -24,14 +24,14 @@ jest.mock('bcrypt', () => ({
 
 describe('AuthService', () => {
   let service: AuthService;
-  let mockUserRepository: DeepMocked<Repository<User>>;
+  let mockUsersService: DeepMocked<UsersService>;
   let mockRoleRepository: DeepMocked<Repository<Role>>;
   let mockJwtService: DeepMocked<JwtService>;
   let mockDataSource: DeepMocked<DataSource>;
   let mockProfilesService: DeepMocked<ProfilesService>;
 
   beforeEach(async () => {
-    mockUserRepository = createMock<Repository<User>>();
+    mockUsersService = createMock<UsersService>();
     mockRoleRepository = createMock<Repository<Role>>();
     mockJwtService = createMock<JwtService>();
     mockDataSource = createMock<DataSource>();
@@ -42,7 +42,6 @@ describe('AuthService', () => {
     });
 
     mockDataSource.manager.getRepository.mockImplementation((entity: any) => {
-      if (entity === User) return mockUserRepository as any;
       if (entity === Role) return mockRoleRepository as any;
       return null as any;
     });
@@ -51,8 +50,8 @@ describe('AuthService', () => {
       providers: [
         AuthService,
         {
-          provide: getRepositoryToken(User),
-          useValue: mockUserRepository,
+          provide: UsersService,
+          useValue: mockUsersService,
         },
         {
           provide: JwtService,
@@ -99,8 +98,7 @@ describe('AuthService', () => {
       };
 
       mockRoleRepository.findOne.mockResolvedValue(role as any);
-      mockUserRepository.create.mockReturnValue(user as any);
-      mockUserRepository.save.mockResolvedValue(user as any);
+      mockUsersService.create.mockResolvedValue(user as any);
       (bcrypt.hashSync as jest.Mock).mockReturnValue('hashedpassword');
 
       const result = await service.create(
@@ -111,7 +109,7 @@ describe('AuthService', () => {
       expect(mockRoleRepository.findOne).toHaveBeenCalledWith({
         where: { name: 'client' },
       });
-      expect(mockUserRepository.save).toHaveBeenCalled();
+      expect(mockUsersService.create).toHaveBeenCalled();
     });
 
     it('should throw BadRequestException if role not found', async () => {
@@ -129,7 +127,7 @@ describe('AuthService', () => {
 
   describe('login', () => {
     it('should throw UnauthorizedException if user not found', async () => {
-      mockUserRepository.findOne.mockResolvedValue(null);
+      mockUsersService.findOneByEmailForLogin.mockResolvedValue(null);
       await expect(
         service.login({
           email: faker.internet.email(),
@@ -139,7 +137,9 @@ describe('AuthService', () => {
     });
 
     it('should throw UnauthorizedException if user is not active', async () => {
-      mockUserRepository.findOne.mockResolvedValue({ isActive: false } as any);
+      mockUsersService.findOneByEmailForLogin.mockResolvedValue({
+        isActive: false,
+      } as any);
       await expect(
         service.login({
           email: faker.internet.email(),
@@ -163,7 +163,9 @@ describe('AuthService', () => {
           birthDate: faker.date.birthdate(),
         },
       };
-      mockUserRepository.findOne.mockResolvedValue(mockUser as any);
+      mockUsersService.findOneByEmailForLogin.mockResolvedValue(
+        mockUser as any,
+      );
       mockJwtService.sign.mockReturnValue('mock-jwt-token');
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 

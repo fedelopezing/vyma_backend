@@ -3,10 +3,9 @@ import { ProfilesService } from './profiles.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Profile } from './entities/profile.entity';
 import { DataSource, Repository, EntityManager } from 'typeorm';
-import { AuthService } from '../auth/auth.service';
 import { createMock } from '@golevelup/ts-jest';
 import { faker } from '@faker-js/faker';
-import { User } from '../auth/entities/user.entity';
+import { User } from '../users/entities/user.entity';
 import { Profession } from '../professions/entities/profession.entity';
 
 describe('ProfilesService', () => {
@@ -24,10 +23,6 @@ describe('ProfilesService', () => {
         {
           provide: DataSource,
           useValue: createMock<DataSource>(),
-        },
-        {
-          provide: AuthService,
-          useValue: createMock<AuthService>(),
         },
       ],
     }).compile();

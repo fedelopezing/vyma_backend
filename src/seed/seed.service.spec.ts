@@ -3,7 +3,8 @@ import { SeedService } from './seed.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Role } from '../auth/entities/role.entity';
 import { Permission } from '../auth/entities/permission.entity';
-import { User } from '../auth/entities/user.entity';
+import { Profession } from '../professions/entities/profession.entity';
+import { User } from '../users/entities/user.entity';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { Repository } from 'typeorm';
 
