@@ -8,14 +8,13 @@ import {
   forwardRef,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
-import { DataSource, Repository } from 'typeorm';
-import { InjectRepository } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 
 import { CreateUserDto, LoginUserDto } from './dto';
 import { JwtPayload } from './interfaces';
 import { UsersService } from '../users/users.service';
-import { Role } from './entities/role.entity';
+import { Role } from '../roles/entities/role.entity';
 import { ProfilesService } from '../profiles/profiles.service';
 import { CreateUserWithProfileDto } from '../profiles/dto';
 
@@ -120,9 +119,9 @@ export class AuthService {
         id: user.id,
         email: user.email,
         name: user.name,
-        avatar: user.profile.avatarUrl,
-        gender: user.profile.gender,
-        birthdate: user.profile.birthDate,
+        avatar: user.profile?.avatarUrl || null,
+        gender: user.profile?.gender || null,
+        birthdate: user.profile?.birthDate || null,
       },
       access_token: this.getJwtToken({ id: user.id }),
     };

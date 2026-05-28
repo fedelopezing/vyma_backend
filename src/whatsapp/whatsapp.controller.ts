@@ -1,3 +1,4 @@
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import {
   Controller,
   Get,
@@ -11,6 +12,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { WhatsappMessagingService } from './whatsapp-messaging.service';
 import { SendMessageDto } from './dto/send-message.dto';
 
+@ApiTags('Whatsapp')
 @Controller('whatsapp')
 export class WhatsappController {
   constructor(
@@ -22,6 +24,7 @@ export class WhatsappController {
     return this.whatsappMessagingService.getClientStatus();
   }
 
+  @ApiBearerAuth()
   @Post('send-message')
   @UseGuards(AuthGuard('jwt'))
   async sendMessage(@Body() sendMessageDto: SendMessageDto) {
@@ -39,6 +42,7 @@ export class WhatsappController {
     }
   }
 
+  @ApiBearerAuth()
   @Get('chats')
   @UseGuards(AuthGuard('jwt'))
   async getChats() {

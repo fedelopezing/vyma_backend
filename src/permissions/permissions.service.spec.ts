@@ -2,9 +2,9 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PermissionsService } from './permissions.service';
-import { Permission } from '../entities/permission.entity';
+import { Permission } from './entities/permission.entity';
 import { createMock } from '@golevelup/ts-jest';
-import { PermissionNotFoundException } from '../exceptions/permission-not-found.exception';
+import { PermissionNotFoundException } from './exceptions/permission-not-found.exception';
 
 describe('PermissionsService', () => {
   let service: PermissionsService;

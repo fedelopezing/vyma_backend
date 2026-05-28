@@ -1,3 +1,4 @@
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import {
   Controller,
   Get,
@@ -17,6 +18,8 @@ import { RoleProtected } from '../auth/decorators/role-protected.decorator';
 import { UserRoleGuard } from '../auth/guards/user-role.guard';
 import { ValidRoles } from '../auth/interfaces';
 
+@ApiBearerAuth()
+@ApiTags('Profiles')
 @Controller('profiles')
 @UseGuards(AuthGuard('jwt'))
 export class ProfilesController {

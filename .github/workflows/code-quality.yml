@@ -32,3 +32,6 @@ jobs:
 
       - name: Ejecutar pruebas unitarias (Jest)
         run: npm run test:cov
+
+      - name: Compilar proyecto (Build)
+        run: npm run build
