@@ -1,9 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtStrategy } from './jwt.strategy';
 import { ConfigService } from '@nestjs/config';
-import { getRepositoryToken } from '@nestjs/typeorm';
-import { User } from '../entities/user.entity';
-import { Repository } from 'typeorm';
+import { User } from '../../users/entities/user.entity';
+import { UsersService } from '../../users/users.service';
 import { createMock } from '@golevelup/ts-jest';
 import { faker } from '@faker-js/faker';
 import { UnauthorizedException } from '@nestjs/common';
@@ -11,7 +10,7 @@ import { JwtPayload } from '../interfaces/jwt-payload.interface';
 
 describe('JwtStrategy', () => {
   let strategy: JwtStrategy;
-  let userRepository: Repository<User>;
+  let mockUsersService: UsersService;
 
   beforeEach(async () => {
     // ConfigService mock returning a dummy secret so JwtStrategy super() doesn't fail
@@ -25,8 +24,8 @@ describe('JwtStrategy', () => {
       providers: [
         JwtStrategy,
         {
-          provide: getRepositoryToken(User),
-          useValue: createMock<Repository<User>>(),
+          provide: UsersService,
+          useValue: createMock<UsersService>(),
         },
         {
           provide: ConfigService,
@@ -36,7 +35,7 @@ describe('JwtStrategy', () => {
     }).compile();
 
     strategy = module.get<JwtStrategy>(JwtStrategy);
-    userRepository = module.get<Repository<User>>(getRepositoryToken(User));
+    mockUsersService = module.get<UsersService>(UsersService);
   });
 
   it('should be defined', () => {
@@ -51,21 +50,20 @@ describe('JwtStrategy', () => {
         isActive: true,
       });
 
-      jest.spyOn(userRepository, 'findOne').mockResolvedValue(expectedUser);
+      jest
+        .spyOn(mockUsersService, 'findOneById')
+        .mockResolvedValue(expectedUser);
 
       const result = await strategy.validate(payload);
 
-      expect(userRepository.findOne).toHaveBeenCalledWith({
-        where: { id: payload.id },
-        relations: ['role'],
-      });
+      expect(mockUsersService.findOneById).toHaveBeenCalledWith(payload.id);
       expect(result).toEqual(expectedUser);
     });
 
     it('should throw UnauthorizedException if user is not found', async () => {
       const payload: JwtPayload = { id: faker.number.int() };
 
-      jest.spyOn(userRepository, 'findOne').mockResolvedValue(null);
+      jest.spyOn(mockUsersService, 'findOneById').mockResolvedValue(null);
 
       await expect(strategy.validate(payload)).rejects.toThrow(
         UnauthorizedException,
@@ -82,7 +80,9 @@ describe('JwtStrategy', () => {
         isActive: false,
       });
 
-      jest.spyOn(userRepository, 'findOne').mockResolvedValue(inactiveUser);
+      jest
+        .spyOn(mockUsersService, 'findOneById')
+        .mockResolvedValue(inactiveUser);
 
       await expect(strategy.validate(payload)).rejects.toThrow(
         UnauthorizedException,

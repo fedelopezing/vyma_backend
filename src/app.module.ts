@@ -13,6 +13,7 @@ import { SchedulesModule } from './schedules/schedules.module';
 import { ScheduleBreaksModule } from './schedule-breaks/schedule-breaks.module';
 import { EmailModule } from './email/email.module';
 import { WhatsappModule } from './whatsapp/whatsapp.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { WhatsappModule } from './whatsapp/whatsapp.module';
     ScheduleBreaksModule,
     EmailModule,
     WhatsappModule,
+    UsersModule,
   ],
   controllers: [],
   providers: [],

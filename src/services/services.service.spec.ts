@@ -9,12 +9,13 @@ import {
 } from '@nestjs/common';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { faker } from '@faker-js/faker';
-import { Repository } from 'typeorm';
+import { Repository, SelectQueryBuilder } from 'typeorm';
+import { CreateServiceDto } from './dto/create-service.dto';
 
 describe('ServicesService', () => {
   let service: ServicesService;
   let mockRepository: DeepMocked<Repository<Service>>;
-  let mockQueryBuilder: any;
+  let mockQueryBuilder: DeepMocked<SelectQueryBuilder<Service>>;
 
   const createFakeService = (): Service => {
     const s = new Service();
@@ -31,11 +32,9 @@ describe('ServicesService', () => {
 
   beforeEach(async () => {
     mockRepository = createMock<Repository<Service>>();
-    mockQueryBuilder = {
-      where: jest.fn().mockReturnThis(),
-      getMany: jest.fn(),
-    };
-    mockRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
+    mockQueryBuilder = createMock<SelectQueryBuilder<Service>>();
+    mockQueryBuilder.where.mockReturnThis();
+    mockRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -56,7 +55,7 @@ describe('ServicesService', () => {
 
   describe('create', () => {
     it('should create a service successfully', async () => {
-      const dto = {
+      const dto: CreateServiceDto = {
         name: faker.commerce.productName(),
         description: faker.lorem.sentence(),
         price: Number(faker.commerce.price()),
@@ -66,7 +65,7 @@ describe('ServicesService', () => {
       mockRepository.create.mockReturnValue(s);
       mockRepository.save.mockResolvedValue(s);
 
-      const result = await service.create(dto as any);
+      const result = await service.create(dto);
 
       expect(result.data).toEqual(s);
       expect(mockRepository.create).toHaveBeenCalledWith(dto);
@@ -76,7 +75,9 @@ describe('ServicesService', () => {
     it('should throw ConflictException on duplicate entry', async () => {
       mockRepository.save.mockRejectedValue({ code: '23505' });
       await expect(
-        service.create({ name: faker.commerce.productName() } as any),
+        service.create({
+          name: faker.commerce.productName(),
+        } as unknown as CreateServiceDto),
       ).rejects.toThrow(ConflictException);
     });
   });

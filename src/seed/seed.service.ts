@@ -4,7 +4,7 @@ import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { Role } from '../auth/entities/role.entity';
 import { Permission } from '../auth/entities/permission.entity';
-import { User } from '../auth/entities/user.entity';
+import { User } from '../users/entities/user.entity';
 
 @Injectable()
 export class SeedService {

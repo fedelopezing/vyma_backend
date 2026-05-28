@@ -11,7 +11,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { Profile } from '../../profiles/entities/profile.entity';
-import { Role } from './role.entity';
+import { Role } from '../../auth/entities/role.entity';
 
 @Entity('users')
 export class User {

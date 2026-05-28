@@ -3,14 +3,16 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { RolesService } from './roles.service';
 import { Role } from '../entities/role.entity';
-import { User } from '../entities/user.entity';
+import { User } from '../../users/entities/user.entity';
+import { UsersService } from '../../users/users.service';
 import { CacheService } from '../../common/services/cache.service';
 import { NotFoundException } from '@nestjs/common';
 import { createMock } from '@golevelup/ts-jest';
+import { AuthCacheKeys } from '../constants/cache-keys.constant';
 
 describe('RolesService', () => {
   let service: RolesService;
-  let userRepository: Repository<User>;
+  let usersService: UsersService;
   let cacheService: CacheService;
 
   beforeEach(async () => {
@@ -22,8 +24,8 @@ describe('RolesService', () => {
           useValue: createMock<Repository<Role>>(),
         },
         {
-          provide: getRepositoryToken(User),
-          useValue: createMock<Repository<User>>(),
+          provide: UsersService,
+          useValue: createMock<UsersService>(),
         },
         {
           provide: CacheService,
@@ -33,7 +35,7 @@ describe('RolesService', () => {
     }).compile();
 
     service = module.get<RolesService>(RolesService);
-    userRepository = module.get<Repository<User>>(getRepositoryToken(User));
+    usersService = module.get<UsersService>(UsersService);
     cacheService = module.get<CacheService>(CacheService);
   });
 
@@ -49,8 +51,10 @@ describe('RolesService', () => {
       const result = await service.getUserPermissions(1);
 
       expect(result).toEqual(cachedPermissions);
-      expect(cacheService.get).toHaveBeenCalledWith('permissions_user_1');
-      expect(userRepository.findOne).not.toHaveBeenCalled();
+      expect(cacheService.get).toHaveBeenCalledWith(
+        AuthCacheKeys.userPermissions(1),
+      );
+      expect(usersService.findOneWithPermissions).not.toHaveBeenCalled();
     });
 
     it('should query DB and cache permissions if not in cache', async () => {
@@ -68,27 +72,19 @@ describe('RolesService', () => {
         },
       } as User;
 
-      jest.spyOn(userRepository, 'findOne').mockResolvedValue(mockUser);
+      jest
+        .spyOn(usersService, 'findOneWithPermissions')
+        .mockResolvedValue(mockUser);
 
       const result = await service.getUserPermissions(1);
 
       expect(result).toEqual(['read:news', 'create:news']);
-      expect(cacheService.get).toHaveBeenCalledWith('permissions_user_1');
-      expect(userRepository.findOne).toHaveBeenCalledWith({
-        where: { id: 1 },
-        relations: ['role', 'role.permissions'],
-        select: {
-          id: true,
-          role: {
-            id: true,
-            permissions: {
-              action: true,
-            },
-          },
-        },
-      });
+      expect(cacheService.get).toHaveBeenCalledWith(
+        AuthCacheKeys.userPermissions(1),
+      );
+      expect(usersService.findOneWithPermissions).toHaveBeenCalledWith(1);
       expect(cacheService.set).toHaveBeenCalledWith(
-        'permissions_user_1',
+        AuthCacheKeys.userPermissions(1),
         ['read:news', 'create:news'],
         3600,
       );
@@ -96,7 +92,9 @@ describe('RolesService', () => {
 
     it('should throw NotFoundException if user not found', async () => {
       jest.spyOn(cacheService, 'get').mockReturnValue(null);
-      jest.spyOn(userRepository, 'findOne').mockResolvedValue(null);
+      jest
+        .spyOn(usersService, 'findOneWithPermissions')
+        .mockResolvedValue(null);
 
       await expect(service.getUserPermissions(999)).rejects.toThrow(
         NotFoundException,

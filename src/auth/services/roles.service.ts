@@ -2,16 +2,16 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Role } from '../entities/role.entity';
-import { User } from '../entities/user.entity';
+import { UsersService } from '../../users/users.service';
 import { CacheService } from '../../common/services/cache.service';
+import { AuthCacheKeys } from '../constants/cache-keys.constant';
 
 @Injectable()
 export class RolesService {
   constructor(
     @InjectRepository(Role)
     private readonly roleRepository: Repository<Role>,
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
+    private readonly usersService: UsersService,
     private readonly cacheService: CacheService,
   ) {}
 
@@ -36,26 +36,14 @@ export class RolesService {
   }
 
   async getUserPermissions(userId: number): Promise<string[]> {
-    const cacheKey = `permissions_user_${userId}`;
+    const cacheKey = AuthCacheKeys.userPermissions(userId);
     const cachedPermissions = this.cacheService.get<string[]>(cacheKey);
 
     if (cachedPermissions) {
       return cachedPermissions;
     }
 
-    const user = await this.userRepository.findOne({
-      where: { id: userId },
-      relations: ['role', 'role.permissions'],
-      select: {
-        id: true, // Requerido para resolver la relación
-        role: {
-          id: true,
-          permissions: {
-            action: true, // Solo traemos el string de la acción
-          },
-        },
-      },
-    });
+    const user = await this.usersService.findOneWithPermissions(userId);
 
     if (!user) {
       throw new NotFoundException(`User with id ${userId} not found`);
