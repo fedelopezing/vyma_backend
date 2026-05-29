@@ -19,6 +19,7 @@ jest.mock('resend', () => {
 describe('EmailService', () => {
   let service: EmailService;
   let mockEventEmitter: DeepMocked<EventEmitter2>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let mockResendInstance: any;
 
   beforeEach(async () => {
@@ -36,7 +37,7 @@ describe('EmailService', () => {
     }).compile();
 
     service = module.get<EmailService>(EmailService);
-    mockResendInstance = (service as any).resend;
+    mockResendInstance = service['resend'];
   });
 
   afterEach(() => {

@@ -1,4 +1,4 @@
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
   Controller,
   Get,
@@ -8,52 +8,57 @@ import {
   Param,
   Delete,
   UseGuards,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 
 import { CreateUserWithProfileDto, UpdateProfileDto } from './dto';
 import { ProfilesService } from './profiles.service';
-import { AuthService } from '../auth/auth.service';
-import { RoleProtected } from '../auth/decorators/role-protected.decorator';
-import { UserRoleGuard } from '../auth/guards/user-role.guard';
-import { ValidRoles } from '../auth/interfaces';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { RequirePermissions } from '../auth/decorators/require-permissions.decorator';
 
 @ApiBearerAuth()
 @ApiTags('Profiles')
 @Controller('profiles')
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), PermissionsGuard)
 export class ProfilesController {
-  constructor(
-    private readonly profilesService: ProfilesService,
-    private readonly authService: AuthService,
-  ) {}
+  constructor(private readonly profilesService: ProfilesService) {}
 
   @Post()
-  @RoleProtected(ValidRoles.admin)
-  @UseGuards(UserRoleGuard)
+  @RequirePermissions('write:users')
+  @ApiOperation({ summary: 'Crear un usuario con perfil (solo admin)' })
   async create(@Body() createUserDto: CreateUserWithProfileDto) {
-    return this.authService.registerWithProfile(createUserDto);
+    return this.profilesService.createWithUser(createUserDto);
   }
 
   @Get()
-  @RoleProtected(ValidRoles.admin)
-  @UseGuards(UserRoleGuard)
+  @RequirePermissions('read:users')
+  @ApiOperation({ summary: 'Obtener todos los perfiles (solo admin)' })
   findAll() {
     return this.profilesService.findAll();
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.profilesService.findOne(+id);
+  @RequirePermissions('read:users')
+  @ApiOperation({ summary: 'Obtener un perfil por ID' })
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.profilesService.findOne(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateProfileDto: UpdateProfileDto) {
-    return this.profilesService.update(+id, updateProfileDto);
+  @RequirePermissions('write:users')
+  @ApiOperation({ summary: 'Actualizar un perfil por ID' })
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateProfileDto: UpdateProfileDto,
+  ) {
+    return this.profilesService.update(id, updateProfileDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.profilesService.remove(+id);
+  @RequirePermissions('write:users')
+  @ApiOperation({ summary: 'Eliminar un perfil por ID' })
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.profilesService.remove(id);
   }
 }

@@ -1,4 +1,8 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
@@ -8,6 +12,7 @@ import { User } from '../users/entities/user.entity';
 
 @Injectable()
 export class SeedService {
+  private readonly logger = new Logger(SeedService.name);
   constructor(
     @InjectRepository(Role)
     private readonly roleRepository: Repository<Role>,
@@ -24,7 +29,10 @@ export class SeedService {
       await this.seedUsers();
       return { message: 'Seed executed successfully' };
     } catch (error) {
-      console.error(error);
+      this.logger.error(
+        'Error executing seed',
+        error instanceof Error ? error.stack : String(error),
+      );
       throw new InternalServerErrorException('Error executing seed');
     }
   }
@@ -118,15 +126,15 @@ export class SeedService {
       relations: ['role'],
     });
 
+    // Consultar el rol 'client' UNA SOLA VEZ fuera del loop (evita N+1)
+    const clientRole = await this.roleRepository.findOne({
+      where: { name: 'client' },
+    });
+
     for (const user of usersWithoutRole) {
-      if (!user.role) {
-        const clientRole = await this.roleRepository.findOne({
-          where: { name: 'client' },
-        });
-        if (clientRole) {
-          user.role = clientRole;
-          await this.userRepository.save(user);
-        }
+      if (!user.role && clientRole) {
+        user.role = clientRole;
+        await this.userRepository.save(user);
       }
     }
   }

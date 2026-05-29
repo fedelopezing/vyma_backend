@@ -8,7 +8,7 @@ import { RequirePermissions } from '../auth/decorators/require-permissions.decor
 @ApiTags('Permissions')
 @ApiBearerAuth()
 @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-@Controller('api/v1/permissions')
+@Controller('permissions')
 export class PermissionsController {
   constructor(private readonly permissionsService: PermissionsService) {}
 

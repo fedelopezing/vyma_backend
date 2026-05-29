@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { WhatsappConnectionService } from './whatsapp-connection.service';
+import { getErrorMessage } from '../common/helpers/errors.helper';
 
 @Injectable()
 export class WhatsappMessagingService {
@@ -25,7 +26,8 @@ export class WhatsappMessagingService {
       this.logger.log(`Message sent to ${phoneNumber}`);
       return { success: true, message: 'Message sent successfully' };
     } catch (error) {
-      this.logger.error(`Failed to send message: ${error.message}`);
+      const msg = getErrorMessage(error, String(error));
+      this.logger.error(`Failed to send message: ${msg}`);
       throw error;
     }
   }

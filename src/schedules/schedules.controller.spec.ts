@@ -30,15 +30,15 @@ describe('SchedulesController', () => {
 
   it('should create a schedule', () => {
     const expectedResult = faker.lorem.sentence();
-    mockService.create.mockReturnValue(expectedResult as any);
+    mockService.create.mockReturnValue(expectedResult as never);
 
-    expect(controller.create({} as any)).toBe(expectedResult);
+    expect(controller.create({} as never)).toBe(expectedResult);
     expect(mockService.create).toHaveBeenCalled();
   });
 
   it('should return all schedules', () => {
     const expectedResult = faker.lorem.sentence();
-    mockService.findAll.mockReturnValue(expectedResult as any);
+    mockService.findAll.mockReturnValue(expectedResult as never);
 
     expect(controller.findAll()).toBe(expectedResult);
     expect(mockService.findAll).toHaveBeenCalled();
@@ -46,7 +46,7 @@ describe('SchedulesController', () => {
 
   it('should return a schedule by id', () => {
     const expectedResult = faker.lorem.sentence();
-    mockService.findOne.mockReturnValue(expectedResult as any);
+    mockService.findOne.mockReturnValue(expectedResult as never);
 
     expect(controller.findOne('1')).toBe(expectedResult);
     expect(mockService.findOne).toHaveBeenCalledWith(1);
@@ -54,15 +54,15 @@ describe('SchedulesController', () => {
 
   it('should update a schedule', () => {
     const expectedResult = faker.lorem.sentence();
-    mockService.update.mockReturnValue(expectedResult as any);
+    mockService.update.mockReturnValue(expectedResult as never);
 
-    expect(controller.update('1', {} as any)).toBe(expectedResult);
+    expect(controller.update('1', {} as never)).toBe(expectedResult);
     expect(mockService.update).toHaveBeenCalledWith(1, {});
   });
 
   it('should remove a schedule', () => {
     const expectedResult = faker.lorem.sentence();
-    mockService.remove.mockReturnValue(expectedResult as any);
+    mockService.remove.mockReturnValue(expectedResult as never);
 
     expect(controller.remove('1')).toBe(expectedResult);
     expect(mockService.remove).toHaveBeenCalledWith(1);

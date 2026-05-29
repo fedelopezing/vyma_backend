@@ -19,7 +19,7 @@ import { RequirePermissions } from '../auth/decorators/require-permissions.decor
 @ApiTags('Roles')
 @ApiBearerAuth()
 @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-@Controller('api/v1/roles')
+@Controller('roles')
 export class RolesController {
   constructor(private readonly rolesService: RolesService) {}
 

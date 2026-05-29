@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { SeedController } from './seed.controller';
 import { SeedService } from './seed.service';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
+import { RolesService } from '../roles/roles.service';
 
 describe('SeedController', () => {
   let controller: SeedController;
@@ -17,6 +18,10 @@ describe('SeedController', () => {
           provide: SeedService,
           useValue: mockSeedService,
         },
+        {
+          provide: RolesService,
+          useValue: createMock<RolesService>(),
+        },
       ],
     }).compile();
 
@@ -29,7 +34,7 @@ describe('SeedController', () => {
 
   it('should execute seed successfully', async () => {
     const expectedResult = { message: 'Seed executed successfully' };
-    mockSeedService.executeSeed.mockResolvedValue(expectedResult as any);
+    mockSeedService.executeSeed.mockResolvedValue(expectedResult as never);
 
     expect(await controller.execute()).toEqual(expectedResult);
     expect(mockSeedService.executeSeed).toHaveBeenCalled();

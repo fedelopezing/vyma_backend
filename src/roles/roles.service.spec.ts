@@ -10,15 +10,18 @@ import { UserNotFoundException } from '../users/exceptions/user-not-found.except
 import { RoleNotFoundException } from './exceptions/role-not-found.exception';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { AuthCacheKeys } from '../auth/constants/cache-keys.constant';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 describe('RolesService', () => {
   let service: RolesService;
   let mockRoleRepository: DeepMocked<Repository<Role>>;
   let usersService: UsersService;
   let cacheService: CacheService;
+  let mockEventEmitter: DeepMocked<EventEmitter2>;
 
   beforeEach(async () => {
     mockRoleRepository = createMock<Repository<Role>>();
+    mockEventEmitter = createMock<EventEmitter2>();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -34,6 +37,10 @@ describe('RolesService', () => {
         {
           provide: CacheService,
           useValue: createMock<CacheService>(),
+        },
+        {
+          provide: EventEmitter2,
+          useValue: mockEventEmitter,
         },
       ],
     }).compile();
@@ -95,6 +102,50 @@ describe('RolesService', () => {
         relations: ['permissions'],
       });
       expect(mockRoleRepository.remove).toHaveBeenCalledWith(mockRole);
+    });
+  });
+
+  describe('create', () => {
+    it('should create a role without permissions', async () => {
+      const createRoleDto = { name: 'editor' };
+      const expectedRole = { id: 2, name: 'editor' } as Role;
+
+      mockRoleRepository.create.mockReturnValue(expectedRole);
+      mockRoleRepository.save.mockResolvedValue(expectedRole);
+
+      const result = await service.create(createRoleDto);
+
+      expect(result).toEqual(expectedRole);
+      expect(mockRoleRepository.create).toHaveBeenCalledWith(createRoleDto);
+      expect(mockRoleRepository.save).toHaveBeenCalledWith(expectedRole);
+    });
+  });
+
+  describe('update', () => {
+    it('should update a role and emit role.updated event', async () => {
+      const existingRole = { id: 1, name: 'admin', permissions: [] } as Role;
+      const updateRoleDto = { name: 'superadmin' };
+      const updatedRole = {
+        id: 1,
+        name: 'superadmin',
+        permissions: [],
+      } as Role;
+
+      mockRoleRepository.findOne.mockResolvedValue(existingRole);
+      mockRoleRepository.save.mockResolvedValue(updatedRole);
+
+      const result = await service.update(1, updateRoleDto);
+
+      expect(result).toEqual(updatedRole);
+      expect(mockRoleRepository.findOne).toHaveBeenCalledWith({
+        where: { id: 1 },
+        relations: ['permissions'],
+      });
+      expect(mockRoleRepository.save).toHaveBeenCalledWith(existingRole);
+      expect(mockEventEmitter.emit).toHaveBeenCalledWith(
+        'role.updated',
+        expect.any(Object),
+      );
     });
   });
 

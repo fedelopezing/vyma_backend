@@ -45,10 +45,10 @@ describe('AuthController', () => {
         token: faker.string.alphanumeric(32),
       };
       mockAuthService.registerWithProfile.mockResolvedValue(
-        expectedResult as any,
+        expectedResult as never,
       );
 
-      expect(await controller.create(dto as any)).toEqual(expectedResult);
+      expect(await controller.create(dto as never)).toEqual(expectedResult);
       expect(mockAuthService.registerWithProfile).toHaveBeenCalledWith(dto);
     });
   });
@@ -63,7 +63,7 @@ describe('AuthController', () => {
         access_token: faker.string.alphanumeric(32),
         user: { id: faker.number.int(), email: dto.email },
       };
-      mockAuthService.login.mockResolvedValue(expectedResult as any);
+      mockAuthService.login.mockResolvedValue(expectedResult as never);
 
       expect(await controller.login(dto)).toEqual(expectedResult);
       expect(mockAuthService.login).toHaveBeenCalledWith(dto);

@@ -4,6 +4,18 @@ import { ConfigService } from '@nestjs/config';
 import { createMock } from '@golevelup/ts-jest';
 import { Client } from 'whatsapp-web.js';
 
+interface WhatsappConnectionServicePrivate {
+  logger: { log: jest.Mock; warn: jest.Mock };
+  reconnectTimer: NodeJS.Timeout | null;
+  client: Client;
+  ready: boolean;
+  initializing: boolean;
+  reconnectAttempts: number;
+  buildClient(): Promise<void>;
+  initializeClient(): Promise<void>;
+  scheduleReconnect(reason: string): void;
+}
+
 jest.mock('whatsapp-web.js', () => {
   return {
     Client: jest.fn().mockImplementation(() => ({
@@ -52,7 +64,10 @@ describe('WhatsappConnectionService', () => {
   describe('onModuleInit', () => {
     it('should log and return if WHATSAPP_ENABLED is not true', async () => {
       jest.spyOn(configService, 'get').mockReturnValue('false');
-      const loggerSpy = jest.spyOn((service as any).logger, 'log');
+      const loggerSpy = jest.spyOn(
+        (service as unknown as WhatsappConnectionServicePrivate).logger,
+        'log',
+      );
 
       await service.onModuleInit();
 
@@ -64,7 +79,10 @@ describe('WhatsappConnectionService', () => {
 
     it('should not initialize client if WHATSAPP_ENABLED is true (temporarily disabled)', async () => {
       jest.spyOn(configService, 'get').mockReturnValue('true');
-      const loggerSpy = jest.spyOn((service as any).logger, 'log');
+      const loggerSpy = jest.spyOn(
+        (service as unknown as WhatsappConnectionServicePrivate).logger,
+        'log',
+      );
 
       await service.onModuleInit();
 
@@ -76,7 +94,8 @@ describe('WhatsappConnectionService', () => {
   describe('onModuleDestroy', () => {
     it('should clear reconnectTimer if it exists', async () => {
       jest.useFakeTimers();
-      (service as any).reconnectTimer = setTimeout(() => {}, 1000);
+      (service as unknown as WhatsappConnectionServicePrivate).reconnectTimer =
+        setTimeout(() => {}, 1000);
       const clearTimeoutSpy = jest.spyOn(global, 'clearTimeout');
 
       await service.onModuleDestroy();
@@ -86,7 +105,8 @@ describe('WhatsappConnectionService', () => {
 
     it('should destroy the client if it exists', async () => {
       const mockClient = createMock<Client>();
-      (service as any).client = mockClient;
+      (service as unknown as WhatsappConnectionServicePrivate).client =
+        mockClient;
 
       await service.onModuleDestroy();
 
@@ -97,9 +117,13 @@ describe('WhatsappConnectionService', () => {
       const mockClient = createMock<Client>();
       const error = new Error('Destroy failed');
       mockClient.destroy.mockRejectedValue(error);
-      (service as any).client = mockClient;
+      (service as unknown as WhatsappConnectionServicePrivate).client =
+        mockClient;
 
-      const loggerWarnSpy = jest.spyOn((service as any).logger, 'warn');
+      const loggerWarnSpy = jest.spyOn(
+        (service as unknown as WhatsappConnectionServicePrivate).logger,
+        'warn',
+      );
 
       await service.onModuleDestroy();
 
@@ -111,10 +135,10 @@ describe('WhatsappConnectionService', () => {
 
   describe('isReady', () => {
     it('should return the ready state', () => {
-      (service as any).ready = true;
+      (service as unknown as WhatsappConnectionServicePrivate).ready = true;
       expect(service.isReady).toBe(true);
 
-      (service as any).ready = false;
+      (service as unknown as WhatsappConnectionServicePrivate).ready = false;
       expect(service.isReady).toBe(false);
     });
   });
@@ -122,7 +146,8 @@ describe('WhatsappConnectionService', () => {
   describe('getClient', () => {
     it('should return the client instance', () => {
       const mockClient = createMock<Client>();
-      (service as any).client = mockClient;
+      (service as unknown as WhatsappConnectionServicePrivate).client =
+        mockClient;
 
       expect(service.getClient()).toBe(mockClient);
     });
@@ -130,26 +155,34 @@ describe('WhatsappConnectionService', () => {
 
   describe('buildClient (private)', () => {
     it('should build client correctly for dev stage', async () => {
-      jest.spyOn(configService, 'get').mockImplementation((key) => {
-        if (key === 'STAGE') return 'dev';
-        if (key === 'WHATSAPP_CLIENT_ID') return 'test-client';
-        return null;
-      });
+      (jest.spyOn(configService, 'get') as jest.Mock).mockImplementation(
+        (key) => {
+          if (key === 'STAGE') return 'dev';
+          if (key === 'WHATSAPP_CLIENT_ID') return 'test-client';
+          return null;
+        },
+      );
 
-      await (service as any).buildClient();
+      await (
+        service as unknown as WhatsappConnectionServicePrivate
+      ).buildClient();
 
       expect(service.getClient()).toBeDefined();
     });
 
     it('should build client correctly for prod stage', async () => {
-      jest.spyOn(configService, 'get').mockImplementation((key) => {
-        if (key === 'STAGE') return 'prod';
-        if (key === 'CHROME_EXECUTABLE_PATH') return '/custom/path/chromium';
-        if (key === 'WHATSAPP_CLIENT_ID') return 'test-client';
-        return null;
-      });
+      (jest.spyOn(configService, 'get') as jest.Mock).mockImplementation(
+        (key) => {
+          if (key === 'STAGE') return 'prod';
+          if (key === 'CHROME_EXECUTABLE_PATH') return '/custom/path/chromium';
+          if (key === 'WHATSAPP_CLIENT_ID') return 'test-client';
+          return null;
+        },
+      );
 
-      await (service as any).buildClient();
+      await (
+        service as unknown as WhatsappConnectionServicePrivate
+      ).buildClient();
 
       expect(service.getClient()).toBeDefined();
     });
@@ -158,36 +191,51 @@ describe('WhatsappConnectionService', () => {
   describe('initializeClient (private)', () => {
     it('should initialize the client', async () => {
       const mockClient = createMock<Client>();
-      (service as any).client = mockClient;
+      (service as unknown as WhatsappConnectionServicePrivate).client =
+        mockClient;
 
-      await (service as any).initializeClient();
+      await (
+        service as unknown as WhatsappConnectionServicePrivate
+      ).initializeClient();
 
       expect(mockClient.initialize).toHaveBeenCalled();
-      expect((service as any).initializing).toBe(false);
+      expect(
+        (service as unknown as WhatsappConnectionServicePrivate).initializing,
+      ).toBe(false);
     });
 
     it('should catch error on initialize and schedule reconnect', async () => {
       const mockClient = createMock<Client>();
       mockClient.initialize.mockRejectedValue(new Error('Init Error'));
-      (service as any).client = mockClient;
+      (service as unknown as WhatsappConnectionServicePrivate).client =
+        mockClient;
 
       const scheduleSpy = jest
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .spyOn(service as any, 'scheduleReconnect')
         .mockImplementation(() => {});
 
-      await (service as any).initializeClient();
+      await (
+        service as unknown as WhatsappConnectionServicePrivate
+      ).initializeClient();
 
       expect(mockClient.initialize).toHaveBeenCalled();
-      expect((service as any).ready).toBe(false);
+      expect(
+        (service as unknown as WhatsappConnectionServicePrivate).ready,
+      ).toBe(false);
       expect(scheduleSpy).toHaveBeenCalledWith('initialize_error');
     });
 
     it('should not initialize if already initializing', async () => {
-      (service as any).initializing = true;
+      (service as unknown as WhatsappConnectionServicePrivate).initializing =
+        true;
       const mockClient = createMock<Client>();
-      (service as any).client = mockClient;
+      (service as unknown as WhatsappConnectionServicePrivate).client =
+        mockClient;
 
-      await (service as any).initializeClient();
+      await (
+        service as unknown as WhatsappConnectionServicePrivate
+      ).initializeClient();
 
       expect(mockClient.initialize).not.toHaveBeenCalled();
     });
@@ -199,22 +247,36 @@ describe('WhatsappConnectionService', () => {
     });
 
     it('should schedule a reconnect if no timer exists', () => {
-      const loggerWarnSpy = jest.spyOn((service as any).logger, 'warn');
+      const loggerWarnSpy = jest.spyOn(
+        (service as unknown as WhatsappConnectionServicePrivate).logger,
+        'warn',
+      );
 
-      (service as any).scheduleReconnect('test_reason');
+      (
+        service as unknown as WhatsappConnectionServicePrivate
+      ).scheduleReconnect('test_reason');
 
-      expect((service as any).reconnectAttempts).toBe(1);
-      expect((service as any).reconnectTimer).not.toBeNull();
+      expect(
+        (service as unknown as WhatsappConnectionServicePrivate)
+          .reconnectAttempts,
+      ).toBe(1);
+      expect(
+        (service as unknown as WhatsappConnectionServicePrivate).reconnectTimer,
+      ).not.toBeNull();
       expect(loggerWarnSpy).toHaveBeenCalled();
     });
 
     it('should execute reconnect callback after delay', async () => {
-      (service as any).scheduleReconnect('test_reason');
+      (
+        service as unknown as WhatsappConnectionServicePrivate
+      ).scheduleReconnect('test_reason');
 
       const buildClientSpy = jest
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .spyOn(service as any, 'buildClient')
         .mockResolvedValue(undefined);
       const initializeClientSpy = jest
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .spyOn(service as any, 'initializeClient')
         .mockResolvedValue(undefined);
 
@@ -222,18 +284,28 @@ describe('WhatsappConnectionService', () => {
 
       await Promise.resolve(); // allow microtasks to flush
 
-      expect((service as any).reconnectTimer).toBeNull();
+      expect(
+        (service as unknown as WhatsappConnectionServicePrivate).reconnectTimer,
+      ).toBeNull();
       expect(buildClientSpy).toHaveBeenCalled();
       expect(initializeClientSpy).toHaveBeenCalled();
     });
 
     it('should not schedule if timer already exists', () => {
-      (service as any).reconnectTimer = setTimeout(() => {}, 1000);
-      const initialAttempts = (service as any).reconnectAttempts;
+      (service as unknown as WhatsappConnectionServicePrivate).reconnectTimer =
+        setTimeout(() => {}, 1000);
+      const initialAttempts = (
+        service as unknown as WhatsappConnectionServicePrivate
+      ).reconnectAttempts;
 
-      (service as any).scheduleReconnect('test_reason');
+      (
+        service as unknown as WhatsappConnectionServicePrivate
+      ).scheduleReconnect('test_reason');
 
-      expect((service as any).reconnectAttempts).toBe(initialAttempts);
+      expect(
+        (service as unknown as WhatsappConnectionServicePrivate)
+          .reconnectAttempts,
+      ).toBe(initialAttempts);
     });
   });
 });

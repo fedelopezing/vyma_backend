@@ -50,7 +50,7 @@ describe('PermissionsGuard', () => {
       switchToHttp: () => ({
         getRequest: () => ({ user: null }),
       }),
-    } as any);
+    } as never);
 
     await expect(guard.canActivate(context)).rejects.toThrow(
       UnauthorizedException,
@@ -65,7 +65,7 @@ describe('PermissionsGuard', () => {
       switchToHttp: () => ({
         getRequest: () => ({ user: { id: 1 } }),
       }),
-    } as any);
+    } as never);
 
     jest
       .spyOn(rolesService, 'getUserPermissions')
@@ -84,7 +84,7 @@ describe('PermissionsGuard', () => {
       switchToHttp: () => ({
         getRequest: () => ({ user: { id: 1 } }),
       }),
-    } as any);
+    } as never);
 
     jest
       .spyOn(rolesService, 'getUserPermissions')

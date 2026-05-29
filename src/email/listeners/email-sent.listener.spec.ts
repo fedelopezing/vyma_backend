@@ -35,7 +35,7 @@ describe('EmailSentListener', () => {
       details: faker.lorem.paragraph(),
       subject: faker.lorem.sentence(),
     };
-    whatsappService.sendMessage.mockResolvedValue({ success: true } as any);
+    whatsappService.sendMessage.mockResolvedValue({ success: true } as never);
 
     await listener.handleEmailSentEvent(event);
     expect(whatsappService.sendMessage).toHaveBeenCalled();
