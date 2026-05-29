@@ -3,11 +3,13 @@ import {
   ConflictException,
   Injectable,
   InternalServerErrorException,
+  Logger,
   UnauthorizedException,
   Inject,
   forwardRef,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
+import { getErrorStack } from '../common/helpers/errors.helper';
 import { DataSource } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 
@@ -20,6 +22,8 @@ import { CreateUserWithProfileDto } from '../profiles/dto';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
@@ -158,7 +162,7 @@ export class AuthService {
       }
     }
 
-    console.error(error);
+    this.logger.error('Unexpected database error', getErrorStack(error));
     throw new InternalServerErrorException(
       'Error inesperado, revise los logs del servidor',
     );

@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 
 import { SeedModule } from './seed/seed.module';
 import { AuthModule } from './auth/auth.module';
@@ -26,6 +28,9 @@ import { PermissionsModule } from './permissions/permissions.module';
     }),
     EventEmitterModule.forRoot(),
 
+    // Rate limiting global: 30 req / 60s por IP
+    ThrottlerModule.forRoot([{ ttl: 60000, limit: 30 }]),
+
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DB_HOST,
@@ -34,7 +39,7 @@ import { PermissionsModule } from './permissions/permissions.module';
       username: process.env.DB_USERNAME,
       password: process.env.DB_PASSWORD,
       autoLoadEntities: true,
-      synchronize: true,
+      synchronize: process.env.NODE_ENV !== 'production',
     }),
 
     SeedModule,
@@ -52,6 +57,9 @@ import { PermissionsModule } from './permissions/permissions.module';
     UsersModule,
   ],
   controllers: [],
-  providers: [],
+  providers: [
+    // Aplica ThrottlerGuard globalmente a toda la aplicación
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+  ],
 })
 export class AppModule {}

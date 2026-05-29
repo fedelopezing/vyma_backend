@@ -86,13 +86,13 @@ describe('SeedService', () => {
       mockPermissionRepository.findOne.mockRejectedValue(
         new Error('DB connection lost'),
       );
-      const mockConsoleError = jest
-        .spyOn(console, 'error')
+      const mockLoggerError = jest
+        .spyOn(service['logger'], 'error')
         .mockImplementation();
 
       await expect(service.executeSeed()).rejects.toThrow();
-      expect(mockConsoleError).toHaveBeenCalled();
-      mockConsoleError.mockRestore();
+      expect(mockLoggerError).toHaveBeenCalled();
+      mockLoggerError.mockRestore();
     });
   });
 });

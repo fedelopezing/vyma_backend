@@ -275,14 +275,14 @@ describe('AuthService', () => {
     });
 
     it('should throw InternalServerErrorException for other errors', () => {
-      const mockConsoleError = jest
-        .spyOn(console, 'error')
+      const mockLoggerError = jest
+        .spyOn(service['logger'], 'error')
         .mockImplementation();
       expect(() => service.handleDBErrors({})).toThrow(
         InternalServerErrorException,
       );
-      expect(mockConsoleError).toHaveBeenCalled();
-      mockConsoleError.mockRestore();
+      expect(mockLoggerError).toHaveBeenCalled();
+      mockLoggerError.mockRestore();
     });
   });
 });

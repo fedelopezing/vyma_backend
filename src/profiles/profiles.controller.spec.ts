@@ -2,24 +2,22 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ProfilesController } from './profiles.controller';
 import { ProfilesService } from './profiles.service';
 import { CreateUserWithProfileDto } from './dto';
-import { AuthService } from '../auth/auth.service';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { faker } from '@faker-js/faker';
+import { RolesService } from '../roles/roles.service';
 
 describe('ProfilesController', () => {
   let controller: ProfilesController;
-  let authService: DeepMocked<AuthService>;
   let profilesService: DeepMocked<ProfilesService>;
 
   beforeEach(async () => {
     profilesService = createMock<ProfilesService>();
-    authService = createMock<AuthService>();
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ProfilesController],
       providers: [
         { provide: ProfilesService, useValue: profilesService },
-        { provide: AuthService, useValue: authService },
+        { provide: RolesService, useValue: createMock<RolesService>() },
       ],
     }).compile();
 
@@ -41,10 +39,10 @@ describe('ProfilesController', () => {
       profile: { id: faker.number.int() },
       token: faker.string.alphanumeric(32),
     };
-    authService.registerWithProfile.mockResolvedValue(expectedResult as any);
+    profilesService.createWithUser.mockResolvedValue(expectedResult as never);
 
     const result = await controller.create(dto);
-    expect(authService.registerWithProfile).toHaveBeenCalledWith(dto);
+    expect(profilesService.createWithUser).toHaveBeenCalledWith(dto);
     expect(result).toEqual(expectedResult);
   });
 });
