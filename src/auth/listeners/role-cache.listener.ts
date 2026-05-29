@@ -4,6 +4,7 @@ import { UsersService } from '../../users/users.service';
 import { CacheService } from '../../common/services/cache.service';
 import { RoleUpdatedEvent } from '../events/role-updated.event';
 import { AuthCacheKeys } from '../constants/cache-keys.constant';
+import { getErrorStack } from '../../common/helpers/errors.helper';
 
 @Injectable()
 export class RoleCacheListener {
@@ -28,7 +29,7 @@ export class RoleCacheListener {
     } catch (error) {
       this.logger.error(
         `Failed to invalidate cache for roleId: ${event.roleId}`,
-        error instanceof Error ? error.stack : 'Unknown Error',
+        getErrorStack(error),
       );
     }
   }

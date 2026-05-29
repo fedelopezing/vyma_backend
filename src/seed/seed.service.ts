@@ -9,6 +9,7 @@ import * as bcrypt from 'bcrypt';
 import { Role } from '../roles/entities/role.entity';
 import { Permission } from '../permissions/entities/permission.entity';
 import { User } from '../users/entities/user.entity';
+import { getErrorStack } from '../common/helpers/errors.helper';
 
 @Injectable()
 export class SeedService {
@@ -29,10 +30,7 @@ export class SeedService {
       await this.seedUsers();
       return { message: 'Seed executed successfully' };
     } catch (error) {
-      this.logger.error(
-        'Error executing seed',
-        error instanceof Error ? error.stack : String(error),
-      );
+      this.logger.error('Error executing seed', getErrorStack(error));
       throw new InternalServerErrorException('Error executing seed');
     }
   }

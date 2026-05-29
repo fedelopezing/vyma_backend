@@ -12,15 +12,16 @@ import {
 export class CreateUserDto {
   @ApiProperty({
     description: 'Dirección de correo electrónico del usuario',
-    example: 'user@example.com',
+    example: 'user@mail.com',
   })
   @IsString()
   @IsEmail()
   email: string;
 
   @ApiProperty({
-    description: 'Contraseña del usuario (debe contener al menos una mayúscula, una minúscula y un número)',
-    example: 'SecurePassword123',
+    description:
+      'Contraseña del usuario (debe contener al menos una mayúscula, una minúscula y un número)',
+    example: 'Admin123!',
     minLength: 6,
     maxLength: 50,
   })

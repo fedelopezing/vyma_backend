@@ -19,7 +19,8 @@ export class CreateServiceDto {
 
   @ApiPropertyOptional({
     description: 'Descripción detallada del servicio',
-    example: 'Limpieza profunda y desinfección de alfombras residenciales y de oficinas.',
+    example:
+      'Limpieza profunda y desinfección de alfombras residenciales y de oficinas.',
   })
   @IsOptional()
   @IsString()
