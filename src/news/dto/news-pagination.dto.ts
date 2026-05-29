@@ -1,8 +1,51 @@
+import { IsEnum, IsInt, IsOptional, Max, Min } from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+
 import { NewsCategory, NewsStatus } from '../entities/news.entity';
 
 export class NewsPaginationDto {
-  page?: number;
-  limit?: number;
+  @ApiPropertyOptional({
+    description: 'Número de página (comienza en 1)',
+    example: 1,
+    minimum: 1,
+    default: 1,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number = 1;
+
+  @ApiPropertyOptional({
+    description: 'Cantidad de resultados por página (máximo 100)',
+    example: 10,
+    minimum: 1,
+    maximum: 100,
+    default: 10,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  limit?: number = 10;
+
+  @ApiPropertyOptional({
+    description: 'Filtrar por categoría',
+    enum: NewsCategory,
+    example: NewsCategory.NOTICIA,
+  })
+  @IsOptional()
+  @IsEnum(NewsCategory)
   categoria?: NewsCategory;
+
+  @ApiPropertyOptional({
+    description: 'Filtrar por estado (solo disponible para endpoints admin)',
+    enum: NewsStatus,
+    example: NewsStatus.BORRADOR,
+  })
+  @IsOptional()
+  @IsEnum(NewsStatus)
   estado?: NewsStatus;
 }
