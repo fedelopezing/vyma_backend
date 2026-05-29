@@ -4,6 +4,8 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Generated,
+  Index,
   JoinColumn,
   ManyToOne,
   OneToOne,
@@ -17,6 +19,11 @@ import { Role } from '../../roles/entities/role.entity';
 export class User {
   @PrimaryGeneratedColumn('increment', { type: 'bigint' })
   id: number;
+
+  @Column()
+  @Generated('uuid')
+  @Index({ unique: true })
+  uuid: string;
 
   @Column('varchar', { length: 255, nullable: false })
   name: string;
