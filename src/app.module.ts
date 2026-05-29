@@ -18,6 +18,7 @@ import { WhatsappModule } from './whatsapp/whatsapp.module';
 import { UsersModule } from './users/users.module';
 import { RolesModule } from './roles/roles.module';
 import { PermissionsModule } from './permissions/permissions.module';
+import { NewsModule } from './news/news.module';
 
 @Module({
   imports: [
@@ -55,6 +56,7 @@ import { PermissionsModule } from './permissions/permissions.module';
     EmailModule,
     WhatsappModule,
     UsersModule,
+    NewsModule,
   ],
   controllers: [],
   providers: [
