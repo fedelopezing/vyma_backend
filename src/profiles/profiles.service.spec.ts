@@ -152,8 +152,8 @@ describe('ProfilesService', () => {
 
   describe('createWithUser', () => {
     it('should delegate to authService.registerWithProfile', async () => {
-      const dto = { email: faker.internet.email() } as any;
-      const expected = { user: {}, token: 'tok' } as any;
+      const dto = { email: faker.internet.email() } as never;
+      const expected = { user: {}, token: 'tok' } as never;
 
       mockAuthService.registerWithProfile.mockResolvedValue(expected);
 

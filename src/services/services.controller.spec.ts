@@ -53,9 +53,9 @@ describe('ServicesController', () => {
       message: 'El servicio ha sido creado correctamente!',
       data: createFakeService(),
     };
-    mockService.create.mockResolvedValue(expectedResult as any);
+    mockService.create.mockResolvedValue(expectedResult as never);
 
-    expect(await controller.create(dto as any)).toEqual(expectedResult);
+    expect(await controller.create(dto as never)).toEqual(expectedResult);
     expect(mockService.create).toHaveBeenCalledWith(dto);
   });
 
@@ -93,7 +93,7 @@ describe('ServicesController', () => {
       message: 'El servicio ha sido actualizado correctamente!',
       data: dto,
     };
-    mockService.update.mockResolvedValue(expectedResult as any);
+    mockService.update.mockResolvedValue(expectedResult as never);
 
     expect(await controller.update(id.toString(), dto)).toEqual(expectedResult);
     expect(mockService.update).toHaveBeenCalledWith(id, dto);

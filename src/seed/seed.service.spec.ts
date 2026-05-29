@@ -46,9 +46,9 @@ describe('SeedService', () => {
   describe('executeSeed', () => {
     it('should seed permissions, roles, and users successfully', async () => {
       mockPermissionRepository.findOne.mockResolvedValue(null);
-      mockPermissionRepository.create.mockImplementation((dto) => dto as any);
+      mockPermissionRepository.create.mockImplementation((dto) => dto as never);
       mockPermissionRepository.save.mockImplementation(
-        async (entity) => entity as any,
+        async (entity) => entity as never,
       );
 
       const fakePermissions = [
@@ -56,21 +56,21 @@ describe('SeedService', () => {
         { id: 2, action: 'create:news' },
         { id: 3, action: 'update:news' },
       ];
-      mockPermissionRepository.find.mockResolvedValue(fakePermissions as any);
+      mockPermissionRepository.find.mockResolvedValue(fakePermissions as never);
 
       mockRoleRepository.findOne.mockResolvedValue(null);
-      mockRoleRepository.create.mockImplementation((dto) => dto as any);
+      mockRoleRepository.create.mockImplementation((dto) => dto as never);
       mockRoleRepository.save.mockImplementation(
-        async (entity) => entity as any,
+        async (entity) => entity as never,
       );
 
       const adminRole = { id: 10, name: 'admin' };
-      mockRoleRepository.findOne.mockResolvedValue(adminRole as any);
+      mockRoleRepository.findOne.mockResolvedValue(adminRole as never);
 
       mockUserRepository.findOne.mockResolvedValue(null);
-      mockUserRepository.create.mockImplementation((dto) => dto as any);
+      mockUserRepository.create.mockImplementation((dto) => dto as never);
       mockUserRepository.save.mockImplementation(
-        async (entity) => entity as any,
+        async (entity) => entity as never,
       );
       mockUserRepository.find.mockResolvedValue([]);
 

@@ -18,7 +18,7 @@ describe('ScheduleBreaksService', () => {
   });
 
   it('should create a scheduleBreak', () => {
-    expect(service.create({} as any)).toBe(
+    expect(service.create({} as never)).toBe(
       'This action adds a new scheduleBreak',
     );
   });
@@ -36,7 +36,7 @@ describe('ScheduleBreaksService', () => {
 
   it('should update a scheduleBreak', () => {
     const id = faker.number.int();
-    expect(service.update(id, {} as any)).toBe(
+    expect(service.update(id, {} as never)).toBe(
       `This action updates a #${id} scheduleBreak`,
     );
   });

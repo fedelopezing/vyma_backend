@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from './auth.service';
 import { JwtService } from '@nestjs/jwt';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, Repository, EntityManager } from 'typeorm';
 import { UsersService } from '../users/users.service';
 import { ProfilesService } from '../profiles/profiles.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -39,14 +39,22 @@ describe('AuthService', () => {
     mockDataSource = createMock<DataSource>();
     mockProfilesService = createMock<ProfilesService>();
 
-    mockDataSource.transaction.mockImplementation(async (cb: any) => {
-      return await cb(mockDataSource.manager);
-    });
+    (mockDataSource.transaction as unknown as jest.Mock).mockImplementation(
+      async (...args: unknown[]) => {
+        const cb = args[args.length - 1] as (
+          manager: EntityManager,
+        ) => Promise<unknown>;
+        return await cb(mockDataSource.manager);
+      },
+    );
 
-    mockDataSource.manager.getRepository.mockImplementation((entity: any) => {
-      if (entity === Role) return mockRoleRepository as any;
-      return null as any;
-    });
+    mockDataSource.manager.getRepository.mockImplementation(
+      (entity: unknown) => {
+        if (entity === Role)
+          return mockRoleRepository as unknown as Repository<Role>; // Actually wait, any is bad
+        return null as unknown as Repository<Role>;
+      },
+    );
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [

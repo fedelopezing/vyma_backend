@@ -46,9 +46,9 @@ describe('EmailController', () => {
       message: 'El correo ha sido enviado correctamente!',
       email: { id: faker.string.uuid() },
     };
-    mockEmailService.sendEmail.mockResolvedValue(expectedResult as any);
+    mockEmailService.sendEmail.mockResolvedValue(expectedResult as never);
 
-    expect(await controller.sendBudget(dto as any)).toEqual(expectedResult);
+    expect(await controller.sendBudget(dto as never)).toEqual(expectedResult);
     expect(mockEmailService.sendEmail).toHaveBeenCalledWith(
       dto,
       'Biolimpieza <no-reply@send.biolimpieza.com.py>',
