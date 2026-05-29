@@ -11,8 +11,8 @@ export const AppDataSource = new DataSource({
   database: process.env.DB_NAME || 'harmonia',
   username: process.env.DB_USERNAME || 'postgres',
   password: process.env.DB_PASSWORD || 'fede@123',
-  entities: [join(__dirname, '../**/*.entity.{ts,js}')], // Ruta relativa a las entidades
-  migrations: [join(__dirname, './migrations/*.{ts,js}')], // Ruta relativa a las migraciones
+  entities: [join(process.cwd(), 'src/**/*.entity.{ts,js}')], // Ruta relativa a las entidades
+  migrations: [join(process.cwd(), 'src/database/migrations/*.{ts,js}')], // Ruta relativa a las migraciones
   synchronize: false, // Desactiva en producción para evitar cambios automáticos
   logging: true,
 });

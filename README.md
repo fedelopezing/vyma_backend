@@ -1,101 +1,171 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Harmonia Backend 🎵
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Un backend moderno, robusto y altamente escalable desarrollado con **NestJS** y **TypeScript** para la gestión de turnos, agendas, servicios y notificaciones automáticas (Email y WhatsApp).
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+---
 
-## Description
+## 🚀 Características Principales
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+- **Autenticación y Autorización**: Sistema seguro basado en JSON Web Tokens (JWT) y Control de Acceso Basado en Roles/Permisos (RBAC).
+- **Gestión de Turnos y Agendas**: Completo sistema de horarios (`schedules`) y pausas o descansos (`schedule-breaks`) para profesionales.
+- **Perfiles y Servicios**: Administración de profesionales, profesiones asociadas y catálogo de servicios ofrecidos.
+- **Notificaciones Integradas**:
+  - **Email**: Integración fluida con la API de [Resend](https://resend.com/).
+  - **WhatsApp**: Bot automatizado y notificador en tiempo real mediante `whatsapp-web.js` con generación de códigos QR en terminal.
+- **Seguridad**: Limitador de peticiones (Rate Limiting / Throttling) global configurado por IP (30 req / 60s por defecto).
+- **Base de Datos**: ORM potente con **TypeORM** y PostgreSQL con soporte para migraciones automáticas y herramientas de seeding.
 
-## Project setup
+---
 
+## 🛠️ Stack Tecnológico
+
+- **Framework**: [NestJS](https://nestjs.com/) (v10+)
+- **Lenguaje**: TypeScript
+- **Base de Datos**: PostgreSQL
+- **ORM**: TypeORM
+- **Mensajería & Notificaciones**: Resend API, `whatsapp-web.js` (con autenticación por sesión persistente)
+- **Seguridad**: `@nestjs/throttler`, `@nestjs/jwt`, `bcrypt`
+- **Documentación**: Swagger / OpenAPI (`@nestjs/swagger`)
+
+---
+
+## ⚙️ Configuración del Entorno
+
+1. Clona el repositorio y entra en el directorio del proyecto:
+   ```bash
+   cd vyma_backend
+   ```
+
+2. Instala las dependencias:
+   ```bash
+   npm install
+   ```
+
+3. Crea un archivo `.env` en la raíz del proyecto basándote en el archivo de ejemplo:
+   ```bash
+   cp .env.example .env
+   ```
+
+4. Configura las variables de entorno en tu `.env`:
+   ```env
+   STAGE=dev
+   NODE_ENV=development
+
+   # Base de Datos PostgreSQL
+   DB_PASSWORD=tu_password
+   DB_NAME=vyma
+   DB_HOST=localhost
+   DB_PORT=5432
+   DB_USERNAME=postgres
+
+   # Puerto del Servidor
+   PORT=3000
+   HOST_API=http://localhost:3000/api
+   JWT_SECRET=tu_secreto_super_seguro
+
+   # Notificaciones (Resend & WhatsApp)
+   RESEND_API_KEY=tu_api_key_de_resend
+   EMAIL_BIOLIMPIEZA_TO="destinatario@correo.com"
+   ALLOWED_ORIGINS="http://localhost:3000,https://tu-dominio.com"
+   WHATSAPP_TO="+5959xxxxxxxx"
+   ```
+
+---
+
+## 💻 Ejecución del Proyecto
+
+### Desarrollo
+Para iniciar el servidor en modo desarrollo con recarga automática (*hot-reload*):
 ```bash
-$ npm install
+npm run start:dev
 ```
 
-## Compile and run the project
-
+### Producción
+Para compilar y ejecutar el proyecto optimizado para producción:
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
-```
-
-## Run tests
-
-```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
-```
-
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
+# Compilar el código TypeScript a JavaScript
 npm run build
-$ pm2 stop <app-name>
-$ pm2 start ecosystem.config.js --env production
-$ pm2 logs <app-name> --lines 100 //ver log en vivo
+
+# Levantar el servidor en producción
+npm run start:prod
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+---
 
-## Resources
+## 🧪 Ejecución de Pruebas
 
-Check out a few resources that may come in handy when working with NestJS:
+El proyecto cuenta con un entorno configurado para pruebas unitarias e integración usando **Jest**.
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+```bash
+# Pruebas unitarias
+npm run test
 
-## Support
+# Pruebas unitarias en modo observador (watch)
+npm run test:watch
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+# Cobertura de código (Coverage)
+npm run test:cov
 
-## Stay in touch
+# Pruebas End-to-End (E2E)
+npm run test:e2e
+```
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+---
 
-## License
+## 🧰 Scripts Útiles y Herramientas de Desarrollo
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+### 🏷️ Autogeneración de Etiquetas Swagger (`add-api-tags.js`)
+Para mantener la documentación de Swagger limpia, estructurada y agrupada por módulos de forma automática, el proyecto cuenta con un script utilitario personalizado:
+```bash
+node scripts/add-api-tags.js
+```
+
+**¿Cómo funciona?**
+- Escanea de forma automática y recursiva el directorio `src/` buscando controladores (`*.controller.ts`).
+- **Previene duplicados**: Si un controlador ya tiene el decorador `@ApiTags(...)` aplicado, lo ignora automáticamente.
+- Si no está presente, analiza la ruta del `@Controller(...)`, remueve el prefijo de versión (como `api/v1/`), capitaliza y formatea el nombre (ej. `auth-management` -> `"Auth Management"`).
+- Inyecta de forma segura el decorador `@ApiTags('Nombre')` y añade de forma automática la importación correspondiente de `@nestjs/swagger` al inicio del archivo si no existía.
+
+### 🌱 Base de Datos / Migraciones y Semillas (Seeding)
+Puedes poblar tu base de datos de desarrollo con datos de prueba preestablecidos (usuarios, roles, profesiones) utilizando el módulo de Seeding mediante HTTP al endpoint habilitado de desarrollo (o a través del servicio inyectado).
+
+Para la gestión de base de datos con **TypeORM**:
+```bash
+# Crear una nueva migración vacía
+npm run typeorm:create --name=NombreDeMigracion
+
+# Generar una migración basada en cambios en las entidades
+npm run typeorm:generate --name=NombreDeMigracion
+
+# Ejecutar migraciones pendientes
+npm run typeorm:run
+
+# Revertir la última migración ejecutada
+npm run typeorm:revert
+```
+
+---
+
+## 🌐 Despliegue en Producción (PM2)
+
+Para entornos de producción, se recomienda administrar el ciclo de vida de la aplicación con **PM2**:
+
+```bash
+# 1. Compilar el bundle de producción
+npm run build
+
+# 2. Detener la instancia anterior (si aplica)
+pm2 stop harmonia-backend
+
+# 3. Iniciar el servicio usando la configuración del ecosistema
+pm2 start ecosystem.config.js --env production
+
+# 4. Ver los logs de producción en tiempo real
+pm2 logs harmonia-backend --lines 100
+```
+
+---
+
+## 📄 Licencia
+
+Este proyecto es privado y de uso exclusivo bajo los términos de licencia no comercial (`UNLICENSED`).
