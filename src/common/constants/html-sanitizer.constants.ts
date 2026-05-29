@@ -1,0 +1,40 @@
+export const ALLOWED_HTML_TAGS = [
+  'h1',
+  'h2',
+  'h3',
+  'h4',
+  'h5',
+  'h6',
+  'p',
+  'a',
+  'ul',
+  'ol',
+  'li',
+  'b',
+  'i',
+  'strong',
+  'em',
+  'code',
+  'blockquote',
+  'table',
+  'thead',
+  'tbody',
+  'tr',
+  'th',
+  'td',
+  'img',
+  'br',
+  'hr',
+  'div',
+  'pre',
+  'strike',
+  'nl',
+  'caption',
+];
+
+export const ALLOWED_HTML_ATTRIBUTES = {
+  a: ['href', 'name', 'target'],
+  img: ['src', 'alt', 'title', 'width', 'height', 'loading'],
+};
+
+export const ALLOWED_HTML_SCHEMES = ['http', 'https', 'mailto'];

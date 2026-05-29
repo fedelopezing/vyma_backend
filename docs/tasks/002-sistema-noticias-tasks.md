@@ -3,17 +3,17 @@
 Esta plantilla fue generada por el **Agente Tech-Lead** a partir del RFC-002 aprobado. Sirve como contrato de desarrollo para el **Agente Desarrollador Backend**, promoviendo un flujo de trabajo auto-testeado capa por capa para facilitar la creación de **Pull Requests (PRs) independientes por fase**.
 
 ## Estado del Módulo
-- [ ] **Fase 0: Preparación y Dependencias**
-  - [ ] Tarea 0.1: Instalar dependencias externas (`sanitize-html`, `slugify`)
-  - [ ] Tarea 0.2: Generar el skeleton del módulo `News` con el CLI de NestJS
-- [ ] **Fase 1: Base de Datos & Persistencia**
-  - [ ] Tarea 1.1: Crear Entidades TypeORM (`News`)
-  - [ ] Tarea 1.2: Registrar entidad en el módulo y generar/ejecutar la migración
-- [ ] **Fase 2: Dominio & Lógica de Negocio (Auto-testeado)**
-  - [ ] Tarea 2.1: Crear decorador `@SanitizeHtml()` y helper `slugify`
-  - [ ] Tarea 2.2: Crear la clase del evento `NewsPublishedEvent`
-  - [ ] Tarea 2.3: Implementar `NewsService` con toda la lógica de negocio
-  - [ ] Tarea 2.4: Escribir Pruebas Unitarias del Servicio (`news.service.spec.ts`)
+- [x] **Fase 0: Preparación y Dependencias**
+  - [x] Tarea 0.1: Instalar dependencias externas (`sanitize-html`, `slugify`)
+  - [x] Tarea 0.2: Generar el skeleton del módulo `News` con el CLI de NestJS
+- [x] **Fase 1: Base de Datos & Persistencia**
+  - [x] Tarea 1.1: Crear Entidades TypeORM (`News`)
+  - [x] Tarea 1.2: Registrar entidad en el módulo y generar/ejecutar la migración
+- [x] **Fase 2: Dominio & Lógica de Negocio (Auto-testeado)**
+  - [x] Tarea 2.1: Crear decorador `@SanitizeHtml()` y helper `slugify`
+  - [x] Tarea 2.2: Crear la clase del evento `NewsPublishedEvent`
+  - [x] Tarea 2.3: Implementar `NewsService` con toda la lógica de negocio
+  - [x] Tarea 2.4: Escribir Pruebas Unitarias del Servicio (`news.service.spec.ts`)
 - [ ] **Fase 3: API & Controladores (Auto-testeado)**
   - [ ] Tarea 3.1: Definir DTOs (`CreateNewsDto`, `UpdateNewsDto`, `NewsPaginationDto`)
   - [ ] Tarea 3.2: Implementar `NewsController` con todos los endpoints REST
