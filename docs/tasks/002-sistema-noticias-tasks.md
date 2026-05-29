@@ -14,13 +14,13 @@ Esta plantilla fue generada por el **Agente Tech-Lead** a partir del RFC-002 apr
   - [x] Tarea 2.2: Crear la clase del evento `NewsPublishedEvent`
   - [x] Tarea 2.3: Implementar `NewsService` con toda la lógica de negocio
   - [x] Tarea 2.4: Escribir Pruebas Unitarias del Servicio (`news.service.spec.ts`)
-- [ ] **Fase 3: API & Controladores (Auto-testeado)**
-  - [ ] Tarea 3.1: Definir DTOs (`CreateNewsDto`, `UpdateNewsDto`, `NewsPaginationDto`)
-  - [ ] Tarea 3.2: Implementar `NewsController` con todos los endpoints REST
-  - [ ] Tarea 3.3: Escribir Pruebas Unitarias del Controlador (`news.controller.spec.ts`)
-- [ ] **Fase 4: Eventos & Integraciones (Auto-testeado)**
-  - [ ] Tarea 4.1: Implementar `AstroWebhookListener`
-  - [ ] Tarea 4.2: Escribir Pruebas Unitarias del Listener (`astro-webhook.listener.spec.ts`)
+- [x] **Fase 3: API & Controladores (Auto-testeado)**
+  - [x] Tarea 3.1: Definir DTOs (`CreateNewsDto`, `UpdateNewsDto`, `NewsPaginationDto`)
+  - [x] Tarea 3.2: Implementar `NewsController` con todos los endpoints REST
+  - [x] Tarea 3.3: Escribir Pruebas Unitarias del Controlador (`news.controller.spec.ts`)
+- [x] **Fase 4: Eventos & Integraciones (Auto-testeado)**
+  - [x] Tarea 4.1: Implementar `AstroWebhookListener`
+  - [x] Tarea 4.2: Escribir Pruebas Unitarias del Listener (`astro-webhook.listener.spec.ts`)
 - [ ] **Fase 5: Verificación E2E Final**
   - [ ] Tarea 5.1: Pruebas Manuales E2E (Postman / cURL)
 
