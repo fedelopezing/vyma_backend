@@ -17,12 +17,20 @@ export function SanitizeHtml() {
       return value;
     }
 
-    const sanitize = sanitizeHtml as unknown as (
-      text: string,
-      options?: Record<string, unknown>,
-    ) => string;
+    const sanitizeFn = (
+      typeof sanitizeHtml === 'function'
+        ? sanitizeHtml
+        : (
+            sanitizeHtml as unknown as {
+              default?: (
+                text: string,
+                options?: Record<string, unknown>,
+              ) => string;
+            }
+          ).default || sanitizeHtml
+    ) as (text: string, options?: Record<string, unknown>) => string;
 
-    return sanitize(value, {
+    return sanitizeFn(value, {
       allowedTags: ALLOWED_HTML_TAGS,
       allowedAttributes: ALLOWED_HTML_ATTRIBUTES,
       allowedSchemes: ALLOWED_HTML_SCHEMES,

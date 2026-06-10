@@ -44,10 +44,10 @@ describe('UsersRepository', () => {
 
       jest
         .spyOn(typeOrmRepository, 'create')
-        .mockReturnValue(createdUser as any);
+        .mockReturnValue(createdUser as unknown as User);
       jest
         .spyOn(typeOrmRepository, 'save')
-        .mockResolvedValue(createdUser as any);
+        .mockResolvedValue(createdUser as unknown as User);
 
       const result = await repository.create(userData);
 
@@ -81,7 +81,7 @@ describe('UsersRepository', () => {
 
       jest
         .spyOn(typeOrmRepository, 'create')
-        .mockReturnValue(createdUser as any);
+        .mockReturnValue(createdUser as unknown as User);
       jest
         .spyOn(typeOrmRepository, 'save')
         .mockRejectedValue({ code: '23505' });
@@ -98,7 +98,7 @@ describe('UsersRepository', () => {
 
       jest
         .spyOn(typeOrmRepository, 'create')
-        .mockReturnValue(createdUser as any);
+        .mockReturnValue(createdUser as unknown as User);
       jest.spyOn(typeOrmRepository, 'save').mockRejectedValue(error);
 
       await expect(repository.create(userData)).rejects.toThrow(error);
