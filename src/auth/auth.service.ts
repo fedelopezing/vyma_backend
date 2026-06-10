@@ -8,17 +8,13 @@ import {
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { getErrorStack } from '../common/helpers/errors.helper';
-import { DataSource, Repository } from 'typeorm';
-import { JwtService } from '@nestjs/jwt';
-import { InjectRepository } from '@nestjs/typeorm';
-
 import { LoginUserDto, ActivateAccountDto } from './dto';
-import { JwtPayload } from './interfaces';
+import { JwtPayload, LoginResponse, MessageResponse } from './interfaces';
+import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { ActivationTokensService } from '../users/activation-tokens.service';
-import { RefreshToken } from './entities/refresh-token.entity';
+import { RefreshTokenRepository } from './repositories/refresh-token.repository';
 import { randomUUID } from 'crypto';
-import { runInTransaction } from '../common/helpers/transaction.helper';
 import { User } from '../users/entities/user.entity';
 
 @Injectable()
@@ -29,13 +25,13 @@ export class AuthService {
     private readonly usersService: UsersService,
     private readonly activationTokensService: ActivationTokensService,
     private readonly jwtService: JwtService,
-    @InjectRepository(RefreshToken)
-    private readonly refreshTokenRepo: Repository<RefreshToken>,
-    private readonly dataSource: DataSource,
+    private readonly refreshTokenRepo: RefreshTokenRepository,
   ) {}
 
-  async activateAccount(activateDto: ActivateAccountDto) {
-    return runInTransaction(this.dataSource, async (qr) => {
+  async activateAccount(
+    activateDto: ActivateAccountDto,
+  ): Promise<MessageResponse> {
+    return this.refreshTokenRepo.runTransaction(async (manager) => {
       const { token, password } = activateDto;
 
       const activeToken =
@@ -48,14 +44,14 @@ export class AuthService {
         throw new BadRequestException('El token ha expirado');
       }
 
-      const userRepo = qr.manager.getRepository(User);
+      const userRepo = manager.getRepository(User);
       const user = activeToken.user;
 
       user.passwordHash = await bcrypt.hash(password, 10);
       user.isActive = true;
       await userRepo.save(user);
 
-      await this.activationTokensService.markAsUsed(activeToken.id, qr.manager);
+      await this.activationTokensService.markAsUsed(activeToken.id, manager);
 
       return { message: 'Account activated successfully' };
     });
@@ -65,7 +61,7 @@ export class AuthService {
     loginUserDto: LoginUserDto,
     ipAddress?: string,
     userAgent?: string,
-  ) {
+  ): Promise<LoginResponse> {
     const { password, email } = loginUserDto;
 
     const user = await this.usersService.findOneByEmailForLogin(email);
@@ -86,20 +82,22 @@ export class AuthService {
     return this.generateTokens(user, ipAddress, userAgent);
   }
 
-  async refreshTokens(token: string, ipAddress?: string, userAgent?: string) {
-    const refreshTokenRecord = await this.refreshTokenRepo.findOne({
-      where: { uuid: token },
-      relations: ['user', 'user.role'],
-    });
+  async refreshTokens(
+    token: string,
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<LoginResponse> {
+    const refreshTokenRecord =
+      await this.refreshTokenRepo.findOneByTokenWithUser(token);
 
     if (!refreshTokenRecord) {
       throw new UnauthorizedException('Invalid refresh token');
     }
 
     if (refreshTokenRecord.isRevoked) {
-      await this.refreshTokenRepo.update(
-        { user: { id: refreshTokenRecord.user.id } },
-        { isRevoked: true },
+      await this.refreshTokenRepo.updateRevokeStatusByUser(
+        refreshTokenRecord.user.id,
+        true,
       );
       throw new UnauthorizedException(
         'Refresh token was revoked. All sessions terminated.',
@@ -123,10 +121,9 @@ export class AuthService {
     return this.generateTokens(user, ipAddress, userAgent);
   }
 
-  async logout(token: string) {
-    const refreshTokenRecord = await this.refreshTokenRepo.findOne({
-      where: { uuid: token },
-    });
+  async logout(token: string): Promise<MessageResponse> {
+    const refreshTokenRecord =
+      await this.refreshTokenRepo.findOneByToken(token);
 
     if (refreshTokenRecord) {
       refreshTokenRecord.isRevoked = true;
@@ -140,7 +137,7 @@ export class AuthService {
     user: User,
     ipAddress?: string,
     userAgent?: string,
-  ) {
+  ): Promise<LoginResponse> {
     const payload: JwtPayload = {
       sub: user.id,
       uuid: user.uuid,

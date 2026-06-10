@@ -40,6 +40,7 @@ src/
     │   ├── index.ts            # Exportaciones de DTOs para importaciones limpias
     │   └── login-user.dto.ts
     ├── entities/               # Entidades de base de datos (TypeORM)
+    ├── exceptions/             # Excepciones específicas del módulo (Ej: user-not-found.exception.ts)
     ├── events/                 # Clases de eventos disparados por la feature
     ├── guards/                 # Protectores de rutas específicos del módulo
     ├── interfaces/             # Interfaces de tipado internas del módulo
@@ -49,9 +50,10 @@ src/
 ```
 
 ### Reglas de la Estructura Modular
-1. **Feature Modules Autónomos**: Cada módulo debe agrupar sus propios controladores, servicios, repositorios, DTOs, entidades, y listeners.
+1. **Feature Modules Autónomos**: Cada módulo debe agrupar sus propios controladores, servicios, repositorios, DTOs, entidades, excepciones y listeners.
 2. **Importación Limpia de DTOs**: La carpeta `dto` de cada módulo debe incluir un archivo `index.ts` que exporte todos los DTOs del módulo.
 3. **Common Exclusivamente Genérico**: La carpeta `src/common` solo debe albergar código estrictamente reutilizable por múltiples módulos sin dependencias de negocio (ej. helper de transacciones, filtros globales).
+4. **Excepciones Modulares**: Las excepciones específicas de negocio deben residir en la carpeta `exceptions/` del módulo en archivos separados para mantener los servicios limpios.
 
 ---
 
@@ -63,8 +65,8 @@ Para asegurar la legibilidad del código a lo largo de todo el proyecto, se esta
 
 | Tipo de Elemento | Convención de Casing | Sufijo Obligatorio | Ejemplo |
 | :--- | :--- | :--- | :--- |
-| **Nombres de Archivos** | `kebab-case` | `.module.ts`, `.controller.ts`, `.service.ts`, `.repository.ts`, `.dto.ts`, `.entity.ts`, `.guard.ts`, `.strategy.ts`, `.filter.ts`, `.decorator.ts`, `.spec.ts`, `.interface.ts`, `.listener.ts` | `create-user.dto.ts`<br>`users.repository.ts` |
-| **Clases** | `PascalCase` | Nombre descriptivo + rol (opcional) | `AuthController`<br>`CreateUserDto`<br>`UsersRepository` |
+| **Nombres de Archivos** | `kebab-case` | `.module.ts`, `.controller.ts`, `.service.ts`, `.repository.ts`, `.dto.ts`, `.entity.ts`, `.guard.ts`, `.strategy.ts`, `.filter.ts`, `.decorator.ts`, `.spec.ts`, `.interface.ts`, `.listener.ts`, `.exception.ts` | `create-user.dto.ts`<br>`users.repository.ts`<br>`user-not-found.exception.ts` |
+| **Clases** | `PascalCase` | Nombre descriptivo + rol (opcional) o `Exception` al final | `AuthController`<br>`CreateUserDto`<br>`UsersRepository`<br>`UserNotFoundException` |
 | **Métodos y Funciones** | `camelCase` | Ninguno (verbos) | `activateAccount()` |
 | **Variables y Propiedades** | `camelCase` | Ninguno | `passwordHash`<br>`email` |
 | **Interfaces** | `PascalCase` | Ninguno (o prefijo `I` si es genérico) | `JwtPayload`<br>`IUserRepository` |
@@ -92,6 +94,7 @@ Para asegurar la legibilidad del código a lo largo de todo el proyecto, se esta
 - **Excepciones Controladas de NestJS**: Queda prohibido lanzar errores genéricos como `new Error()`. Toda anomalía en la lógica de negocio o validación debe resolverse mediante las excepciones HTTP integradas de NestJS (`BadRequestException`, `UnauthorizedException`, `NotFoundException`, `ConflictException`, `InternalServerErrorException`, etc.).
 - **Filtros de Excepciones (Exception Filters)**: El servidor debe tener configurado un filtro global (en la carpeta `src/common/filters/`) para interceptar excepciones imprevistas, formatear la respuesta del servidor y loguear el stack trace detalladamente.
 - **Errores de Base de Datos**: Capturar los errores nativos de la base de datos (como el código `23505` de clave duplicada en PostgreSQL) en las capas de servicio y mapearlos a la excepción HTTP correspondiente (`ConflictException`).
+- **Excepciones en Archivo Aparte**: Las excepciones específicas de un módulo (como `UserNotFoundException`, `RoleNotFoundException` o excepciones personalizadas para módulos como `news`, `users`, etc.) deben crearse en archivos individuales dentro de la carpeta `exceptions/` de dicho módulo, heredando de la excepción HTTP adecuada de NestJS.
 
 ### 4.4 Tipado Estricto
 - **Cero Uso de `any`**: Queda estrictamente prohibido usar el tipo `any` en firmas de métodos, propiedades o variables del código productivo. Su uso anula los beneficios de TypeScript. En su lugar, utilizar tipados estrictos, tipos genéricos, `unknown`, o `never`.

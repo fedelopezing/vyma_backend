@@ -14,6 +14,7 @@ import { AuthGuard } from '@nestjs/passport';
 
 import { AuthService } from './auth.service';
 import { LoginUserDto, ActivateAccountDto, RefreshTokenDto } from './dto';
+import { LoginResponse, MessageResponse } from './interfaces';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -24,14 +25,19 @@ export class AuthController {
   @Throttle({ default: { limit: 3, ttl: 60000 } })
   @Post('activate')
   @HttpCode(HttpStatus.OK)
-  async activate(@Body() activateAccountDto: ActivateAccountDto) {
+  async activate(
+    @Body() activateAccountDto: ActivateAccountDto,
+  ): Promise<MessageResponse> {
     return this.authService.activateAccount(activateAccountDto);
   }
 
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  async login(@Body() loginDto: LoginUserDto, @Req() req: Request) {
+  async login(
+    @Body() loginDto: LoginUserDto,
+    @Req() req: Request,
+  ): Promise<LoginResponse> {
     const ipAddress = req.ip || req.connection?.remoteAddress;
     const userAgent = req.headers['user-agent'];
     return this.authService.login(loginDto, ipAddress, userAgent);
@@ -40,7 +46,10 @@ export class AuthController {
   @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  async refresh(@Body() refreshTokenDto: RefreshTokenDto, @Req() req: Request) {
+  async refresh(
+    @Body() refreshTokenDto: RefreshTokenDto,
+    @Req() req: Request,
+  ): Promise<LoginResponse> {
     const ipAddress = req.ip || req.connection?.remoteAddress;
     const userAgent = req.headers['user-agent'];
     return this.authService.refreshTokens(
@@ -53,7 +62,9 @@ export class AuthController {
   @Post('logout')
   @UseGuards(AuthGuard('jwt'))
   @HttpCode(HttpStatus.OK)
-  async logout(@Body() refreshTokenDto: RefreshTokenDto) {
+  async logout(
+    @Body() refreshTokenDto: RefreshTokenDto,
+  ): Promise<MessageResponse> {
     return this.authService.logout(refreshTokenDto.refreshToken);
   }
 }

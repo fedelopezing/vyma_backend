@@ -18,10 +18,17 @@ import { PermissionsModule } from '../permissions/permissions.module';
 
 import { RoleCacheListener } from './listeners/role-cache.listener';
 import { TokenCleanupCron } from './cron/token-cleanup.cron';
+import { RefreshTokenRepository } from './repositories/refresh-token.repository';
 
 @Module({
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, RoleCacheListener, TokenCleanupCron],
+  providers: [
+    AuthService,
+    JwtStrategy,
+    RoleCacheListener,
+    TokenCleanupCron,
+    RefreshTokenRepository,
+  ],
   imports: [
     ConfigModule,
     forwardRef(() => ProfilesModule),
@@ -62,6 +69,7 @@ import { TokenCleanupCron } from './cron/token-cleanup.cron';
     AuthService,
     RolesModule,
     PermissionsModule,
+    RefreshTokenRepository,
   ],
 })
 export class AuthModule {}

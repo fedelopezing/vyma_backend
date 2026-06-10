@@ -3,6 +3,8 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { faker } from '@faker-js/faker';
+import { ThrottlerGuard } from '@nestjs/throttler';
+import { Request } from 'express';
 
 describe('AuthController', () => {
   let controller: AuthController;
@@ -19,7 +21,10 @@ describe('AuthController', () => {
           useValue: mockAuthService,
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(ThrottlerGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<AuthController>(AuthController);
   });
@@ -35,14 +40,27 @@ describe('AuthController', () => {
         password: faker.internet.password(),
       };
       const expectedResult = {
-        access_token: faker.string.alphanumeric(32),
-        user: { id: faker.number.int(), email: dto.email },
+        accessToken: faker.string.alphanumeric(32),
+        refreshToken: faker.string.alphanumeric(32),
+        expiresIn: 900,
+        user: {
+          uuid: faker.string.uuid(),
+          email: dto.email,
+          name: faker.person.fullName(),
+        },
       };
       mockAuthService.login.mockResolvedValue(expectedResult as never);
 
-      const req = { ip: '127.0.0.1', headers: { 'user-agent': 'test' } } as any;
+      const req = {
+        ip: '127.0.0.1',
+        headers: { 'user-agent': 'test' },
+      } as unknown as Request;
       expect(await controller.login(dto, req)).toEqual(expectedResult);
-      expect(mockAuthService.login).toHaveBeenCalledWith(dto);
+      expect(mockAuthService.login).toHaveBeenCalledWith(
+        dto,
+        '127.0.0.1',
+        'test',
+      );
     });
   });
 });

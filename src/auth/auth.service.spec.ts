@@ -1,10 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from './auth.service';
 import { JwtService } from '@nestjs/jwt';
-import { DataSource, Repository, EntityManager } from 'typeorm';
 import { UsersService } from '../users/users.service';
-import { ProfilesService } from '../profiles/profiles.service';
-import { CreateUserDto } from './dto/create-user.dto';
+import { ActivationTokensService } from '../users/activation-tokens.service';
+import { RefreshTokenRepository } from './repositories/refresh-token.repository';
 import {
   BadRequestException,
   ConflictException,
@@ -12,47 +11,38 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
-import { Role } from '../roles/entities/role.entity';
 import { User } from '../users/entities/user.entity';
-import { Profile } from '../profiles/entities/profile.entity';
-import { CreateUserWithProfileDto } from '../profiles/dto';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { faker } from '@faker-js/faker';
+import { RefreshToken } from './entities/refresh-token.entity';
+import { EntityManager } from 'typeorm';
+import { ActivationToken } from '../users/entities/activation-token.entity';
 
 jest.mock('bcrypt', () => ({
   compare: jest.fn(),
-  hashSync: jest.fn(),
+  hash: jest.fn(),
 }));
 
 describe('AuthService', () => {
   let service: AuthService;
   let mockUsersService: DeepMocked<UsersService>;
-  let mockRoleRepository: DeepMocked<Repository<Role>>;
+  let mockActivationTokensService: DeepMocked<ActivationTokensService>;
   let mockJwtService: DeepMocked<JwtService>;
-  let mockDataSource: DeepMocked<DataSource>;
-  let mockProfilesService: DeepMocked<ProfilesService>;
+  let mockRefreshTokenRepo: DeepMocked<RefreshTokenRepository>;
 
   beforeEach(async () => {
     mockUsersService = createMock<UsersService>();
-    mockRoleRepository = createMock<Repository<Role>>();
+    mockActivationTokensService = createMock<ActivationTokensService>();
     mockJwtService = createMock<JwtService>();
-    mockDataSource = createMock<DataSource>();
-    mockProfilesService = createMock<ProfilesService>();
+    mockRefreshTokenRepo = createMock<RefreshTokenRepository>();
 
-    (mockDataSource.transaction as unknown as jest.Mock).mockImplementation(
-      async (...args: unknown[]) => {
-        const cb = args[args.length - 1] as (
-          manager: EntityManager,
-        ) => Promise<unknown>;
-        return await cb(mockDataSource.manager);
-      },
-    );
-
-    mockDataSource.manager.getRepository.mockImplementation(
-      (entity: unknown) => {
-        if (entity === Role)
-          return mockRoleRepository as unknown as Repository<Role>; // Actually wait, any is bad
-        return null as unknown as Repository<Role>;
+    mockRefreshTokenRepo.runTransaction.mockImplementation(
+      async (cb: (manager: EntityManager) => Promise<unknown>) => {
+        const mockManager = createMock<EntityManager>();
+        mockManager.getRepository.mockImplementation(() => {
+          return createMock();
+        });
+        return await cb(mockManager);
       },
     );
 
@@ -64,16 +54,16 @@ describe('AuthService', () => {
           useValue: mockUsersService,
         },
         {
+          provide: ActivationTokensService,
+          useValue: mockActivationTokensService,
+        },
+        {
           provide: JwtService,
           useValue: mockJwtService,
         },
         {
-          provide: DataSource,
-          useValue: mockDataSource,
-        },
-        {
-          provide: ProfilesService,
-          useValue: mockProfilesService,
+          provide: RefreshTokenRepository,
+          useValue: mockRefreshTokenRepo,
         },
       ],
     }).compile();
@@ -89,48 +79,56 @@ describe('AuthService', () => {
     expect(service).toBeDefined();
   });
 
-  describe('create', () => {
-    it('should create a user successfully', async () => {
-      const email = faker.internet.email();
-      const createUserDto = {
-        email,
-        name: faker.person.fullName(),
-        password: faker.internet.password(),
-        role: 'client',
+  describe('activateAccount', () => {
+    it('should activate account successfully', async () => {
+      const mockToken = {
+        id: 1,
+        expiresAt: new Date(Date.now() + 10000),
+        user: { id: 1, passwordHash: '' } as User,
       };
-      const role = { id: faker.number.int(), name: 'client' };
-      const user = {
-        id: faker.number.int(),
-        email,
-        name: createUserDto.name,
-        passwordHash: 'hash',
-        role,
-      };
-
-      mockRoleRepository.findOne.mockResolvedValue(role as Role);
-      mockUsersService.create.mockResolvedValue(user as unknown as User);
-      (bcrypt.hashSync as jest.Mock).mockReturnValue('hashedpassword');
-
-      const result = await service.create(
-        createUserDto as unknown as CreateUserDto,
+      mockActivationTokensService.findActiveToken.mockResolvedValue(
+        mockToken as unknown as ActivationToken,
       );
+      (bcrypt.hash as jest.Mock).mockResolvedValue('hashed_pass');
 
-      expect(result).toHaveProperty('email', email);
-      expect(mockRoleRepository.findOne).toHaveBeenCalledWith({
-        where: { name: 'client' },
+      const result = await service.activateAccount({
+        token: 'valid_token',
+        password: 'Password123!',
       });
-      expect(mockUsersService.create).toHaveBeenCalled();
+
+      expect(result).toEqual({ message: 'Account activated successfully' });
+      expect(mockActivationTokensService.markAsUsed).toHaveBeenCalledWith(
+        1,
+        expect.any(Object),
+      );
     });
 
-    it('should throw BadRequestException if role not found', async () => {
-      mockRoleRepository.findOne.mockResolvedValue(null);
+    it('should throw BadRequestException if token not found', async () => {
+      mockActivationTokensService.findActiveToken.mockResolvedValue(null);
+
       await expect(
-        service.create({
-          email: faker.internet.email(),
-          name: faker.person.fullName(),
-          password: faker.internet.password(),
-          role: 'invalid',
-        } as unknown as CreateUserDto),
+        service.activateAccount({
+          token: 'invalid_token',
+          password: 'Password123!',
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException if token expired', async () => {
+      const mockToken = {
+        id: 1,
+        expiresAt: new Date(Date.now() - 10000),
+        user: { id: 1 } as User,
+      };
+      mockActivationTokensService.findActiveToken.mockResolvedValue(
+        mockToken as unknown as ActivationToken,
+      );
+
+      await expect(
+        service.activateAccount({
+          token: 'expired_token',
+          password: 'Password123!',
+        }),
       ).rejects.toThrow(BadRequestException);
     });
   });
@@ -166,11 +164,6 @@ describe('AuthService', () => {
         name: faker.person.fullName(),
         passwordHash: 'hashedpassword',
         isActive: true,
-        profile: {
-          avatarUrl: faker.image.avatar(),
-          gender: 'other',
-          birthDate: faker.date.birthdate(),
-        },
       };
       mockUsersService.findOneByEmailForLogin.mockResolvedValue(
         mockUser as unknown as User,
@@ -194,78 +187,103 @@ describe('AuthService', () => {
         name,
         passwordHash: 'hashedpassword',
         isActive: true,
-        profile: {
-          avatarUrl: faker.image.avatar(),
-          gender: 'other',
-          birthDate: faker.date.birthdate(),
-        },
+        role: { name: 'client' },
       };
       mockUsersService.findOneByEmailForLogin.mockResolvedValue(
         mockUser as unknown as User,
       );
       mockJwtService.sign.mockReturnValue('mock-jwt-token');
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      (bcrypt.hash as jest.Mock).mockResolvedValue('hash_refresh');
+      mockRefreshTokenRepo.create.mockReturnValue({} as RefreshToken);
+      mockRefreshTokenRepo.save.mockResolvedValue({} as RefreshToken);
 
       const result = await service.login({
         email,
         password: faker.internet.password(),
       });
 
-      expect(result).toHaveProperty('access_token', 'mock-jwt-token');
+      expect(result).toHaveProperty('accessToken', 'mock-jwt-token');
       expect(result.user).toHaveProperty('email', email);
     });
   });
 
-  describe('registerWithProfile', () => {
-    it('should register a user with profile successfully', async () => {
-      const email = faker.internet.email();
-      const name = faker.person.fullName();
-      const professionId = faker.number.int();
-      const createUserDto = {
-        email,
-        name,
-        password: faker.internet.password(),
-        professionId,
-      };
-
-      const mockRole = { id: 1, name: 'client' };
-      const mockUser = { id: 123, email, name, role: mockRole };
-
-      mockRoleRepository.findOne.mockResolvedValue(mockRole as Role);
-      mockUsersService.create.mockResolvedValue(mockUser as unknown as User);
-      mockProfilesService.create.mockResolvedValue({
-        id: 1,
-      } as unknown as Profile);
-      mockJwtService.sign.mockReturnValue('mock-jwt-token');
-      (bcrypt.hashSync as jest.Mock).mockReturnValue('hashedpassword');
-
-      const result = await service.registerWithProfile(
-        createUserDto as unknown as CreateUserWithProfileDto,
-      );
-
-      expect(result).toHaveProperty('user');
-      expect(result).toHaveProperty('token', 'mock-jwt-token');
-      expect(mockProfilesService.create).toHaveBeenCalledWith(
-        { userId: mockUser.id, professionId },
-        mockDataSource.manager,
+  describe('refreshTokens', () => {
+    it('should throw UnauthorizedException if token not found', async () => {
+      mockRefreshTokenRepo.findOneByTokenWithUser.mockResolvedValue(null);
+      await expect(service.refreshTokens('invalid_token')).rejects.toThrow(
+        UnauthorizedException,
       );
     });
 
-    it('should throw ConflictException if database error occurs', async () => {
-      const createUserDto = {
-        email: faker.internet.email(),
-        name: faker.person.fullName(),
-        password: faker.internet.password(),
-        professionId: faker.number.int(),
-      };
+    it('should throw UnauthorizedException if token is revoked', async () => {
+      const mockToken = {
+        isRevoked: true,
+        user: { id: 1 },
+      } as RefreshToken;
+      mockRefreshTokenRepo.findOneByTokenWithUser.mockResolvedValue(mockToken);
 
-      mockRoleRepository.findOne.mockRejectedValue({ code: '23505' });
+      await expect(service.refreshTokens('revoked_token')).rejects.toThrow(
+        UnauthorizedException,
+      );
+      expect(
+        mockRefreshTokenRepo.updateRevokeStatusByUser,
+      ).toHaveBeenCalledWith(1, true);
+    });
 
-      await expect(
-        service.registerWithProfile(
-          createUserDto as unknown as CreateUserWithProfileDto,
-        ),
-      ).rejects.toThrow(ConflictException);
+    it('should throw UnauthorizedException if token has expired', async () => {
+      const mockToken = {
+        isRevoked: false,
+        expiresAt: new Date(Date.now() - 10000),
+        user: { id: 1 },
+      } as RefreshToken;
+      mockRefreshTokenRepo.findOneByTokenWithUser.mockResolvedValue(mockToken);
+
+      await expect(service.refreshTokens('expired_token')).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+
+    it('should refresh tokens successfully', async () => {
+      const mockToken = {
+        isRevoked: false,
+        expiresAt: new Date(Date.now() + 10000),
+        user: { id: 1 },
+      } as RefreshToken;
+      const mockUser = {
+        id: 1,
+        isActive: true,
+        email: 'test@mail.com',
+        role: { name: 'client' },
+      } as User;
+
+      mockRefreshTokenRepo.findOneByTokenWithUser.mockResolvedValue(mockToken);
+      mockUsersService.findOneById.mockResolvedValue(mockUser);
+      mockJwtService.sign.mockReturnValue('new-access-token');
+      (bcrypt.hash as jest.Mock).mockResolvedValue('hash_refresh');
+      mockRefreshTokenRepo.create.mockReturnValue({} as RefreshToken);
+      mockRefreshTokenRepo.save.mockResolvedValue({} as RefreshToken);
+
+      const result = await service.refreshTokens('valid_token');
+
+      expect(result).toHaveProperty('accessToken', 'new-access-token');
+      expect(mockRefreshTokenRepo.save).toHaveBeenCalled();
+    });
+  });
+
+  describe('logout', () => {
+    it('should revoke token successfully', async () => {
+      const mockToken = {
+        uuid: 'token',
+        isRevoked: false,
+      } as RefreshToken;
+      mockRefreshTokenRepo.findOneByToken.mockResolvedValue(mockToken);
+
+      const result = await service.logout('token');
+
+      expect(result).toEqual({ message: 'Logged out successfully' });
+      expect(mockToken.isRevoked).toBe(true);
+      expect(mockRefreshTokenRepo.save).toHaveBeenCalledWith(mockToken);
     });
   });
 
@@ -274,12 +292,6 @@ describe('AuthService', () => {
       expect(() => service.handleDBErrors({ code: '23505' })).toThrow(
         ConflictException,
       );
-    });
-
-    it('should throw BadRequestException for response message', () => {
-      expect(() =>
-        service.handleDBErrors({ response: { message: 'error' } }),
-      ).toThrow(BadRequestException);
     });
 
     it('should throw InternalServerErrorException for other errors', () => {
