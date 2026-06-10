@@ -20,13 +20,10 @@ import {
   resolveNewsSlugs,
   resolveUniqueSlug,
   runInTransaction,
+  buildPaginatedResponse,
 } from '../common/helpers';
+import { PaginatedResponse } from '../common/interfaces';
 import { slugify } from '../common/helpers/slugify.helper';
-
-/**
- * Tipo de retorno estándar para listados paginados.
- */
-type PaginatedResult<T> = { data: T[]; total: number };
 
 @Injectable()
 export class NewsService {
@@ -131,18 +128,28 @@ export class NewsService {
 
   async findAll(
     paginationDto: NewsPaginationDto,
-  ): Promise<PaginatedResult<News>> {
+  ): Promise<PaginatedResponse<News>> {
     const query = this.buildPaginatedQuery(paginationDto, NewsStatus.PUBLICADO);
     const [data, total] = await query.getManyAndCount();
-    return { data, total };
+    return buildPaginatedResponse(
+      data,
+      total,
+      paginationDto.page,
+      paginationDto.limit,
+    );
   }
 
   async findAllAdmin(
     paginationDto: NewsPaginationDto,
-  ): Promise<PaginatedResult<News>> {
+  ): Promise<PaginatedResponse<News>> {
     const query = this.buildPaginatedQuery(paginationDto);
     const [data, total] = await query.getManyAndCount();
-    return { data, total };
+    return buildPaginatedResponse(
+      data,
+      total,
+      paginationDto.page,
+      paginationDto.limit,
+    );
   }
 
   async findOneBySlug(slug: string): Promise<News> {

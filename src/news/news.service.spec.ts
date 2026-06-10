@@ -179,7 +179,36 @@ describe('NewsService', () => {
 
       const result = await service.findAll({ page: 1, limit: 10 });
 
-      expect(result).toEqual({ data: [{ id: '1' }], total: 1 });
+      expect(result).toEqual({
+        data: [{ id: '1' }],
+        meta: {
+          page: 1,
+          limit: 10,
+          total: 1,
+          totalPages: 1,
+          hasNextPage: false,
+          hasPrevPage: false,
+        },
+      });
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'news.estado = :estado',
+        { estado: NewsStatus.PUBLICADO },
+      );
+    });
+
+    it('debería forzar el estado PUBLICADO incluso si se pasa otro estado o undefined en la consulta pública', async () => {
+      mockNewsRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
+      mockQueryBuilder.getManyAndCount.mockResolvedValueOnce([
+        [{ id: '1' }],
+        1,
+      ]);
+
+      await service.findAll({
+        page: 1,
+        limit: 10,
+        estado: NewsStatus.BORRADOR,
+      });
+
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
         'news.estado = :estado',
         { estado: NewsStatus.PUBLICADO },
@@ -211,11 +240,38 @@ describe('NewsService', () => {
           estado: NewsStatus.BORRADOR,
         });
 
-        expect(result).toEqual({ data: [{ id: '1' }], total: 1 });
+        expect(result).toEqual({
+          data: [{ id: '1' }],
+          meta: {
+            page: 1,
+            limit: 10,
+            total: 1,
+            totalPages: 1,
+            hasNextPage: false,
+            hasPrevPage: false,
+          },
+        });
         expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
           'news.estado = :estado',
           { estado: NewsStatus.BORRADOR },
         );
+      });
+
+      it('debería omitir filtros de categoría y estado si no se proveen (o son undefined)', async () => {
+        mockNewsRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
+        mockQueryBuilder.getManyAndCount.mockResolvedValueOnce([
+          [{ id: '1' }],
+          1,
+        ]);
+
+        await service.findAllAdmin({
+          page: 1,
+          limit: 10,
+          categoria: undefined,
+          estado: undefined,
+        });
+
+        expect(mockQueryBuilder.andWhere).not.toHaveBeenCalled();
       });
     });
 

@@ -9,13 +9,17 @@ import {
   Delete,
   UseGuards,
   ParseIntPipe,
+  Req,
 } from '@nestjs/common';
+import { Request } from 'express';
+import { User } from '../users/entities/user.entity';
 import { AuthGuard } from '@nestjs/passport';
 
-import { CreateUserWithProfileDto, UpdateProfileDto } from './dto';
+import { CreateProfileDto, UpdateProfileDto } from './dto';
 import { ProfilesService } from './profiles.service';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { RequirePermissions } from '../auth/decorators/require-permissions.decorator';
+import { checkOwnershipOrAdmin } from '../common/helpers/ownership.helper';
 
 @ApiBearerAuth()
 @ApiTags('Profiles')
@@ -26,9 +30,9 @@ export class ProfilesController {
 
   @Post()
   @RequirePermissions('write:users')
-  @ApiOperation({ summary: 'Crear un usuario con perfil (solo admin)' })
-  async create(@Body() createUserDto: CreateUserWithProfileDto) {
-    return this.profilesService.createWithUser(createUserDto);
+  @ApiOperation({ summary: 'Crear un perfil (solo admin)' })
+  async create(@Body() createProfileDto: CreateProfileDto) {
+    return this.profilesService.create(createProfileDto);
   }
 
   @Get()
@@ -46,12 +50,16 @@ export class ProfilesController {
   }
 
   @Patch(':id')
-  @RequirePermissions('write:users')
   @ApiOperation({ summary: 'Actualizar un perfil por ID' })
-  update(
+  async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateProfileDto: UpdateProfileDto,
+    @Req() req: Request,
   ) {
+    const user = req.user as User;
+    const profile = await this.profilesService.findOne(id);
+    checkOwnershipOrAdmin(user, profile.user.id);
+
     return this.profilesService.update(id, updateProfileDto);
   }
 

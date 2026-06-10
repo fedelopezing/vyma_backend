@@ -3,6 +3,7 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
 import { NewsCategory, NewsStatus } from '../entities/news.entity';
+import { ParseOptionalQuery } from '../../common/decorators/parse-optional-query.decorator';
 
 export class NewsPaginationDto {
   @ApiPropertyOptional({
@@ -37,6 +38,7 @@ export class NewsPaginationDto {
     example: NewsCategory.NOTICIA,
   })
   @IsOptional()
+  @ParseOptionalQuery()
   @IsEnum(NewsCategory)
   categoria?: NewsCategory;
 
@@ -46,6 +48,7 @@ export class NewsPaginationDto {
     example: NewsStatus.BORRADOR,
   })
   @IsOptional()
+  @ParseOptionalQuery()
   @IsEnum(NewsStatus)
   estado?: NewsStatus;
 }

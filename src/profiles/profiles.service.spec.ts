@@ -149,18 +149,4 @@ describe('ProfilesService', () => {
       expect(result).toEqual(existingProfile);
     });
   });
-
-  describe('createWithUser', () => {
-    it('should delegate to authService.registerWithProfile', async () => {
-      const dto = { email: faker.internet.email() } as never;
-      const expected = { user: {}, token: 'tok' } as never;
-
-      mockAuthService.registerWithProfile.mockResolvedValue(expected);
-
-      const result = await service.createWithUser(dto);
-
-      expect(mockAuthService.registerWithProfile).toHaveBeenCalledWith(dto);
-      expect(result).toEqual(expected);
-    });
-  });
 });

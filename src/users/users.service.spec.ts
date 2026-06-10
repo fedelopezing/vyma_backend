@@ -1,14 +1,21 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UsersService } from './users.service';
-import { getRepositoryToken } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { faker } from '@faker-js/faker';
-import { Repository, EntityManager } from 'typeorm';
+import { DataSource, EntityManager, QueryRunner } from 'typeorm';
+import { ActivationTokensService } from './activation-tokens.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { UsersRepository } from './repositories/users.repository';
+import { ConflictException } from '@nestjs/common';
+import { CreateUserDto } from './dto/create-user.dto';
 
 describe('UsersService', () => {
   let service: UsersService;
-  let mockRepository: DeepMocked<Repository<User>>;
+  let mockUsersRepository: DeepMocked<UsersRepository>;
+  let mockDataSource: DeepMocked<DataSource>;
+  let mockActivationTokensService: DeepMocked<ActivationTokensService>;
+  let mockEventEmitter: DeepMocked<EventEmitter2>;
 
   const createFakeUser = (): User => {
     const u = new User();
@@ -16,21 +23,42 @@ describe('UsersService', () => {
     u.name = faker.person.fullName();
     u.email = faker.internet.email();
     u.passwordHash = 'hashedpassword';
-    u.isActive = true;
+    u.isActive = false;
     u.createdAt = new Date();
     u.updatedAt = new Date();
     return u;
   };
 
   beforeEach(async () => {
-    mockRepository = createMock<Repository<User>>();
+    mockUsersRepository = createMock<UsersRepository>();
+    mockDataSource = createMock<DataSource>();
+    mockActivationTokensService = createMock<ActivationTokensService>();
+    mockEventEmitter = createMock<EventEmitter2>();
+
+    const mockQueryRunner = createMock<QueryRunner>();
+    mockDataSource.createQueryRunner.mockReturnValue(mockQueryRunner);
+    Object.defineProperty(mockQueryRunner, 'manager', {
+      value: createMock<EntityManager>(),
+    });
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         UsersService,
         {
-          provide: getRepositoryToken(User),
-          useValue: mockRepository,
+          provide: UsersRepository,
+          useValue: mockUsersRepository,
+        },
+        {
+          provide: DataSource,
+          useValue: mockDataSource,
+        },
+        {
+          provide: ActivationTokensService,
+          useValue: mockActivationTokensService,
+        },
+        {
+          provide: EventEmitter2,
+          useValue: mockEventEmitter,
         },
       ],
     }).compile();
@@ -43,66 +71,82 @@ describe('UsersService', () => {
   });
 
   describe('create', () => {
-    it('should create a user using the default repository when no manager is provided', async () => {
-      const userData: Partial<User> = {
+    it('should create a user, generate token, and emit event', async () => {
+      const userData: CreateUserDto = {
         name: faker.person.fullName(),
         email: faker.internet.email(),
-      };
-      const user = createFakeUser();
-      mockRepository.create.mockReturnValue(user);
-      mockRepository.save.mockResolvedValue(user);
-
-      const result = await service.create(userData);
-
-      expect(result).toEqual(user);
-      expect(mockRepository.create).toHaveBeenCalledWith(userData);
-      expect(mockRepository.save).toHaveBeenCalledWith(user);
-    });
-
-    it('should create a user using the custom manager when manager is provided', async () => {
-      const userData: Partial<User> = {
-        name: faker.person.fullName(),
-        email: faker.internet.email(),
+        roleId: 1,
       };
       const user = createFakeUser();
 
       const mockManager = createMock<EntityManager>();
-      const mockManagerRepository = createMock<Repository<User>>();
-      mockManager.getRepository.mockReturnValue(mockManagerRepository);
-      mockManagerRepository.create.mockReturnValue(user);
-      mockManagerRepository.save.mockResolvedValue(user);
+
+      mockUsersRepository.create.mockResolvedValue(user);
+      mockActivationTokensService.createToken.mockResolvedValue('raw-token');
 
       const result = await service.create(userData, mockManager);
 
       expect(result).toEqual(user);
-      expect(mockManager.getRepository).toHaveBeenCalledWith(User);
-      expect(mockManagerRepository.create).toHaveBeenCalledWith(userData);
-      expect(mockManagerRepository.save).toHaveBeenCalledWith(user);
-      expect(mockRepository.create).not.toHaveBeenCalled();
+      expect(mockUsersRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: userData.name,
+          email: userData.email,
+          isActive: false,
+        }),
+        mockManager,
+      );
+      expect(mockActivationTokensService.createToken).toHaveBeenCalledWith(
+        user.id,
+        mockManager,
+      );
+      expect(mockEventEmitter.emit).toHaveBeenCalledWith('user.created', {
+        user,
+        activationToken: 'raw-token',
+      });
+    });
+
+    it('should throw ConflictException if email is duplicated', async () => {
+      const userData: CreateUserDto = {
+        name: faker.person.fullName(),
+        email: faker.internet.email(),
+        roleId: 1,
+      };
+      const mockManager = createMock<EntityManager>();
+
+      mockUsersRepository.create.mockRejectedValue(
+        new ConflictException('A user with this email already exists'),
+      );
+
+      await expect(service.create(userData, mockManager)).rejects.toThrow(
+        ConflictException,
+      );
     });
   });
 
   describe('findOneByEmailForLogin', () => {
-    it('should find and return user by email with specific selection/relations', async () => {
+    it('should find and return user by email when user exists', async () => {
       const user = createFakeUser();
       const email = user.email;
-      mockRepository.findOne.mockResolvedValue(user);
+      mockUsersRepository.findOneByEmailForLogin.mockResolvedValue(user);
 
       const result = await service.findOneByEmailForLogin(email);
 
       expect(result).toEqual(user);
-      expect(mockRepository.findOne).toHaveBeenCalledWith({
-        where: { email },
-        select: {
-          email: true,
-          passwordHash: true,
-          isActive: true,
-          id: true,
-          name: true,
-          role: { id: true, name: true },
-        },
-        relations: ['profile', 'role'],
-      });
+      expect(mockUsersRepository.findOneByEmailForLogin).toHaveBeenCalledWith(
+        email,
+      );
+    });
+
+    it('should return null when user does not exist', async () => {
+      const email = faker.internet.email();
+      mockUsersRepository.findOneByEmailForLogin.mockResolvedValue(null);
+
+      const result = await service.findOneByEmailForLogin(email);
+
+      expect(result).toBeNull();
+      expect(mockUsersRepository.findOneByEmailForLogin).toHaveBeenCalledWith(
+        email,
+      );
     });
   });
 
@@ -110,40 +154,35 @@ describe('UsersService', () => {
     it('should find and return user by id', async () => {
       const user = createFakeUser();
       const id = user.id;
-      mockRepository.findOne.mockResolvedValue(user);
+      mockUsersRepository.findOneById.mockResolvedValue(user);
 
       const result = await service.findOneById(id);
 
       expect(result).toEqual(user);
-      expect(mockRepository.findOne).toHaveBeenCalledWith({
-        where: { id },
-        relations: ['role'],
-      });
+      expect(mockUsersRepository.findOneById).toHaveBeenCalledWith(id);
     });
   });
 
   describe('findOneWithPermissions', () => {
-    it('should find and return user with role and permissions relation and selection', async () => {
+    it('should find and return user with permissions', async () => {
       const user = createFakeUser();
       const id = user.id;
-      mockRepository.findOne.mockResolvedValue(user);
+      mockUsersRepository.findOneWithPermissions.mockResolvedValue(user);
 
       const result = await service.findOneWithPermissions(id);
 
       expect(result).toEqual(user);
-      expect(mockRepository.findOne).toHaveBeenCalledWith({
-        where: { id },
-        relations: ['role', 'role.permissions'],
-        select: {
-          id: true,
-          role: {
-            id: true,
-            permissions: {
-              action: true,
-            },
-          },
-        },
-      });
+      expect(mockUsersRepository.findOneWithPermissions).toHaveBeenCalledWith(
+        id,
+      );
+    });
+  });
+
+  describe('findUsersByRoleId', () => {
+    it('should find users by roleId', async () => {
+      mockUsersRepository.findUsersByRoleId.mockResolvedValue([{ id: 1 }]);
+      const result = await service.findUsersByRoleId(1);
+      expect(result).toEqual([{ id: 1 }]);
     });
   });
 });

@@ -2,6 +2,10 @@ import { forwardRef, Module } from '@nestjs/common';
 import { PassportModule } from '@nestjs/passport';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { RefreshToken } from './entities/refresh-token.entity';
 
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
@@ -13,10 +17,18 @@ import { RolesModule } from '../roles/roles.module';
 import { PermissionsModule } from '../permissions/permissions.module';
 
 import { RoleCacheListener } from './listeners/role-cache.listener';
+import { TokenCleanupCron } from './cron/token-cleanup.cron';
+import { RefreshTokenRepository } from './repositories/refresh-token.repository';
 
 @Module({
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, RoleCacheListener],
+  providers: [
+    AuthService,
+    JwtStrategy,
+    RoleCacheListener,
+    TokenCleanupCron,
+    RefreshTokenRepository,
+  ],
   imports: [
     ConfigModule,
     forwardRef(() => ProfilesModule),
@@ -25,8 +37,16 @@ import { RoleCacheListener } from './listeners/role-cache.listener';
     RolesModule,
     PermissionsModule,
 
+    TypeOrmModule.forFeature([RefreshToken]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
+    ScheduleModule.forRoot(),
 
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,
+        limit: 10,
+      },
+    ]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -34,7 +54,9 @@ import { RoleCacheListener } from './listeners/role-cache.listener';
         return {
           secret: configService.get('JWT_SECRET'),
           signOptions: {
-            expiresIn: '2h',
+            expiresIn: '15m',
+            issuer: configService.get('JWT_ISSUER'),
+            audience: configService.get('JWT_AUDIENCE'),
           },
         };
       },
@@ -47,6 +69,7 @@ import { RoleCacheListener } from './listeners/role-cache.listener';
     AuthService,
     RolesModule,
     PermissionsModule,
+    RefreshTokenRepository,
   ],
 })
 export class AuthModule {}

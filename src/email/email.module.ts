@@ -8,5 +8,6 @@ import { EmailSentListener } from './listeners/email-sent.listener';
   imports: [WhatsappModule],
   controllers: [EmailController],
   providers: [EmailService, EmailSentListener],
+  exports: [EmailService],
 })
 export class EmailModule {}

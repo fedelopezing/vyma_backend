@@ -44,9 +44,14 @@ describe('JwtStrategy', () => {
 
   describe('validate', () => {
     it('should return user if user exists and is active', async () => {
-      const payload: JwtPayload = { id: faker.number.int() };
+      const payload: JwtPayload = {
+        sub: faker.number.int(),
+        uuid: faker.string.uuid(),
+        email: faker.internet.email(),
+        role: 'client',
+      };
       const expectedUser = createMock<User>({
-        id: payload.id,
+        id: payload.sub,
         isActive: true,
       });
 
@@ -56,12 +61,17 @@ describe('JwtStrategy', () => {
 
       const result = await strategy.validate(payload);
 
-      expect(mockUsersService.findOneById).toHaveBeenCalledWith(payload.id);
+      expect(mockUsersService.findOneById).toHaveBeenCalledWith(payload.sub);
       expect(result).toEqual(expectedUser);
     });
 
     it('should throw UnauthorizedException if user is not found', async () => {
-      const payload: JwtPayload = { id: faker.number.int() };
+      const payload: JwtPayload = {
+        sub: faker.number.int(),
+        uuid: faker.string.uuid(),
+        email: faker.internet.email(),
+        role: 'client',
+      };
 
       jest.spyOn(mockUsersService, 'findOneById').mockResolvedValue(null);
 
@@ -74,9 +84,14 @@ describe('JwtStrategy', () => {
     });
 
     it('should throw UnauthorizedException if user is inactive', async () => {
-      const payload: JwtPayload = { id: faker.number.int() };
+      const payload: JwtPayload = {
+        sub: faker.number.int(),
+        uuid: faker.string.uuid(),
+        email: faker.internet.email(),
+        role: 'client',
+      };
       const inactiveUser = createMock<User>({
-        id: payload.id,
+        id: payload.sub,
         isActive: false,
       });
 

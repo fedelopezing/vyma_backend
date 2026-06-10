@@ -5,6 +5,11 @@ description: Workflow for the Tech-Lead to generate developer tasks from an RFC
 # Workflow: RFC to Task Breakdown
 You will work with the agent: `.agents/rules/architect-tech-lead.md`
 
+## Core Guidelines
+- **NestJS Best Practices & Token Optimization:** During task generation, the Tech-Lead must not load the complete `AGENTS.md` file. Instead, the agent must selectively reference specific testing and architecture rules (such as [test-use-testing-module.md](file:///c:/Users/fedel/NestJs/vyma_backend/.agents/skills/nestjs-best-practices/rules/test-use-testing-module.md), [test-mock-external-services.md](file:///c:/Users/fedel/NestJs/vyma_backend/.agents/skills/nestjs-best-practices/rules/test-mock-external-services.md), or [db-use-migrations.md](file:///c:/Users/fedel/NestJs/vyma_backend/.agents/skills/nestjs-best-practices/rules/db-use-migrations.md)) to formulate precise development instructions for each layer in `docs/tasks/`.
+- **Architecture Convention Alignment (MANDATORY):** During task generation, the Tech-Lead must ensure that all generated tasks in `docs/tasks/` strictly align with the naming conventions, directory structure, and technical rules detailed in [convencion-arquitectura.md](file:///c:/Users/fedel/NestJs/vyma_backend/docs/convencion-arquitectura.md). Ensure that tasks map specifically to the folders listed in Section 2, use kebab-case and the correct suffixes from Section 3, and comply with the **Creador de RFC (Tech Lead)** role described in **Section 5**.
+
+
 ## Objective
 Convert an approved Technical RFC (from `docs/RFCs/`) into a highly detailed, structured, and sequential checklist of tasks (tickets) inside `docs/tasks/` that the Expert Developer Agent (`.agents/rules/backend-expert.md`) can easily execute.
 

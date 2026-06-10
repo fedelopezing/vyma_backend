@@ -20,12 +20,14 @@ import { RolesModule } from './roles/roles.module';
 import { PermissionsModule } from './permissions/permissions.module';
 import { NewsModule } from './news/news.module';
 
+import { validateEnv } from './config/env.validation';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath:
-        process.env.NODE_ENV === 'production' ? '.env.production' : '.env',
+      envFilePath: '.env',
+      validate: validateEnv,
     }),
     EventEmitterModule.forRoot(),
 

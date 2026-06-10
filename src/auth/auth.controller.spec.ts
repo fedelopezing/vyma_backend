@@ -3,6 +3,8 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { faker } from '@faker-js/faker';
+import { ThrottlerGuard } from '@nestjs/throttler';
+import { Request } from 'express';
 
 describe('AuthController', () => {
   let controller: AuthController;
@@ -19,38 +21,16 @@ describe('AuthController', () => {
           useValue: mockAuthService,
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(ThrottlerGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<AuthController>(AuthController);
   });
 
   it('should be defined', () => {
     expect(controller).toBeDefined();
-  });
-
-  describe('register', () => {
-    it('should register a user with profile successfully', async () => {
-      const dto = {
-        email: faker.internet.email(),
-        name: faker.person.fullName(),
-        password: faker.internet.password(),
-        role: 'client',
-        avatarUrl: faker.image.avatar(),
-        gender: 'other',
-        birthDate: faker.date.birthdate().toISOString(),
-      };
-      const expectedResult = {
-        user: { id: faker.number.int(), email: dto.email },
-        profile: { id: faker.number.int(), gender: dto.gender },
-        token: faker.string.alphanumeric(32),
-      };
-      mockAuthService.registerWithProfile.mockResolvedValue(
-        expectedResult as never,
-      );
-
-      expect(await controller.create(dto as never)).toEqual(expectedResult);
-      expect(mockAuthService.registerWithProfile).toHaveBeenCalledWith(dto);
-    });
   });
 
   describe('login', () => {
@@ -60,13 +40,55 @@ describe('AuthController', () => {
         password: faker.internet.password(),
       };
       const expectedResult = {
-        access_token: faker.string.alphanumeric(32),
-        user: { id: faker.number.int(), email: dto.email },
+        accessToken: faker.string.alphanumeric(32),
+        refreshToken: faker.string.alphanumeric(32),
+        expiresIn: 900,
+        user: {
+          uuid: faker.string.uuid(),
+          email: dto.email,
+          name: faker.person.fullName(),
+        },
       };
       mockAuthService.login.mockResolvedValue(expectedResult as never);
 
-      expect(await controller.login(dto)).toEqual(expectedResult);
-      expect(mockAuthService.login).toHaveBeenCalledWith(dto);
+      const req = {
+        ip: '127.0.0.1',
+        headers: { 'user-agent': 'test' },
+      } as unknown as Request;
+      expect(await controller.login(dto, req)).toEqual(expectedResult);
+      expect(mockAuthService.login).toHaveBeenCalledWith(
+        dto,
+        '127.0.0.1',
+        'test',
+      );
+    });
+  });
+
+  describe('activate', () => {
+    it('should activate user account', async () => {
+      const dto = {
+        token: faker.string.uuid(),
+        password: 'Password123!',
+      };
+      const expectedResult = { message: 'Account activated successfully' };
+      mockAuthService.activateAccount.mockResolvedValue(expectedResult);
+
+      expect(await controller.activate(dto)).toEqual(expectedResult);
+      expect(mockAuthService.activateAccount).toHaveBeenCalledWith(dto);
+    });
+  });
+
+  describe('resendActivation', () => {
+    it('should request resending activation email', async () => {
+      const dto = { email: faker.internet.email() };
+      const expectedResult = {
+        message:
+          'Si el correo electrónico está registrado, se enviará un enlace de activación',
+      };
+      mockAuthService.resendActivation.mockResolvedValue(expectedResult);
+
+      expect(await controller.resendActivation(dto)).toEqual(expectedResult);
+      expect(mockAuthService.resendActivation).toHaveBeenCalledWith(dto);
     });
   });
 });
