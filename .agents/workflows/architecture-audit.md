@@ -26,23 +26,29 @@ Perform a rigorous, automated, and manual inspection of the codebase to ensure a
 ## Phase 3: Architectural & Clean Code Inspection
 - **Trigger:** Once automated tests and linters pass.
 - **Agent Action:** 
+  - **Context Limitation & Token Optimization:** The agent must *not* load the entire `AGENTS.md` file of `nestjs-best-practices`. Instead, dynamically load only the relevant rule files depending on the checklist point being audited.
   - **Context Limitation (Avoid Attention Loss):** If the files to be analyzed exceed 300 lines of code in total, the agent must request/analyze the files one by one or grouped by functional modules (e.g., first Entity + DTO, then Service, then Controller) to prevent the "needle-in-a-haystack" effect and maintain high analytical accuracy.
   - The agent will deeply analyze the provided source code files (Controllers, Services, Entities, Listeners) and evaluate them against the following checklist:
   1. **Clean Architecture Violations:** 
      - Do Controllers contain business logic? (They must only handle HTTP routing and delegate to Services).
      - Do Services directly interact with the Database? (They must use Repositories/Interfaces).
+     - **Relevant Rules to Load:** [arch-feature-modules](file:///c:/Users/fedel/NestJs/vyma_backend/.agents/skills/nestjs-best-practices/rules/arch-feature-modules.md), [arch-use-repository-pattern](file:///c:/Users/fedel/NestJs/vyma_backend/.agents/skills/nestjs-best-practices/rules/arch-use-repository-pattern.md).
   2. **SOLID Principles:** 
      - Are classes/methods doing too many things? (Single Responsibility).
      - Are dependencies properly injected? (Dependency Inversion).
+     - **Relevant Rules to Load:** [arch-single-responsibility](file:///c:/Users/fedel/NestJs/vyma_backend/.agents/skills/nestjs-best-practices/rules/arch-single-responsibility.md), [di-prefer-constructor-injection](file:///c:/Users/fedel/NestJs/vyma_backend/.agents/skills/nestjs-best-practices/rules/di-prefer-constructor-injection.md), [di-use-interfaces-tokens](file:///c:/Users/fedel/NestJs/vyma_backend/.agents/skills/nestjs-best-practices/rules/di-use-interfaces-tokens.md), [di-liskov-substitution](file:///c:/Users/fedel/NestJs/vyma_backend/.agents/skills/nestjs-best-practices/rules/di-liskov-substitution.md), [di-interface-segregation](file:///c:/Users/fedel/NestJs/vyma_backend/.agents/skills/nestjs-best-practices/rules/di-interface-segregation.md).
   3. **Event-Driven Decoupling:** 
      - Are secondary tasks (like emails, external API calls to WhatsApp) blocking the main thread? (They must use `EventEmitter2`).
+     - **Relevant Rules to Load:** [arch-use-events](file:///c:/Users/fedel/NestJs/vyma_backend/.agents/skills/nestjs-best-practices/rules/arch-use-events.md), [error-handle-async-errors](file:///c:/Users/fedel/NestJs/vyma_backend/.agents/skills/nestjs-best-practices/rules/error-handle-async-errors.md).
   4. **Performance & TypeORM:** 
      - Are there N+1 query problems?
      - Are raw queries used instead of QueryBuilder or proper relations?
      - Are indices missing on queried columns?
+     - **Relevant Rules to Load:** [db-avoid-n-plus-one](file:///c:/Users/fedel/NestJs/vyma_backend/.agents/skills/nestjs-best-practices/rules/db-avoid-n-plus-one.md), [perf-optimize-database](file:///c:/Users/fedel/NestJs/vyma_backend/.agents/skills/nestjs-best-practices/rules/perf-optimize-database.md).
   5. **Security & Validation:** 
      - Are endpoints missing `@UseGuards()`?
      - Are DTOs missing `class-validator` decorators or is the `any` type being used?
+     - **Relevant Rules to Load:** [security-use-guards](file:///c:/Users/fedel/NestJs/vyma_backend/.agents/skills/nestjs-best-practices/rules/security-use-guards.md), [security-validate-all-input](file:///c:/Users/fedel/NestJs/vyma_backend/.agents/skills/nestjs-best-practices/rules/security-validate-all-input.md).
   6. **Code Cleanup & Unused Imports:** 
      - Are there any unused imports or variables left in the files? (They must be actively identified and removed to keep the code clean).
 
