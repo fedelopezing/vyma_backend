@@ -4,12 +4,8 @@ import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { ActivationTokensService } from '../users/activation-tokens.service';
 import { RefreshTokenRepository } from './repositories/refresh-token.repository';
-import {
-  BadRequestException,
-  ConflictException,
-  InternalServerErrorException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { BadRequestException, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { User } from '../users/entities/user.entity';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
@@ -29,12 +25,14 @@ describe('AuthService', () => {
   let mockActivationTokensService: DeepMocked<ActivationTokensService>;
   let mockJwtService: DeepMocked<JwtService>;
   let mockRefreshTokenRepo: DeepMocked<RefreshTokenRepository>;
+  let mockEventEmitter: DeepMocked<EventEmitter2>;
 
   beforeEach(async () => {
     mockUsersService = createMock<UsersService>();
     mockActivationTokensService = createMock<ActivationTokensService>();
     mockJwtService = createMock<JwtService>();
     mockRefreshTokenRepo = createMock<RefreshTokenRepository>();
+    mockEventEmitter = createMock<EventEmitter2>();
 
     mockRefreshTokenRepo.runTransaction.mockImplementation(
       async (cb: (manager: EntityManager) => Promise<unknown>) => {
@@ -64,6 +62,10 @@ describe('AuthService', () => {
         {
           provide: RefreshTokenRepository,
           useValue: mockRefreshTokenRepo,
+        },
+        {
+          provide: EventEmitter2,
+          useValue: mockEventEmitter,
         },
       ],
     }).compile();
@@ -130,6 +132,63 @@ describe('AuthService', () => {
           password: 'Password123!',
         }),
       ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('resendActivation', () => {
+    const email = 'test@mail.com';
+
+    it('should return generic success message if user does not exist', async () => {
+      mockUsersService.findOneByEmailForLogin.mockResolvedValue(null);
+
+      const result = await service.resendActivation({ email });
+
+      expect(result.message).toContain(
+        'Si el correo electrónico está registrado',
+      );
+      expect(mockActivationTokensService.createToken).not.toHaveBeenCalled();
+      expect(mockEventEmitter.emit).not.toHaveBeenCalled();
+    });
+
+    it('should return generic success message if user is already active', async () => {
+      mockUsersService.findOneByEmailForLogin.mockResolvedValue({
+        id: 1,
+        email,
+        isActive: true,
+      } as User);
+
+      const result = await service.resendActivation({ email });
+
+      expect(result.message).toContain(
+        'Si el correo electrónico está registrado',
+      );
+      expect(mockActivationTokensService.createToken).not.toHaveBeenCalled();
+      expect(mockEventEmitter.emit).not.toHaveBeenCalled();
+    });
+
+    it('should create new token and emit user.created event if user is inactive', async () => {
+      const mockUser = {
+        id: 1,
+        email,
+        isActive: false,
+      } as User;
+      mockUsersService.findOneByEmailForLogin.mockResolvedValue(mockUser);
+      mockActivationTokensService.createToken.mockResolvedValue(
+        'new-raw-token',
+      );
+
+      const result = await service.resendActivation({ email });
+
+      expect(result.message).toContain(
+        'Si el correo electrónico está registrado',
+      );
+      expect(mockActivationTokensService.createToken).toHaveBeenCalledWith(
+        mockUser.id,
+      );
+      expect(mockEventEmitter.emit).toHaveBeenCalledWith('user.created', {
+        user: mockUser,
+        activationToken: 'new-raw-token',
+      });
     });
   });
 
@@ -284,25 +343,6 @@ describe('AuthService', () => {
       expect(result).toEqual({ message: 'Logged out successfully' });
       expect(mockToken.isRevoked).toBe(true);
       expect(mockRefreshTokenRepo.save).toHaveBeenCalledWith(mockToken);
-    });
-  });
-
-  describe('handleDBErrors', () => {
-    it('should throw ConflictException for code 23505', () => {
-      expect(() => service.handleDBErrors({ code: '23505' })).toThrow(
-        ConflictException,
-      );
-    });
-
-    it('should throw InternalServerErrorException for other errors', () => {
-      const mockLoggerError = jest
-        .spyOn(service['logger'], 'error')
-        .mockImplementation();
-      expect(() => service.handleDBErrors({})).toThrow(
-        InternalServerErrorException,
-      );
-      expect(mockLoggerError).toHaveBeenCalled();
-      mockLoggerError.mockRestore();
     });
   });
 });

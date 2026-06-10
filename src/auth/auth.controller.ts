@@ -13,7 +13,12 @@ import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { AuthGuard } from '@nestjs/passport';
 
 import { AuthService } from './auth.service';
-import { LoginUserDto, ActivateAccountDto, RefreshTokenDto } from './dto';
+import {
+  LoginUserDto,
+  ActivateAccountDto,
+  RefreshTokenDto,
+  ResendActivationDto,
+} from './dto';
 import { LoginResponse, MessageResponse } from './interfaces';
 
 @ApiTags('Auth')
@@ -22,13 +27,22 @@ import { LoginResponse, MessageResponse } from './interfaces';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Throttle({ default: { limit: 3, ttl: 60000 } })
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('activate')
   @HttpCode(HttpStatus.OK)
   async activate(
     @Body() activateAccountDto: ActivateAccountDto,
   ): Promise<MessageResponse> {
     return this.authService.activateAccount(activateAccountDto);
+  }
+
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @Post('resend-activation')
+  @HttpCode(HttpStatus.OK)
+  async resendActivation(
+    @Body() resendActivationDto: ResendActivationDto,
+  ): Promise<MessageResponse> {
+    return this.authService.resendActivation(resendActivationDto);
   }
 
   @Throttle({ default: { limit: 5, ttl: 60000 } })

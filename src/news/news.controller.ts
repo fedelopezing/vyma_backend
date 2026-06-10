@@ -26,6 +26,7 @@ import { CreateNewsDto } from './dto/create-news.dto';
 import { UpdateNewsDto } from './dto/update-news.dto';
 import { NewsPaginationDto } from './dto/news-pagination.dto';
 import { News } from './entities/news.entity';
+import { PaginatedResponse } from '../common/interfaces';
 import { UserRoleGuard } from '../auth/guards/user-role.guard';
 import { RoleProtected } from '../auth/decorators/role-protected.decorator';
 import { ValidRoles } from '../auth/interfaces/valid-roles';
@@ -37,9 +38,86 @@ interface AuthenticatedRequest extends Request {
 }
 
 @ApiTags('News')
-@Controller('api/v1/news')
+@Controller('news')
 export class NewsController {
   constructor(private readonly newsService: NewsService) {}
+
+  // ─── Endpoints administrativos ─────────────────────────────────────────────
+
+  @Get('admin')
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'), UserRoleGuard)
+  @RoleProtected(ValidRoles.admin, ValidRoles.ccps)
+  @ApiOperation({
+    summary:
+      'Listar todas las noticias (borradores y publicadas) — admin o ccps',
+  })
+  @ApiResponse({ status: 200, description: 'Listado completo de noticias' })
+  @ApiResponse({ status: 401, description: 'No autenticado' })
+  @ApiResponse({ status: 403, description: 'Sin permiso (no es admin o ccps)' })
+  findAllAdmin(
+    @Query() paginationDto: NewsPaginationDto,
+  ): Promise<PaginatedResponse<News>> {
+    return this.newsService.findAllAdmin(paginationDto);
+  }
+
+  @Post('admin')
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'), UserRoleGuard)
+  @RoleProtected(ValidRoles.admin, ValidRoles.ccps)
+  @ApiOperation({ summary: 'Crear una nueva noticia — admin o ccps' })
+  @ApiResponse({ status: 201, description: 'Noticia creada exitosamente' })
+  @ApiResponse({
+    status: 400,
+    description: 'Datos inválidos o incompletos (bilingüismo al publicar)',
+  })
+  @ApiResponse({ status: 401, description: 'No autenticado' })
+  @ApiResponse({ status: 403, description: 'Sin permiso (no es admin o ccps)' })
+  create(
+    @Body() createNewsDto: CreateNewsDto,
+    @Request() req: AuthenticatedRequest,
+  ): Promise<News> {
+    return this.newsService.create(createNewsDto, String(req.user.id));
+  }
+
+  @Put('admin/:id')
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'), UserRoleGuard)
+  @RoleProtected(ValidRoles.admin, ValidRoles.ccps)
+  @ApiOperation({ summary: 'Actualizar una noticia — admin o ccps' })
+  @ApiParam({
+    name: 'id',
+    description: 'UUID de la noticia',
+    example: 'uuid-aqui',
+  })
+  @ApiResponse({ status: 200, description: 'Noticia actualizada exitosamente' })
+  @ApiResponse({ status: 400, description: 'Datos inválidos o incompletos' })
+  @ApiResponse({ status: 404, description: 'Noticia no encontrada' })
+  update(
+    @Param('id') id: string,
+    @Body() updateNewsDto: UpdateNewsDto,
+  ): Promise<News> {
+    return this.newsService.update(id, updateNewsDto);
+  }
+
+  @Delete('admin/:id')
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'), UserRoleGuard)
+  @RoleProtected(ValidRoles.admin, ValidRoles.ccps)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Eliminar una noticia (soft-delete) — admin o ccps',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'UUID de la noticia',
+    example: 'uuid-aqui',
+  })
+  @ApiResponse({ status: 204, description: 'Noticia eliminada exitosamente' })
+  @ApiResponse({ status: 404, description: 'Noticia no encontrada' })
+  remove(@Param('id') id: string): Promise<void> {
+    return this.newsService.remove(id);
+  }
 
   // ─── Endpoints públicos ────────────────────────────────────────────────────
 
@@ -51,7 +129,7 @@ export class NewsController {
   })
   findAll(
     @Query() paginationDto: NewsPaginationDto,
-  ): Promise<{ data: News[]; total: number }> {
+  ): Promise<PaginatedResponse<News>> {
     return this.newsService.findAll(paginationDto);
   }
 
@@ -69,79 +147,5 @@ export class NewsController {
   })
   findOneBySlug(@Param('slug') slug: string): Promise<News> {
     return this.newsService.findOneBySlug(slug);
-  }
-
-  // ─── Endpoints administrativos ─────────────────────────────────────────────
-
-  @Get('admin')
-  @ApiBearerAuth()
-  @UseGuards(AuthGuard('jwt'), UserRoleGuard)
-  @RoleProtected(ValidRoles.admin)
-  @ApiOperation({
-    summary: 'Listar todas las noticias (borradores y publicadas) — solo admin',
-  })
-  @ApiResponse({ status: 200, description: 'Listado completo de noticias' })
-  @ApiResponse({ status: 401, description: 'No autenticado' })
-  @ApiResponse({ status: 403, description: 'Sin permiso (no es admin)' })
-  findAllAdmin(
-    @Query() paginationDto: NewsPaginationDto,
-  ): Promise<{ data: News[]; total: number }> {
-    return this.newsService.findAllAdmin(paginationDto);
-  }
-
-  @Post()
-  @ApiBearerAuth()
-  @UseGuards(AuthGuard('jwt'), UserRoleGuard)
-  @RoleProtected(ValidRoles.admin)
-  @ApiOperation({ summary: 'Crear una nueva noticia — solo admin' })
-  @ApiResponse({ status: 201, description: 'Noticia creada exitosamente' })
-  @ApiResponse({
-    status: 400,
-    description: 'Datos inválidos o incompletos (bilingüismo al publicar)',
-  })
-  @ApiResponse({ status: 401, description: 'No autenticado' })
-  @ApiResponse({ status: 403, description: 'Sin permiso (no es admin)' })
-  create(
-    @Body() createNewsDto: CreateNewsDto,
-    @Request() req: AuthenticatedRequest,
-  ): Promise<News> {
-    return this.newsService.create(createNewsDto, String(req.user.id));
-  }
-
-  @Put(':id')
-  @ApiBearerAuth()
-  @UseGuards(AuthGuard('jwt'), UserRoleGuard)
-  @RoleProtected(ValidRoles.admin)
-  @ApiOperation({ summary: 'Actualizar una noticia — solo admin' })
-  @ApiParam({
-    name: 'id',
-    description: 'UUID de la noticia',
-    example: 'uuid-aqui',
-  })
-  @ApiResponse({ status: 200, description: 'Noticia actualizada exitosamente' })
-  @ApiResponse({ status: 400, description: 'Datos inválidos o incompletos' })
-  @ApiResponse({ status: 404, description: 'Noticia no encontrada' })
-  update(
-    @Param('id') id: string,
-    @Body() updateNewsDto: UpdateNewsDto,
-  ): Promise<News> {
-    return this.newsService.update(id, updateNewsDto);
-  }
-
-  @Delete(':id')
-  @ApiBearerAuth()
-  @UseGuards(AuthGuard('jwt'), UserRoleGuard)
-  @RoleProtected(ValidRoles.admin)
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Eliminar una noticia (soft-delete) — solo admin' })
-  @ApiParam({
-    name: 'id',
-    description: 'UUID de la noticia',
-    example: 'uuid-aqui',
-  })
-  @ApiResponse({ status: 204, description: 'Noticia eliminada exitosamente' })
-  @ApiResponse({ status: 404, description: 'Noticia no encontrada' })
-  remove(@Param('id') id: string): Promise<void> {
-    return this.newsService.remove(id);
   }
 }

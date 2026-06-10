@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, EntityManager } from 'typeorm';
 import { ActivationToken } from './entities/activation-token.entity';
-import * as bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
 
 @Injectable()
@@ -14,7 +13,7 @@ export class ActivationTokensService {
 
   async createToken(userId: number, manager?: EntityManager): Promise<string> {
     const rawToken = randomUUID();
-    const tokenHash = await bcrypt.hash(rawToken, 10);
+    const tokenHash = rawToken;
 
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 24); // 24 horas de validez
@@ -22,6 +21,8 @@ export class ActivationTokensService {
     const repo = manager
       ? manager.getRepository(ActivationToken)
       : this.activationTokenRepository;
+
+    await repo.delete({ user: { id: userId } });
 
     const token = repo.create({
       tokenHash,

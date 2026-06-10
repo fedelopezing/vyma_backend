@@ -1,14 +1,12 @@
 import {
   BadRequestException,
-  ConflictException,
   Injectable,
-  InternalServerErrorException,
   Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
-import { getErrorStack } from '../common/helpers/errors.helper';
-import { LoginUserDto, ActivateAccountDto } from './dto';
+import { LoginUserDto, ActivateAccountDto, ResendActivationDto } from './dto';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { JwtPayload, LoginResponse, MessageResponse } from './interfaces';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
@@ -26,6 +24,7 @@ export class AuthService {
     private readonly activationTokensService: ActivationTokensService,
     private readonly jwtService: JwtService,
     private readonly refreshTokenRepo: RefreshTokenRepository,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async activateAccount(
@@ -55,6 +54,28 @@ export class AuthService {
 
       return { message: 'Account activated successfully' };
     });
+  }
+
+  async resendActivation(
+    resendDto: ResendActivationDto,
+  ): Promise<MessageResponse> {
+    const { email } = resendDto;
+
+    const user = await this.usersService.findOneByEmailForLogin(email);
+
+    if (user && !user.isActive) {
+      const rawToken = await this.activationTokensService.createToken(user.id);
+
+      this.eventEmitter.emit('user.created', {
+        user,
+        activationToken: rawToken,
+      });
+    }
+
+    return {
+      message:
+        'Si el correo electrónico está registrado, se enviará un enlace de activación',
+    };
   }
 
   async login(
@@ -174,23 +195,5 @@ export class AuthService {
         role: user.role?.name,
       },
     };
-  }
-
-  handleDBErrors(error: unknown): never {
-    if (
-      typeof error === 'object' &&
-      error !== null &&
-      'code' in error &&
-      (error as Record<string, unknown>).code === '23505'
-    ) {
-      throw new ConflictException(
-        'El email ya está en uso. Por favor, usa otro.',
-      );
-    }
-
-    this.logger.error('Unexpected database error', getErrorStack(error));
-    throw new InternalServerErrorException(
-      'Error inesperado, revise los logs del servidor',
-    );
   }
 }

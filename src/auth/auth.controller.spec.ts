@@ -63,4 +63,32 @@ describe('AuthController', () => {
       );
     });
   });
+
+  describe('activate', () => {
+    it('should activate user account', async () => {
+      const dto = {
+        token: faker.string.uuid(),
+        password: 'Password123!',
+      };
+      const expectedResult = { message: 'Account activated successfully' };
+      mockAuthService.activateAccount.mockResolvedValue(expectedResult);
+
+      expect(await controller.activate(dto)).toEqual(expectedResult);
+      expect(mockAuthService.activateAccount).toHaveBeenCalledWith(dto);
+    });
+  });
+
+  describe('resendActivation', () => {
+    it('should request resending activation email', async () => {
+      const dto = { email: faker.internet.email() };
+      const expectedResult = {
+        message:
+          'Si el correo electrónico está registrado, se enviará un enlace de activación',
+      };
+      mockAuthService.resendActivation.mockResolvedValue(expectedResult);
+
+      expect(await controller.resendActivation(dto)).toEqual(expectedResult);
+      expect(mockAuthService.resendActivation).toHaveBeenCalledWith(dto);
+    });
+  });
 });

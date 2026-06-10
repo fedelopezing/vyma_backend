@@ -54,7 +54,17 @@ describe('NewsController', () => {
   describe('findAll', () => {
     it('debería llamar a newsService.findAll() con el DTO y retornar el resultado', async () => {
       const paginationDto: NewsPaginationDto = { page: 1, limit: 10 };
-      const expected = { data: [mockNews as News], total: 1 };
+      const expected = {
+        data: [mockNews as News],
+        meta: {
+          page: 1,
+          limit: 10,
+          total: 1,
+          totalPages: 1,
+          hasNextPage: false,
+          hasPrevPage: false,
+        },
+      };
       newsService.findAll.mockResolvedValueOnce(expected);
 
       const result = await controller.findAll(paginationDto);
@@ -80,7 +90,17 @@ describe('NewsController', () => {
   describe('findAllAdmin', () => {
     it('debería llamar a newsService.findAllAdmin() con el DTO de paginación', async () => {
       const paginationDto: NewsPaginationDto = { page: 1, limit: 20 };
-      const expected = { data: [mockNews as News], total: 1 };
+      const expected = {
+        data: [mockNews as News],
+        meta: {
+          page: 1,
+          limit: 20,
+          total: 1,
+          totalPages: 1,
+          hasNextPage: false,
+          hasPrevPage: false,
+        },
+      };
       newsService.findAllAdmin.mockResolvedValueOnce(expected);
 
       const result = await controller.findAllAdmin(paginationDto);

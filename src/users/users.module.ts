@@ -6,6 +6,7 @@ import { UsersService } from './users.service';
 import { ActivationTokensService } from './activation-tokens.service';
 import { UsersController } from './users.controller';
 import { UserCreatedListener } from './listeners/user-created.listener';
+import { UsersRepository } from './repositories/users.repository';
 import { EmailModule } from '../email/email.module';
 import { AuthModule } from '../auth/auth.module';
 
@@ -16,7 +17,17 @@ import { AuthModule } from '../auth/auth.module';
     forwardRef(() => AuthModule),
   ],
   controllers: [UsersController],
-  providers: [UsersService, ActivationTokensService, UserCreatedListener],
-  exports: [TypeOrmModule, UsersService, ActivationTokensService],
+  providers: [
+    UsersService,
+    ActivationTokensService,
+    UserCreatedListener,
+    UsersRepository,
+  ],
+  exports: [
+    TypeOrmModule,
+    UsersService,
+    ActivationTokensService,
+    UsersRepository,
+  ],
 })
 export class UsersModule {}
