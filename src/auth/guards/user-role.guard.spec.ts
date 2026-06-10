@@ -92,5 +92,22 @@ describe('UserRoleGuard', () => {
         `${userName} no tiene el rol: [${validRoles}]`,
       );
     });
+
+    it('should return true if user role is admin regardless of valid roles', () => {
+      const context = createMock<ExecutionContext>();
+      jest.spyOn(reflector, 'get').mockReturnValue(['admin']);
+
+      const mockRequest = {
+        user: {
+          name: faker.person.fullName(),
+          role: { name: 'admin' },
+        },
+      };
+      context.switchToHttp().getRequest.mockReturnValue(mockRequest);
+
+      const result = guard.canActivate(context);
+
+      expect(result).toBe(true);
+    });
   });
 });

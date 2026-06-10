@@ -1,38 +1,40 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { SeedService } from './seed.service';
-import { getRepositoryToken } from '@nestjs/typeorm';
-import { Role } from '../roles/entities/role.entity';
-import { Permission } from '../permissions/entities/permission.entity';
-import { User } from '../users/entities/user.entity';
+import { SeedRepository } from './seed.repository';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
-import { Repository } from 'typeorm';
+import { InternalServerErrorException } from '@nestjs/common';
 
 describe('SeedService', () => {
   let service: SeedService;
-  let mockRoleRepository: DeepMocked<Repository<Role>>;
-  let mockPermissionRepository: DeepMocked<Repository<Permission>>;
-  let mockUserRepository: DeepMocked<Repository<User>>;
+  let seedRepository: DeepMocked<SeedRepository>;
+
+  const mockQueryRunner = {
+    connect: jest.fn(),
+    startTransaction: jest.fn(),
+    commitTransaction: jest.fn(),
+    rollbackTransaction: jest.fn(),
+    release: jest.fn(),
+  };
+
+  const mockPermissionsMap = {} as Record<string, unknown>;
+  const mockRolesMap = {} as Record<string, unknown>;
+  const mockUser = { id: 1, email: 'superadmin@mail.com' };
 
   beforeEach(async () => {
-    mockRoleRepository = createMock<Repository<Role>>();
-    mockPermissionRepository = createMock<Repository<Permission>>();
-    mockUserRepository = createMock<Repository<User>>();
+    seedRepository = createMock<SeedRepository>();
+    seedRepository.createQueryRunner.mockReturnValue(mockQueryRunner as never);
+    seedRepository.truncateAllTables.mockResolvedValue();
+    seedRepository.createPermissions.mockResolvedValue(
+      mockPermissionsMap as never,
+    );
+    seedRepository.createRoles.mockResolvedValue(mockRolesMap as never);
+    seedRepository.createAdminUser.mockResolvedValue(mockUser as never);
+    seedRepository.createNews.mockResolvedValue();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SeedService,
-        {
-          provide: getRepositoryToken(Role),
-          useValue: mockRoleRepository,
-        },
-        {
-          provide: getRepositoryToken(Permission),
-          useValue: mockPermissionRepository,
-        },
-        {
-          provide: getRepositoryToken(User),
-          useValue: mockUserRepository,
-        },
+        { provide: SeedRepository, useValue: seedRepository },
       ],
     }).compile();
 
@@ -44,54 +46,50 @@ describe('SeedService', () => {
   });
 
   describe('executeSeed', () => {
-    it('should seed permissions, roles, and users successfully', async () => {
-      mockPermissionRepository.findOne.mockResolvedValue(null);
-      mockPermissionRepository.create.mockImplementation((dto) => dto as never);
-      mockPermissionRepository.save.mockImplementation(
-        async (entity) => entity as never,
-      );
-
-      const fakePermissions = [
-        { id: 1, action: 'read:news' },
-        { id: 2, action: 'create:news' },
-        { id: 3, action: 'update:news' },
-      ];
-      mockPermissionRepository.find.mockResolvedValue(fakePermissions as never);
-
-      mockRoleRepository.findOne.mockResolvedValue(null);
-      mockRoleRepository.create.mockImplementation((dto) => dto as never);
-      mockRoleRepository.save.mockImplementation(
-        async (entity) => entity as never,
-      );
-
-      const adminRole = { id: 10, name: 'admin' };
-      mockRoleRepository.findOne.mockResolvedValue(adminRole as never);
-
-      mockUserRepository.findOne.mockResolvedValue(null);
-      mockUserRepository.create.mockImplementation((dto) => dto as never);
-      mockUserRepository.save.mockImplementation(
-        async (entity) => entity as never,
-      );
-      mockUserRepository.find.mockResolvedValue([]);
-
+    it('should orchestrate all seed steps and commit transaction', async () => {
       const result = await service.executeSeed();
 
       expect(result).toEqual({ message: 'Seed executed successfully' });
-      expect(mockPermissionRepository.save).toHaveBeenCalled();
-      expect(mockRoleRepository.save).toHaveBeenCalled();
-      expect(mockUserRepository.save).toHaveBeenCalled();
+      expect(seedRepository.createQueryRunner).toHaveBeenCalled();
+      expect(mockQueryRunner.connect).toHaveBeenCalled();
+      expect(mockQueryRunner.startTransaction).toHaveBeenCalled();
+      expect(seedRepository.truncateAllTables).toHaveBeenCalledWith(
+        mockQueryRunner,
+      );
+      expect(seedRepository.createPermissions).toHaveBeenCalledWith(
+        mockQueryRunner,
+      );
+      expect(seedRepository.createRoles).toHaveBeenCalledWith(
+        mockQueryRunner,
+        mockPermissionsMap,
+      );
+      expect(seedRepository.createAdminUser).toHaveBeenCalledWith(
+        mockQueryRunner,
+        mockRolesMap,
+      );
+      expect(seedRepository.createNews).toHaveBeenCalledWith(
+        mockQueryRunner,
+        mockUser,
+      );
+      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.release).toHaveBeenCalled();
     });
 
-    it('should throw InternalServerErrorException on database error', async () => {
-      mockPermissionRepository.findOne.mockRejectedValue(
-        new Error('DB connection lost'),
-      );
+    it('should rollback transaction and throw InternalServerErrorException on failure', async () => {
+      seedRepository.truncateAllTables.mockRejectedValue(new Error('DB error'));
+
       const mockLoggerError = jest
         .spyOn(service['logger'], 'error')
         .mockImplementation();
 
-      await expect(service.executeSeed()).rejects.toThrow();
+      await expect(service.executeSeed()).rejects.toThrow(
+        InternalServerErrorException,
+      );
+
+      expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.release).toHaveBeenCalled();
       expect(mockLoggerError).toHaveBeenCalled();
+
       mockLoggerError.mockRestore();
     });
   });

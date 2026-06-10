@@ -76,6 +76,19 @@ describe('PermissionsGuard', () => {
     );
   });
 
+  it('should return true if user role is admin, bypassing permission checks', async () => {
+    jest
+      .spyOn(reflector, 'getAllAndOverride')
+      .mockReturnValue(['read:users', 'write:users']);
+    const context = createMock<ExecutionContext>({
+      switchToHttp: () => ({
+        getRequest: () => ({ user: { id: 1, role: { name: 'admin' } } }),
+      }),
+    } as never);
+
+    expect(await guard.canActivate(context)).toBe(true);
+  });
+
   it('should return true if user has all permissions', async () => {
     jest
       .spyOn(reflector, 'getAllAndOverride')

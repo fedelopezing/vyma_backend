@@ -9,9 +9,8 @@ import {
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { AuthGuard } from '@nestjs/passport';
-import { UserRoleGuard } from '../auth/guards/user-role.guard';
-import { RoleProtected } from '../auth/decorators/role-protected.decorator';
-import { ValidRoles } from '../auth/interfaces';
+import { RequirePermissions } from '../auth/decorators/require-permissions.decorator';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
 
 @Controller('users')
 export class UsersController {
@@ -19,8 +18,8 @@ export class UsersController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @RoleProtected(ValidRoles.admin)
-  @UseGuards(AuthGuard('jwt'), UserRoleGuard)
+  @RequirePermissions('write:users')
+  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
   async create(@Body() createUserDto: CreateUserDto) {
     const user = await this.usersService.create(createUserDto);
     return {

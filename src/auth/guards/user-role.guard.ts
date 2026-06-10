@@ -31,6 +31,8 @@ export class UserRoleGuard implements CanActivate {
 
     if (!user) throw new BadRequestException('El usuario no existe');
 
+    if (user.role?.name === 'admin') return true;
+
     if (validRoles.includes(user.role?.name)) return true;
 
     throw new ForbiddenException(

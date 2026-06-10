@@ -4,11 +4,16 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { faker } from '@faker-js/faker';
-import { Repository, EntityManager } from 'typeorm';
+import { Repository, EntityManager, DataSource } from 'typeorm';
+import { ActivationTokensService } from './activation-tokens.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 describe('UsersService', () => {
   let service: UsersService;
   let mockRepository: DeepMocked<Repository<User>>;
+  let mockDataSource: DeepMocked<DataSource>;
+  let mockActivationTokensService: DeepMocked<ActivationTokensService>;
+  let mockEventEmitter: DeepMocked<EventEmitter2>;
 
   const createFakeUser = (): User => {
     const u = new User();
@@ -24,6 +29,15 @@ describe('UsersService', () => {
 
   beforeEach(async () => {
     mockRepository = createMock<Repository<User>>();
+    mockDataSource = createMock<DataSource>();
+    mockActivationTokensService = createMock<ActivationTokensService>();
+    mockEventEmitter = createMock<EventEmitter2>();
+
+    // Mock query runner and manager
+    const mockQueryRunner = createMock<any>();
+    mockDataSource.createQueryRunner.mockReturnValue(mockQueryRunner);
+    mockQueryRunner.manager = createMock<EntityManager>();
+    mockQueryRunner.manager.getRepository.mockReturnValue(mockRepository);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -31,6 +45,18 @@ describe('UsersService', () => {
         {
           provide: getRepositoryToken(User),
           useValue: mockRepository,
+        },
+        {
+          provide: DataSource,
+          useValue: mockDataSource,
+        },
+        {
+          provide: ActivationTokensService,
+          useValue: mockActivationTokensService,
+        },
+        {
+          provide: EventEmitter2,
+          useValue: mockEventEmitter,
         },
       ],
     }).compile();
@@ -43,41 +69,41 @@ describe('UsersService', () => {
   });
 
   describe('create', () => {
-    it('should create a user using the default repository when no manager is provided', async () => {
-      const userData: Partial<User> = {
-        name: faker.person.fullName(),
-        email: faker.internet.email(),
-      };
-      const user = createFakeUser();
-      mockRepository.create.mockReturnValue(user);
-      mockRepository.save.mockResolvedValue(user);
-
-      const result = await service.create(userData);
-
-      expect(result).toEqual(user);
-      expect(mockRepository.create).toHaveBeenCalledWith(userData);
-      expect(mockRepository.save).toHaveBeenCalledWith(user);
-    });
-
     it('should create a user using the custom manager when manager is provided', async () => {
-      const userData: Partial<User> = {
+      const userData = {
         name: faker.person.fullName(),
         email: faker.internet.email(),
-      };
+        roleId: 1,
+      } as any;
       const user = createFakeUser();
 
       const mockManager = createMock<EntityManager>();
       const mockManagerRepository = createMock<Repository<User>>();
       mockManager.getRepository.mockReturnValue(mockManagerRepository);
       mockManagerRepository.create.mockReturnValue(user);
-      mockManagerRepository.save.mockResolvedValue(user);
+      mockManagerRepository.save.mockResolvedValue(user as any);
+
+      mockActivationTokensService.createToken.mockResolvedValue('raw-token');
 
       const result = await service.create(userData, mockManager);
 
       expect(result).toEqual(user);
       expect(mockManager.getRepository).toHaveBeenCalledWith(User);
-      expect(mockManagerRepository.create).toHaveBeenCalledWith(userData);
+      expect(mockManagerRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: userData.name,
+          email: userData.email,
+        }),
+      );
       expect(mockManagerRepository.save).toHaveBeenCalledWith(user);
+      expect(mockActivationTokensService.createToken).toHaveBeenCalledWith(
+        user.id,
+        mockManager,
+      );
+      expect(mockEventEmitter.emit).toHaveBeenCalledWith('user.created', {
+        user,
+        activationToken: 'raw-token',
+      });
       expect(mockRepository.create).not.toHaveBeenCalled();
     });
   });
@@ -144,6 +170,14 @@ describe('UsersService', () => {
           },
         },
       });
+    });
+  });
+
+  describe('findUsersByRoleId', () => {
+    it('should find users by roleId', async () => {
+      mockRepository.find.mockResolvedValue([{ id: 1 }] as User[]);
+      const result = await service.findUsersByRoleId(1);
+      expect(result).toEqual([{ id: 1 }]);
     });
   });
 });

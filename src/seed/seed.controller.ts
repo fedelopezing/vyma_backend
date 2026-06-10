@@ -1,15 +1,7 @@
 import { ApiTags } from '@nestjs/swagger';
-import {
-  Controller,
-  Post,
-  UseGuards,
-  ForbiddenException,
-} from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
+import { Controller, Post, ForbiddenException } from '@nestjs/common';
 import { SkipThrottle } from '@nestjs/throttler';
 import { SeedService } from './seed.service';
-import { PermissionsGuard } from '../auth/guards/permissions.guard';
-import { RequirePermissions } from '../auth/decorators/require-permissions.decorator';
 
 @ApiTags('Seed')
 @Controller('seed')
@@ -22,8 +14,6 @@ export class SeedController {
    */
   @Post()
   @SkipThrottle() // El seed es una operación única, no aplica rate limiting
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-  @RequirePermissions('write:users')
   execute() {
     if (process.env.NODE_ENV === 'production') {
       throw new ForbiddenException('Seed is disabled in production');

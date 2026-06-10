@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
+import { RolesService } from '../roles/roles.service';
 
 describe('UsersController', () => {
   let controller: UsersController;
@@ -25,6 +26,10 @@ describe('UsersController', () => {
         {
           provide: UsersService,
           useValue: mockUsersService,
+        },
+        {
+          provide: RolesService,
+          useValue: { getRoleById: jest.fn() },
         },
       ],
     }).compile();
