@@ -51,6 +51,11 @@ Perform a rigorous, automated, and manual inspection of the codebase to ensure a
      - **Relevant Rules to Load:** [security-use-guards](file:///c:/Users/fedel/NestJs/vyma_backend/.agents/skills/nestjs-best-practices/rules/security-use-guards.md), [security-validate-all-input](file:///c:/Users/fedel/NestJs/vyma_backend/.agents/skills/nestjs-best-practices/rules/security-validate-all-input.md).
   6. **Code Cleanup & Unused Imports:** 
      - Are there any unused imports or variables left in the files? (They must be actively identified and removed to keep the code clean).
+  7. **Architecture Convention Compliance:**
+     - Does the codebase adhere strictly to the naming casing, suffixes, folder structures, and developer/reviewer rules defined in [convencion-arquitectura.md](file:///c:/Users/fedel/NestJs/vyma_backend/docs/convencion-arquitectura.md)?
+     - Verify that Custom Repositories exist in the `repositories/` directory and use the `.repository.ts` suffix.
+     - Verify that Custom Exception Filters exist in the `filters/` directory and use the `.filter.ts` suffix.
+
 
 ## Phase 4: Audit Report & Suggestions
 - **Agent Action:** The agent generates a structured **Audit Report** summarizing the findings.

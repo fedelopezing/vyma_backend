@@ -7,6 +7,8 @@ You will work with the agent: `.agents/rules/backend-expert.md`
 
 ## Core Guidelines
 - **NestJS Best Practices & Token Optimization:** Throughout all implementation phases, the agent must strictly load and consult *only* the specific rule files from [.agents/skills/nestjs-best-practices/rules/](file:///c:/Users/fedel/NestJs/vyma_backend/.agents/skills/nestjs-best-practices/rules) that correspond to the active phase, instead of reading the full `AGENTS.md` file. This prevents token waste and maintains high context precision.
+- **Architecture Convention Alignment (MANDATORY):** Throughout all phases of feature development, the agent must strictly comply with [convencion-arquitectura.md](file:///c:/Users/fedel/NestJs/vyma_backend/docs/convencion-arquitectura.md). Ensure that all new or modified folders match Section 2 (custom repositories in `repositories/`, filters in `filters/`), all files are named using `kebab-case` and appropriate suffixes (Section 3), type safety is strictly enforced with zero `any` usage, and exceptions/database errors are handled natively (Section 4). The developer must align with the **Desarrollador Senior** and **Code Reviewer** roles defined in **Section 5**.
+
 
 ## Phase 1: Task Assignment (Kickoff)
 The cycle begins when the Architect has generated an approved RFC or there is a clear development ticket.

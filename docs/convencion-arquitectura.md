@@ -20,6 +20,7 @@ src/
 ├── app.module.ts               # Módulo raíz que orquesta los módulos de feature
 ├── common/                     # Utilidades compartidas a nivel global
 │   ├── decorators/             # Decoradores compartidos
+│   ├── filters/                # Filtros de excepciones globales (ej: all-exceptions.filter.ts)
 │   ├── guards/                 # Guards globales o reutilizables
 │   ├── helpers/                # Funciones de ayuda generales
 │   ├── interceptors/           # Interceptores compartidos
@@ -43,11 +44,12 @@ src/
     ├── guards/                 # Protectores de rutas específicos del módulo
     ├── interfaces/             # Interfaces de tipado internas del módulo
     ├── listeners/              # Escuchadores de eventos inter-módulo
+    ├── repositories/           # Repositorios personalizados para encapsular consultas a BD
     └── strategies/             # Estrategias de Passport/Autenticación
 ```
 
 ### Reglas de la Estructura Modular
-1. **Feature Modules Autónomos**: Cada módulo debe agrupar sus propios controladores, servicios, DTOs, entidades, y listeners.
+1. **Feature Modules Autónomos**: Cada módulo debe agrupar sus propios controladores, servicios, repositorios, DTOs, entidades, y listeners.
 2. **Importación Limpia de DTOs**: La carpeta `dto` de cada módulo debe incluir un archivo `index.ts` que exporte todos los DTOs del módulo.
 3. **Common Exclusivamente Genérico**: La carpeta `src/common` solo debe albergar código estrictamente reutilizable por múltiples módulos sin dependencias de negocio (ej. helper de transacciones, filtros globales).
 
@@ -61,8 +63,8 @@ Para asegurar la legibilidad del código a lo largo de todo el proyecto, se esta
 
 | Tipo de Elemento | Convención de Casing | Sufijo Obligatorio | Ejemplo |
 | :--- | :--- | :--- | :--- |
-| **Nombres de Archivos** | `kebab-case` | `.module.ts`, `.controller.ts`, `.service.ts`, `.dto.ts`, `.entity.ts`, `.guard.ts`, `.strategy.ts`, `.decorator.ts`, `.spec.ts`, `.interface.ts`, `.listener.ts` | `create-user.dto.ts`<br>`auth.controller.ts` |
-| **Clases** | `PascalCase` | Nombre descriptivo + rol (opcional) | `AuthController`<br>`CreateUserDto`<br>`User` (entidad) |
+| **Nombres de Archivos** | `kebab-case` | `.module.ts`, `.controller.ts`, `.service.ts`, `.repository.ts`, `.dto.ts`, `.entity.ts`, `.guard.ts`, `.strategy.ts`, `.filter.ts`, `.decorator.ts`, `.spec.ts`, `.interface.ts`, `.listener.ts` | `create-user.dto.ts`<br>`users.repository.ts` |
+| **Clases** | `PascalCase` | Nombre descriptivo + rol (opcional) | `AuthController`<br>`CreateUserDto`<br>`UsersRepository` |
 | **Métodos y Funciones** | `camelCase` | Ninguno (verbos) | `activateAccount()` |
 | **Variables y Propiedades** | `camelCase` | Ninguno | `passwordHash`<br>`email` |
 | **Interfaces** | `PascalCase` | Ninguno (o prefijo `I` si es genérico) | `JwtPayload`<br>`IUserRepository` |
@@ -88,13 +90,17 @@ Para asegurar la legibilidad del código a lo largo de todo el proyecto, se esta
 
 ### 4.3 Manejo de Errores y Excepciones
 - **Excepciones Controladas de NestJS**: Queda prohibido lanzar errores genéricos como `new Error()`. Toda anomalía en la lógica de negocio o validación debe resolverse mediante las excepciones HTTP integradas de NestJS (`BadRequestException`, `UnauthorizedException`, `NotFoundException`, `ConflictException`, `InternalServerErrorException`, etc.).
-- **Filtros de Excepciones (Exception Filters)**: El servidor debe tener configurado un filtro global para interceptar excepciones imprevistas, formatear la respuesta del servidor y loguear el stack trace detalladamente.
+- **Filtros de Excepciones (Exception Filters)**: El servidor debe tener configurado un filtro global (en la carpeta `src/common/filters/`) para interceptar excepciones imprevistas, formatear la respuesta del servidor y loguear el stack trace detalladamente.
 - **Errores de Base de Datos**: Capturar los errores nativos de la base de datos (como el código `23505` de clave duplicada en PostgreSQL) en las capas de servicio y mapearlos a la excepción HTTP correspondiente (`ConflictException`).
 
 ### 4.4 Tipado Estricto
 - **Cero Uso de `any`**: Queda estrictamente prohibido usar el tipo `any` en firmas de métodos, propiedades o variables del código productivo. Su uso anula los beneficios de TypeScript. En su lugar, utilizar tipados estrictos, tipos genéricos, `unknown`, o `never`.
 - **Tipado Explícito de Retornos**: Todos los métodos expuestos en controladores y servicios deben declarar de forma explícita el tipo de dato que retornan (ej: `async findOne(id: number): Promise<User>`).
 - **Interfaces para Contratos**: Utilizar interfaces explícitas para estructurar payloads de tokens, payloads de eventos, y configuraciones.
+
+### 4.5 Capa de Acceso a Datos (Patrón Repositorio)
+- **Aislamiento de TypeORM**: Queda terminantemente prohibido inyectar `Repository<Entity>` o `DataSource` directamente en los Servicios (`.service.ts`). Los Servicios solo deben contener reglas de negocio.
+- **Uso de Repositorios Personalizados**: Toda consulta a la base de datos debe encapsularse en una clase de Repositorio personalizada (`.repository.ts`) perteneciente al módulo. El flujo estricto de llamadas es: `Controlador ➔ Servicio ➔ Repositorio`.
 
 ---
 
@@ -108,7 +114,7 @@ Este apartado contiene las directrices de acción de obligatorio cumplimiento pa
 
 ### Rol: Desarrollador Senior
 * **Alineación de Carpetas**: No inventes subcarpetas, convenciones o nombres de archivos fuera de lo especificado en este manual o Spec Kit. Utiliza las rutas relativas correspondientes a la modularidad.
-* **Separación de Responsabilidades**: Si implementas un caso de uso o lógica de negocio, crea por separado su Controlador (`.controller.ts`), su Servicio asociado (`.service.ts`) y los DTOs requeridos. No mezcles lógica en un único archivo.
+* **Separación de Responsabilidades**: Si implementas un caso de uso o lógica de negocio, crea por separado su Controlador (`.controller.ts`), su Servicio asociado (`.service.ts`) y los DTOs requeridos. Si requieres acceso a BD, crea también su Repositorio (`.repository.ts`). No mezcles lógica en un único archivo.
 * **Decoración de Validación Completa**: Asegúrate de añadir el decorador de validación de `class-validator` correspondiente a cada una de las propiedades de los DTOs implementados.
 
 ### Rol: Code Reviewer (Tech Lead de Control)

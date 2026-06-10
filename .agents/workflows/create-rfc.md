@@ -7,6 +7,8 @@ You will work with the agent: `.agents/rules/architect-tech-lead.md`
 
 ## Core Guidelines
 - **NestJS Best Practices & Token Optimization:** During RFC design, the Architect must not load the complete `AGENTS.md` file. Instead, the agent must selectively load and read only the specific rule files from [.agents/skills/nestjs-best-practices/rules/](file:///c:/Users/fedel/NestJs/vyma_backend/.agents/skills/nestjs-best-practices/rules) that are directly related to the design decision (e.g. database schema migrations, event decoupling, or authentication).
+- **Architecture Convention Alignment (MANDATORY):** The Architect must strictly consult and follow [convencion-arquitectura.md](file:///c:/Users/fedel/NestJs/vyma_backend/docs/convencion-arquitectura.md) when designing database schemas, naming files, defining directory layouts, and structuring endpoints. They must plan all required files under the correct folder hierarchy of Section 2 and explicitly define DTOs/contracts (including Swagger and validation decorators) before creating task tickets.
+
 
 ## Phase 1: PRD Ingestion (Kickoff)
 The cycle starts when the Product team (or you) has a Product Requirements Document (PRD) ready for a new feature.
