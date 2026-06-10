@@ -359,53 +359,53 @@ Se implementará un job programado (`@Cron`) en el propio módulo auth para limp
 ## 5. Plan de Implementación Secuencial
 
 ### Fase 1: Database & Entidades
-- [ ] 1.1 Crear entidad `RefreshToken` (`src/auth/entities/refresh-token.entity.ts`)
-- [ ] 1.2 Crear entidad `ActivationToken` (`src/users/entities/activation-token.entity.ts`)
-- [ ] 1.3 Registrar entidades en sus respectivos módulos (`AuthModule` y `UsersModule`)
-- [ ] 1.4 Generar y ejecutar migración TypeORM para las tablas `refresh_tokens` y `activation_tokens`
-- [ ] 1.5 **[Test]** Crear pruebas unitarias para validar las entidades y asegurar que la migración corre correctamente en entornos de pruebas
+- [x] 1.1 Crear entidad `RefreshToken` (`src/auth/entities/refresh-token.entity.ts`)
+- [x] 1.2 Crear entidad `ActivationToken` (`src/users/entities/activation-token.entity.ts`)
+- [x] 1.3 Registrar entidades en sus respectivos módulos (`AuthModule` y `UsersModule`)
+- [x] 1.4 Generar y ejecutar migración TypeORM para las tablas `refresh_tokens` y `activation_tokens`
+- [x] 1.5 **[Test]** Crear pruebas unitarias para validar las entidades y asegurar que la migración corre correctamente en entornos de pruebas
 
 ### Fase 2: Módulo `users` (Creación e Invitación)
-- [ ] 2.1 Crear `CreateUserDto` en `src/users/dto/create-user.dto.ts` (name, email, roleId obligatorios)
-- [ ] 2.2 Crear repositorio y servicio para gestionar `ActivationToken` en el módulo `users`
-- [ ] 2.3 Extender `UsersService.create()` para:
+- [x] 2.1 Crear `CreateUserDto` en `src/users/dto/create-user.dto.ts` (name, email, roleId obligatorios)
+- [x] 2.2 Crear repositorio y servicio para gestionar `ActivationToken` en el módulo `users`
+- [x] 2.3 Extender `UsersService.create()` para:
   - Crear el usuario con `isActive: false` y un password hash aleatorio seguro
   - Generar el token de activación, hashearlo y guardarlo en la tabla `activation_tokens`
-- [ ] 2.4 Crear `UsersController` con `POST /users` protegido por `JwtAuthGuard` + `RolesGuard(['admin', 'superadmin'])`
-- [ ] 2.5 **[Test]** Crear pruebas unitarias de `UsersService.create()` y `UsersController` (validar guardado inactivo, generación de token e integridad de roles)
+- [x] 2.4 Crear `UsersController` con `POST /users` protegido por `JwtAuthGuard` + `RolesGuard(['admin', 'superadmin'])`
+- [x] 2.5 **[Test]** Crear pruebas unitarias de `UsersService.create()` y `UsersController` (validar guardado inactivo, generación de token e integridad de roles)
 
 ### Fase 3: Refactor y Activación en módulo `auth`
-- [ ] 3.1 Eliminar `POST /auth/register` del `AuthController` y remover `registerWithProfile()` del `AuthService`
-- [ ] 3.2 Implementar el endpoint `POST /auth/activate` y el método `AuthService.activateAccount()` que:
+- [x] 3.1 Eliminar `POST /auth/register` del `AuthController` y remover `registerWithProfile()` del `AuthService`
+- [x] 3.2 Implementar el endpoint `POST /auth/activate` y el método `AuthService.activateAccount()` que:
   - Busque y valide el token de activación (sin usar y no expirado)
   - Actualice la contraseña del usuario con bcrypt
   - Cambie `isActive` a `true`
   - Invalide el token de activación usado (`isUsed = true`)
-- [ ] 3.3 **[Test]** Crear pruebas unitarias de `AuthService.activateAccount()` (casos de éxito, expiración, token usado y token inválido)
-- [ ] 3.4 Actualizar `JwtPayload` interface con los nuevos campos (`sub`, `uuid`, `email`, `role`)
-- [ ] 3.5 Actualizar `AuthService.login()` para:
+- [x] 3.3 **[Test]** Crear pruebas unitarias de `AuthService.activateAccount()` (casos de éxito, expiración, token usado y token inválido)
+- [x] 3.4 Actualizar `JwtPayload` interface con los nuevos campos (`sub`, `uuid`, `email`, `role`)
+- [x] 3.5 Actualizar `AuthService.login()` para:
   - Emitir access token de **15m**
   - Generar y almacenar refresh token hasheado en `refresh_tokens`
   - Capturar IP y User-Agent del request
   - Retornar `TokenResponseDto`
-- [ ] 3.6 Implementar `AuthService.refreshTokens(token: string)` con rotación automática y detección de robo
-- [ ] 3.7 Implementar `AuthService.logout(token: string, userId: number)` para revocar el refresh token
-- [ ] 3.8 Actualizar `JwtStrategy.validate()` con validación de `issuer`, `audience` y estado del usuario (`isActive`)
-- [ ] 3.9 Configurar `ThrottlerModule` con límites específicos para auth endpoints (login, refresh, activate)
-- [ ] 3.10 **[Test]** Crear pruebas unitarias de login, refresh, logout, estrategia JWT y guards
+- [x] 3.6 Implementar `AuthService.refreshTokens(token: string)` con rotación automática y detección de robo
+- [x] 3.7 Implementar `AuthService.logout(token: string, userId: number)` para revocar el refresh token
+- [x] 3.8 Actualizar `JwtStrategy.validate()` con validación de `issuer`, `audience` y estado del usuario (`isActive`)
+- [x] 3.9 Configurar `ThrottlerModule` con límites específicos para auth endpoints (login, refresh, activate)
+- [x] 3.10 **[Test]** Crear pruebas unitarias de login, refresh, logout, estrategia JWT y guards
 
 ### Fase 4: Events, Integrations & Cron Jobs
-- [ ] 4.1 Crear listener `UserCreatedListener` en `src/users/listeners/` para capturar el evento y enviar email de bienvenida con el enlace de activación via Resend
-- [ ] 4.2 **[Test]** Crear pruebas unitarias del listener con mocks del servicio de correo Resend
-- [ ] 4.3 Implementar `@Cron` en `AuthModule` para purga periódica de tokens expirados en `refresh_tokens` y `activation_tokens`
-- [ ] 4.4 **[Test]** Crear pruebas unitarias para validar el job de purga cron
+- [x] 4.1 Crear listener `UserCreatedListener` en `src/users/listeners/` para capturar el evento y enviar email de bienvenida con el enlace de activación via Resend
+- [x] 4.2 **[Test]** Crear pruebas unitarias del listener con mocks del servicio de correo Resend
+- [x] 4.3 Implementar `@Cron` en `AuthModule` para purga periódica de tokens expirados en `refresh_tokens` y `activation_tokens`
+- [x] 4.4 **[Test]** Crear pruebas unitarias para validar el job de purga cron
 
 ### Fase 5: E2E & Verificación Manual
-- [ ] 5.1 **[Test]** Crear suite de pruebas E2E que cubra el flujo de invitación completo: creación → activación con token → login → refresh token → logout
-- [ ] 5.2 Verificar rate limiting en login (>5 intentos/min → 429) y activación (>3 intentos/min → 429)
-- [ ] 5.3 Verificar que un refresh token revocado invalida toda la sesión del usuario
-- [ ] 5.4 Verificar que tokens expirados devuelven 401
-- [ ] 5.5 Documentar variables de entorno en `.env.example`
+- [x] 5.1 **[Test]** Crear suite de pruebas E2E que cubra el flujo de invitación completo: creación → activación con token → login → refresh token → logout
+- [x] 5.2 Verificar rate limiting en login (>5 intentos/min → 429) y activación (>3 intentos/min → 429)
+- [x] 5.3 Verificar que un refresh token revocado invalida toda la sesión del usuario
+- [x] 5.4 Verificar que tokens expirados devuelven 401
+- [x] 5.5 Documentar variables de entorno en `.env.example`
 
 ---
 

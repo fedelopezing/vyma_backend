@@ -5,20 +5,21 @@ import {
   InternalServerErrorException,
   Logger,
   UnauthorizedException,
-  Inject,
-  forwardRef,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { getErrorStack } from '../common/helpers/errors.helper';
-import { DataSource } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
+import { InjectRepository } from '@nestjs/typeorm';
 
-import { CreateUserDto, LoginUserDto } from './dto';
+import { LoginUserDto, ActivateAccountDto } from './dto';
 import { JwtPayload } from './interfaces';
 import { UsersService } from '../users/users.service';
-import { Role } from '../roles/entities/role.entity';
-import { ProfilesService } from '../profiles/profiles.service';
-import { CreateUserWithProfileDto } from '../profiles/dto';
+import { ActivationTokensService } from '../users/activation-tokens.service';
+import { RefreshToken } from './entities/refresh-token.entity';
+import { randomUUID } from 'crypto';
+import { runInTransaction } from '../common/helpers/transaction.helper';
+import { User } from '../users/entities/user.entity';
 
 @Injectable()
 export class AuthService {
@@ -26,117 +27,158 @@ export class AuthService {
 
   constructor(
     private readonly usersService: UsersService,
+    private readonly activationTokensService: ActivationTokensService,
     private readonly jwtService: JwtService,
-    @Inject(forwardRef(() => ProfilesService))
-    private readonly profileService: ProfilesService,
+    @InjectRepository(RefreshToken)
+    private readonly refreshTokenRepo: Repository<RefreshToken>,
     private readonly dataSource: DataSource,
   ) {}
 
-  /**
-   * Creates a new user in the database.
-   * @param createUserDto - Data Transfer Object containing user creation details.
-   * @param manager - Optional manager instance to use for database operations. Defaults to `this.dataSource.manager`.
-   * @returns An object containing the created user and a JWT token.
-   */
-  async create(
-    createUserDto: CreateUserDto,
-    manager = this.dataSource.manager,
-  ) {
-    const roleRepo = manager.getRepository(Role);
-    const roleName = createUserDto.role || 'client';
-    const role = await roleRepo.findOne({ where: { name: roleName } });
+  async activateAccount(activateDto: ActivateAccountDto) {
+    return runInTransaction(this.dataSource, async (qr) => {
+      const { token, password } = activateDto;
 
-    if (!role) {
-      throw new BadRequestException(`Role '${roleName}' not found`);
-    }
-
-    const user = await this.usersService.create(
-      {
-        email: createUserDto.email,
-        name: createUserDto.name,
-        role: role,
-        passwordHash: bcrypt.hashSync(createUserDto.password, 10),
-      },
-      manager,
-    );
-    delete user.passwordHash;
-    return user;
-  }
-
-  /**
-   * Registers a new user and creates their profile within a single transaction.
-   * @param createUserDto - Data Transfer Object containing user and profile creation details.
-   * @returns An object containing the created user and a JWT token.
-   */
-  async registerWithProfile(createUserDto: CreateUserWithProfileDto) {
-    return this.dataSource.transaction(async (manager) => {
-      try {
-        // Create user
-        createUserDto.role = 'client';
-        const user = await this.create(createUserDto, manager);
-
-        // Create profile to attach to user
-        await this.profileService.create(
-          { userId: user.id, professionId: createUserDto.professionId },
-          manager,
-        );
-
-        return {
-          user,
-          token: this.getJwtToken({ id: user.id }),
-        };
-      } catch (error) {
-        this.handleDBErrors(error);
+      const activeToken =
+        await this.activationTokensService.findActiveToken(token);
+      if (!activeToken) {
+        throw new BadRequestException('Token inválido o expirado');
       }
+
+      if (activeToken.expiresAt < new Date()) {
+        throw new BadRequestException('El token ha expirado');
+      }
+
+      const userRepo = qr.manager.getRepository(User);
+      const user = activeToken.user;
+
+      user.passwordHash = await bcrypt.hash(password, 10);
+      user.isActive = true;
+      await userRepo.save(user);
+
+      await this.activationTokensService.markAsUsed(activeToken.id, qr.manager);
+
+      return { message: 'Account activated successfully' };
     });
   }
 
-  /**
-   * Authenticate a user and generate an access token
-   * @param loginUserDto - DTO containing the user's email and password
-   * @returns An object containing the access token
-   * @throws UnauthorizedException If the user does not exist or the password is invalid
-   */
-  async login(loginUserDto: LoginUserDto) {
+  async login(
+    loginUserDto: LoginUserDto,
+    ipAddress?: string,
+    userAgent?: string,
+  ) {
     const { password, email } = loginUserDto;
 
-    // Buscar usuario por correo
     const user = await this.usersService.findOneByEmailForLogin(email);
 
     if (!user) {
       throw new UnauthorizedException('Credentials are not valid');
     }
 
-    // Verificar si el usuario est  activo
     if (!user.isActive) {
       throw new UnauthorizedException('Account is not active');
     }
 
-    // Comparar la contraseña
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
     if (!isPasswordValid) {
       throw new UnauthorizedException('Credentials are not valid');
     }
 
+    return this.generateTokens(user, ipAddress, userAgent);
+  }
+
+  async refreshTokens(token: string, ipAddress?: string, userAgent?: string) {
+    const refreshTokenRecord = await this.refreshTokenRepo.findOne({
+      where: { uuid: token },
+      relations: ['user', 'user.role'],
+    });
+
+    if (!refreshTokenRecord) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    if (refreshTokenRecord.isRevoked) {
+      await this.refreshTokenRepo.update(
+        { user: { id: refreshTokenRecord.user.id } },
+        { isRevoked: true },
+      );
+      throw new UnauthorizedException(
+        'Refresh token was revoked. All sessions terminated.',
+      );
+    }
+
+    if (refreshTokenRecord.expiresAt < new Date()) {
+      throw new UnauthorizedException('Refresh token has expired');
+    }
+
+    refreshTokenRecord.isRevoked = true;
+    await this.refreshTokenRepo.save(refreshTokenRecord);
+
+    const user = await this.usersService.findOneById(
+      refreshTokenRecord.user.id,
+    );
+    if (!user || !user.isActive) {
+      throw new UnauthorizedException('User not found or inactive');
+    }
+
+    return this.generateTokens(user, ipAddress, userAgent);
+  }
+
+  async logout(token: string) {
+    const refreshTokenRecord = await this.refreshTokenRepo.findOne({
+      where: { uuid: token },
+    });
+
+    if (refreshTokenRecord) {
+      refreshTokenRecord.isRevoked = true;
+      await this.refreshTokenRepo.save(refreshTokenRecord);
+    }
+
+    return { message: 'Logged out successfully' };
+  }
+
+  private async generateTokens(
+    user: User,
+    ipAddress?: string,
+    userAgent?: string,
+  ) {
+    const payload: JwtPayload = {
+      sub: user.id,
+      uuid: user.uuid,
+      email: user.email,
+      role: user.role?.name || 'client',
+    };
+
+    const accessToken = this.jwtService.sign(payload);
+
+    const refreshTokenRaw = randomUUID();
+    const tokenHash = await bcrypt.hash(refreshTokenRaw, 10);
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+
+    const newRefreshToken = this.refreshTokenRepo.create({
+      uuid: refreshTokenRaw,
+      tokenHash,
+      expiresAt,
+      ipAddress,
+      userAgent,
+      user: { id: user.id },
+    });
+
+    await this.refreshTokenRepo.save(newRefreshToken);
+
     return {
+      accessToken,
+      refreshToken: refreshTokenRaw,
+      expiresIn: 900,
       user: {
-        id: user.id,
-        email: user.email,
+        uuid: user.uuid,
         name: user.name,
-        avatar: user.profile?.avatarUrl || null,
-        gender: user.profile?.gender || null,
-        birthdate: user.profile?.birthDate || null,
+        email: user.email,
+        role: user.role?.name,
       },
-      access_token: this.getJwtToken({ id: user.id }),
     };
   }
 
-  /**
-   * Handle database errors
-   * @param error The error object
-   * @throws BadRequestException If the error is a duplicate key error
-   * @throws InternalServerErrorException If the error is not a duplicate key error
-   */
   handleDBErrors(error: unknown): never {
     if (
       typeof error === 'object' &&
@@ -149,26 +191,9 @@ export class AuthService {
       );
     }
 
-    if (typeof error === 'object' && error !== null && 'response' in error) {
-      const response = (error as Record<string, unknown>).response;
-      if (
-        typeof response === 'object' &&
-        response !== null &&
-        'message' in response
-      ) {
-        throw new BadRequestException(
-          (response as Record<string, unknown>).message,
-        );
-      }
-    }
-
     this.logger.error('Unexpected database error', getErrorStack(error));
     throw new InternalServerErrorException(
       'Error inesperado, revise los logs del servidor',
     );
-  }
-
-  public getJwtToken(payload: JwtPayload) {
-    return this.jwtService.sign(payload);
   }
 }

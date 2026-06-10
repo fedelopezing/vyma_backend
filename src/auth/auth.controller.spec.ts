@@ -28,31 +28,6 @@ describe('AuthController', () => {
     expect(controller).toBeDefined();
   });
 
-  describe('register', () => {
-    it('should register a user with profile successfully', async () => {
-      const dto = {
-        email: faker.internet.email(),
-        name: faker.person.fullName(),
-        password: faker.internet.password(),
-        role: 'client',
-        avatarUrl: faker.image.avatar(),
-        gender: 'other',
-        birthDate: faker.date.birthdate().toISOString(),
-      };
-      const expectedResult = {
-        user: { id: faker.number.int(), email: dto.email },
-        profile: { id: faker.number.int(), gender: dto.gender },
-        token: faker.string.alphanumeric(32),
-      };
-      mockAuthService.registerWithProfile.mockResolvedValue(
-        expectedResult as never,
-      );
-
-      expect(await controller.create(dto as never)).toEqual(expectedResult);
-      expect(mockAuthService.registerWithProfile).toHaveBeenCalledWith(dto);
-    });
-  });
-
   describe('login', () => {
     it('should login a user successfully', async () => {
       const dto = {
@@ -65,7 +40,8 @@ describe('AuthController', () => {
       };
       mockAuthService.login.mockResolvedValue(expectedResult as never);
 
-      expect(await controller.login(dto)).toEqual(expectedResult);
+      const req = { ip: '127.0.0.1', headers: { 'user-agent': 'test' } } as any;
+      expect(await controller.login(dto, req)).toEqual(expectedResult);
       expect(mockAuthService.login).toHaveBeenCalledWith(dto);
     });
   });

@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 
-import { CreateUserWithProfileDto, UpdateProfileDto } from './dto';
+import { CreateProfileDto, UpdateProfileDto } from './dto';
 import { ProfilesService } from './profiles.service';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { RequirePermissions } from '../auth/decorators/require-permissions.decorator';
@@ -26,9 +26,9 @@ export class ProfilesController {
 
   @Post()
   @RequirePermissions('write:users')
-  @ApiOperation({ summary: 'Crear un usuario con perfil (solo admin)' })
-  async create(@Body() createUserDto: CreateUserWithProfileDto) {
-    return this.profilesService.createWithUser(createUserDto);
+  @ApiOperation({ summary: 'Crear un perfil (solo admin)' })
+  async create(@Body() createProfileDto: CreateProfileDto) {
+    return this.profilesService.create(createProfileDto);
   }
 
   @Get()

@@ -3,6 +3,7 @@ import { Resend } from 'resend';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { CreateEmailDto } from './dto/create-email.dto';
 import { biolimpiezaEmailTemplate } from './templates/biolimpieza.email';
+import { welcomeActivationTemplate } from './templates/welcome-activation.email';
 
 @Injectable()
 export class EmailService {
@@ -27,6 +28,26 @@ export class EmailService {
       };
     } catch {
       throw new Error('Error al enviar el correo');
+    }
+  }
+
+  async sendActivationEmail(to: string, name: string, activationToken: string) {
+    try {
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+      const activationLink = `${frontendUrl}/auth/activate?token=${activationToken}`;
+      const emailFrom = process.env.EMAIL_FROM || 'no-reply@harmonia.com';
+
+      const email = await this.resend.emails.send({
+        from: emailFrom,
+        to: [to],
+        subject: 'Activa tu cuenta en Harmonia',
+        html: welcomeActivationTemplate(name, activationLink),
+      });
+
+      return { message: 'Correo de activación enviado', email };
+    } catch (error) {
+      console.error('Error al enviar el correo de activación', error);
+      throw new Error('Error al enviar el correo de activación');
     }
   }
 }
