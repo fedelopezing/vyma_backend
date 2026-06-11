@@ -1,4 +1,11 @@
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiTags } from '@nestjs/swagger';
+import {
+  ApiCreateProfession,
+  ApiFindAllProfessions,
+  ApiFindOneProfession,
+  ApiUpdateProfession,
+  ApiDeleteProfession,
+} from './decorators/professions-swagger.decorators';
 import {
   Controller,
   Get,
@@ -7,41 +14,42 @@ import {
   Patch,
   Param,
   Delete,
-  UseGuards,
 } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
 
 import { ProfessionsService } from './professions.service';
 import { CreateProfessionDto, UpdateProfessionDto } from './dto';
-import { UserRoleGuard } from '../auth/guards/user-role.guard';
-import { RoleProtected } from '../auth/decorators/role-protected.decorator';
+import { Auth, AuthRoles } from '../auth/decorators';
 import { ValidRoles } from '../auth/interfaces/valid-roles';
 
-@ApiBearerAuth()
 @ApiTags('Professions')
 @Controller('professions')
-@UseGuards(AuthGuard('jwt'), UserRoleGuard)
 export class ProfessionsController {
   constructor(private readonly professionsService: ProfessionsService) {}
 
   @Post()
-  @RoleProtected(ValidRoles.admin)
+  @ApiCreateProfession()
+  @AuthRoles(ValidRoles.admin)
   create(@Body() createProfessionDto: CreateProfessionDto) {
     return this.professionsService.create(createProfessionDto);
   }
 
+  @ApiFindAllProfessions()
+  @Auth()
   @Get()
   findAll() {
     return this.professionsService.findAll();
   }
 
+  @ApiFindOneProfession()
+  @Auth()
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.professionsService.findOne(+id);
   }
 
   @Patch(':id')
-  @RoleProtected(ValidRoles.admin)
+  @ApiUpdateProfession()
+  @AuthRoles(ValidRoles.admin)
   update(
     @Param('id') id: string,
     @Body() updateProfessionDto: UpdateProfessionDto,
@@ -50,7 +58,8 @@ export class ProfessionsController {
   }
 
   @Delete(':id')
-  @RoleProtected(ValidRoles.admin)
+  @ApiDeleteProfession()
+  @AuthRoles(ValidRoles.admin)
   remove(@Param('id') id: string) {
     return this.professionsService.remove(+id);
   }

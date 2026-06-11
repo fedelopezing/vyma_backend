@@ -19,8 +19,8 @@ async function bootstrap() {
   );
 
   const config = new DocumentBuilder()
-    .setTitle('Harmonia API')
-    .setDescription('Harmonia Backend API Documentation')
+    .setTitle('Vyma API')
+    .setDescription('Vyma Backend API Documentation')
     .setVersion('1.0')
     .addBearerAuth()
     .build();

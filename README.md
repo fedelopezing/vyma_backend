@@ -1,4 +1,4 @@
-# Harmonia Backend 🎵
+# Vyma Backend 🎵
 
 Un backend moderno, robusto y altamente escalable desarrollado con **NestJS** y **TypeScript** para la gestión de turnos, agendas, servicios y notificaciones automáticas (Email y WhatsApp).
 
@@ -155,13 +155,13 @@ Para entornos de producción, se recomienda administrar el ciclo de vida de la a
 npm run build
 
 # 2. Detener la instancia anterior (si aplica)
-pm2 stop harmonia-backend
+pm2 stop vyma-backend
 
 # 3. Iniciar el servicio usando la configuración del ecosistema
 pm2 start ecosystem.config.js --env production
 
 # 4. Ver los logs de producción en tiempo real
-pm2 logs harmonia-backend --lines 100
+pm2 logs vyma-backend --lines 100
 ```
 
 ---

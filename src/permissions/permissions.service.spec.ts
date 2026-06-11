@@ -1,30 +1,27 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { PermissionsService } from './permissions.service';
 import { Permission } from './entities/permission.entity';
 import { createMock } from '@golevelup/ts-jest';
 import { PermissionNotFoundException } from './exceptions/permission-not-found.exception';
+import { PermissionsRepository } from './repositories/permissions.repository';
 
 describe('PermissionsService', () => {
   let service: PermissionsService;
-  let repository: Repository<Permission>;
+  let repository: PermissionsRepository;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PermissionsService,
         {
-          provide: getRepositoryToken(Permission),
-          useValue: createMock<Repository<Permission>>(),
+          provide: PermissionsRepository,
+          useValue: createMock<PermissionsRepository>(),
         },
       ],
     }).compile();
 
     service = module.get<PermissionsService>(PermissionsService);
-    repository = module.get<Repository<Permission>>(
-      getRepositoryToken(Permission),
-    );
+    repository = module.get<PermissionsRepository>(PermissionsRepository);
   });
 
   it('should be defined', () => {
@@ -38,11 +35,11 @@ describe('PermissionsService', () => {
         { id: 2, action: 'create:news' },
       ] as Permission[];
 
-      jest.spyOn(repository, 'find').mockResolvedValue(permissions);
+      jest.spyOn(repository, 'findAll').mockResolvedValue(permissions);
 
       const result = await service.findAll();
       expect(result).toEqual(permissions);
-      expect(repository.find).toHaveBeenCalled();
+      expect(repository.findAll).toHaveBeenCalled();
     });
   });
 
@@ -53,7 +50,7 @@ describe('PermissionsService', () => {
 
       const result = await service.findOne(1);
       expect(result).toEqual(permission);
-      expect(repository.findOne).toHaveBeenCalledWith({ where: { id: 1 } });
+      expect(repository.findOne).toHaveBeenCalledWith(1);
     });
 
     it('should throw PermissionNotFoundException if permission not found', async () => {

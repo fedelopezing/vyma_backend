@@ -1,45 +1,29 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ProfilesService } from './profiles.service';
-import { getRepositoryToken } from '@nestjs/typeorm';
 import { Profile } from './entities/profile.entity';
-import { DataSource, Repository, EntityManager } from 'typeorm';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { faker } from '@faker-js/faker';
-import { User } from '../users/entities/user.entity';
-import { Profession } from '../professions/entities/profession.entity';
-import { AuthService } from '../auth/auth.service';
 import { NotFoundException } from '@nestjs/common';
+import { ProfilesRepository } from './repositories/profiles.repository';
+import { EntityManager } from 'typeorm';
 
 describe('ProfilesService', () => {
   let service: ProfilesService;
-  let profileRepository: DeepMocked<Repository<Profile>>;
-  let mockAuthService: DeepMocked<AuthService>;
+  let repository: DeepMocked<ProfilesRepository>;
 
   beforeEach(async () => {
-    mockAuthService = createMock<AuthService>();
-
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ProfilesService,
         {
-          provide: getRepositoryToken(Profile),
-          useValue: createMock<Repository<Profile>>(),
-        },
-        {
-          provide: DataSource,
-          useValue: createMock<DataSource>(),
-        },
-        {
-          provide: AuthService,
-          useValue: mockAuthService,
+          provide: ProfilesRepository,
+          useValue: createMock<ProfilesRepository>(),
         },
       ],
     }).compile();
 
     service = module.get<ProfilesService>(ProfilesService);
-    profileRepository = module.get<DeepMocked<Repository<Profile>>>(
-      getRepositoryToken(Profile),
-    );
+    repository = module.get<DeepMocked<ProfilesRepository>>(ProfilesRepository);
   });
 
   it('should be defined', () => {
@@ -55,25 +39,17 @@ describe('ProfilesService', () => {
 
       const expectedProfile = createMock<Profile>({
         id: faker.number.int(),
-        user: { id: createProfileDto.userId } as User,
-        profession: { id: createProfileDto.professionId } as Profession,
       });
 
-      const mockRepo = createMock<Repository<Profile>>();
-      mockRepo.create.mockReturnValue(expectedProfile);
-      mockRepo.save.mockResolvedValue(expectedProfile);
-
       const mockManager = createMock<EntityManager>();
-      mockManager.getRepository.mockReturnValue(mockRepo);
+      repository.createProfile.mockResolvedValue(expectedProfile);
 
       const result = await service.create(createProfileDto, mockManager);
 
-      expect(mockManager.getRepository).toHaveBeenCalledWith(Profile);
-      expect(mockRepo.create).toHaveBeenCalledWith({
-        user: { id: createProfileDto.userId },
-        profession: { id: createProfileDto.professionId },
-      });
-      expect(mockRepo.save).toHaveBeenCalledWith(expectedProfile);
+      expect(repository.createProfile).toHaveBeenCalledWith(
+        createProfileDto,
+        mockManager,
+      );
       expect(result).toEqual(expectedProfile);
     });
   });
@@ -84,13 +60,11 @@ describe('ProfilesService', () => {
         createMock<Profile>({ id: faker.number.int() }),
       ];
 
-      profileRepository.find.mockResolvedValue(expectedProfiles);
+      repository.findAll.mockResolvedValue(expectedProfiles);
 
       const result = await service.findAll();
 
-      expect(profileRepository.find).toHaveBeenCalledWith({
-        relations: ['user', 'profession'],
-      });
+      expect(repository.findAll).toHaveBeenCalled();
       expect(result).toEqual(expectedProfiles);
     });
   });
@@ -100,19 +74,16 @@ describe('ProfilesService', () => {
       const id = faker.number.int();
       const expectedProfile = createMock<Profile>({ id });
 
-      profileRepository.findOne.mockResolvedValue(expectedProfile);
+      repository.findOneById.mockResolvedValue(expectedProfile);
 
       const result = await service.findOne(id);
 
-      expect(profileRepository.findOne).toHaveBeenCalledWith({
-        where: { id },
-        relations: ['user', 'profession'],
-      });
+      expect(repository.findOneById).toHaveBeenCalledWith(id);
       expect(result).toEqual(expectedProfile);
     });
 
     it('should throw NotFoundException if profile not found', async () => {
-      profileRepository.findOne.mockResolvedValue(null);
+      repository.findOneById.mockResolvedValue(null);
 
       await expect(service.findOne(999)).rejects.toThrow(NotFoundException);
     });
@@ -125,12 +96,12 @@ describe('ProfilesService', () => {
       const existingProfile = createMock<Profile>({ id });
       const savedProfile = createMock<Profile>({ id });
 
-      profileRepository.findOne.mockResolvedValue(existingProfile);
-      profileRepository.save.mockResolvedValue(savedProfile);
+      repository.findOneById.mockResolvedValue(existingProfile);
+      repository.save.mockResolvedValue(savedProfile);
 
       const result = await service.update(id, updateDto);
 
-      expect(profileRepository.save).toHaveBeenCalledWith(existingProfile);
+      expect(repository.save).toHaveBeenCalledWith(existingProfile);
       expect(result).toEqual(savedProfile);
     });
   });
@@ -140,12 +111,12 @@ describe('ProfilesService', () => {
       const id = faker.number.int();
       const existingProfile = createMock<Profile>({ id });
 
-      profileRepository.findOne.mockResolvedValue(existingProfile);
-      profileRepository.remove.mockResolvedValue(existingProfile);
+      repository.findOneById.mockResolvedValue(existingProfile);
+      repository.remove.mockResolvedValue(existingProfile);
 
       const result = await service.remove(id);
 
-      expect(profileRepository.remove).toHaveBeenCalledWith(existingProfile);
+      expect(repository.remove).toHaveBeenCalledWith(existingProfile);
       expect(result).toEqual(existingProfile);
     });
   });

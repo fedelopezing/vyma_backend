@@ -1,4 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { WhatsappConnectionService } from './whatsapp-connection.service';
 import { getErrorMessage } from '../common/helpers/errors.helper';
 
@@ -12,9 +16,12 @@ export class WhatsappMessagingService {
     return { isReady: this.connectionService.isReady };
   }
 
-  async sendMessage(phoneNumber: string, message: string) {
+  async sendMessage(
+    phoneNumber: string,
+    message: string,
+  ): Promise<{ success: boolean; message: string }> {
     if (!this.connectionService.isReady) {
-      throw new Error('WhatsApp client is not ready yet');
+      throw new ServiceUnavailableException('WhatsApp client is not ready yet');
     }
 
     try {
@@ -32,9 +39,9 @@ export class WhatsappMessagingService {
     }
   }
 
-  async getChats() {
+  async getChats(): Promise<import('whatsapp-web.js').Chat[]> {
     if (!this.connectionService.isReady) {
-      throw new Error('WhatsApp client is not ready yet');
+      throw new ServiceUnavailableException('WhatsApp client is not ready yet');
     }
 
     const client = this.connectionService.getClient();

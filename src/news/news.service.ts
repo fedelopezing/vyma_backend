@@ -1,14 +1,12 @@
 import {
-  BadRequestException,
   Injectable,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository, QueryRunner } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 
 import { News, NewsStatus } from './entities/news.entity';
-import { User } from '../users/entities/user.entity';
+import { NewsRepository } from './repositories/news.repository';
 import { CreateNewsDto } from './dto/create-news.dto';
 import { UpdateNewsDto } from './dto/update-news.dto';
 import { NewsPaginationDto } from './dto/news-pagination.dto';
@@ -16,21 +14,13 @@ import {
   NewsPublishedEvent,
   NEWS_PUBLISHED_EVENT,
 } from './events/news-published.event';
-import {
-  resolveNewsSlugs,
-  resolveUniqueSlug,
-  runInTransaction,
-  buildPaginatedResponse,
-} from '../common/helpers';
+import { buildPaginatedResponse } from '../common/helpers';
 import { PaginatedResponse } from '../common/interfaces';
-import { slugify } from '../common/helpers/slugify.helper';
 
 @Injectable()
 export class NewsService {
   constructor(
-    @InjectRepository(News)
-    private readonly newsRepository: Repository<News>,
-    private readonly dataSource: DataSource,
+    private readonly newsRepository: NewsRepository,
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
@@ -53,7 +43,7 @@ export class NewsService {
    * Lanza NotFoundException si la noticia no existe.
    */
   private async findNewsOrFail(id: string): Promise<News> {
-    const news = await this.newsRepository.findOne({ where: { id } });
+    const news = await this.newsRepository.findOneById(id);
     if (!news) {
       throw new NotFoundException(`Noticia con id '${id}' no encontrada.`);
     }
@@ -78,7 +68,7 @@ export class NewsService {
   private buildPaginatedQuery(
     paginationDto: NewsPaginationDto,
     forceStatus?: NewsStatus,
-  ) {
+  ): import('typeorm').SelectQueryBuilder<News> {
     const { page = 1, limit = 10, categoria, estado } = paginationDto;
     const skip = (page - 1) * limit;
 
@@ -107,17 +97,7 @@ export class NewsService {
       this.assertBilingualComplete(dto);
     }
 
-    const savedNews = await runInTransaction(this.dataSource, async (qr) => {
-      const slugs = await resolveNewsSlugs(dto.tituloEs, dto.tituloEn, qr);
-
-      const news = this.newsRepository.create({
-        ...dto,
-        ...slugs,
-        autor: { id: parseInt(autorId, 10) } as User,
-      });
-
-      return qr.manager.save(news);
-    });
+    const savedNews = await this.newsRepository.createNews(dto, autorId);
 
     if (savedNews.estado === NewsStatus.PUBLICADO) {
       this.publishEvent(savedNews);
@@ -153,11 +133,7 @@ export class NewsService {
   }
 
   async findOneBySlug(slug: string): Promise<News> {
-    const news = await this.newsRepository
-      .createQueryBuilder('news')
-      .where('(news.slugEs = :slug OR news.slugEn = :slug)', { slug })
-      .andWhere('news.estado = :estado', { estado: NewsStatus.PUBLICADO })
-      .getOne();
+    const news = await this.newsRepository.findOneBySlug(slug);
 
     if (!news) {
       throw new NotFoundException(
@@ -179,15 +155,7 @@ export class NewsService {
       this.assertBilingualComplete({ ...news, ...dto });
     }
 
-    const savedNews = await runInTransaction(this.dataSource, async (qr) => {
-      // Regenerar slugs solo si la noticia es un borrador y el título cambió.
-      if (news.estado === NewsStatus.BORRADOR) {
-        await this.regenerateSlugsIfTitleChanged(news, dto, qr);
-      }
-
-      Object.assign(news, dto);
-      return qr.manager.save(news);
-    });
+    const savedNews = await this.newsRepository.updateNews(news, dto);
 
     if (isPublishingNow || wasPublished) {
       this.publishEvent(savedNews);
@@ -199,28 +167,5 @@ export class NewsService {
   async remove(id: string): Promise<void> {
     await this.findNewsOrFail(id);
     await this.newsRepository.softDelete(id);
-  }
-
-  // ─── Lógica auxiliar privada ─────────────────────────────────────────────────
-
-  /**
-   * Regenera slugEs y slugEn si los títulos cambiaron en un borrador.
-   * Muta el objeto `news` directamente para que los cambios queden listos al hacer `save`.
-   */
-  private async regenerateSlugsIfTitleChanged(
-    news: News,
-    dto: UpdateNewsDto,
-    qr: QueryRunner,
-  ): Promise<void> {
-    const tituloEsChanged = dto.tituloEs && dto.tituloEs !== news.tituloEs;
-    const tituloEnChanged = dto.tituloEn && dto.tituloEn !== news.tituloEn;
-
-    if (tituloEsChanged) {
-      news.slugEs = await resolveUniqueSlug(slugify(dto.tituloEs!), qr);
-    }
-
-    if (tituloEnChanged) {
-      news.slugEn = await resolveUniqueSlug(slugify(dto.tituloEn!), qr);
-    }
   }
 }

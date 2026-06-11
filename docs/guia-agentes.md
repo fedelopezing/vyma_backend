@@ -1,6 +1,6 @@
-# Guía de Uso del Ecosistema de Agentes de IA (Harmonia)
+# Guía de Uso del Ecosistema de Agentes de IA (Vyma)
 
-Esta guía documenta el flujo de trabajo centralizado para el desarrollo de software en el proyecto **Harmonia** utilizando nuestro ecosistema de dos agentes especializados en IA:
+Esta guía documenta el flujo de trabajo centralizado para el desarrollo de software en el proyecto **Vyma** utilizando nuestro ecosistema de dos agentes especializados en IA:
 1. **Agente Arquitecto y Technical Lead** (`.agents/rules/architect-tech-lead.md`)
 2. **Agente Desarrollador Backend Experto** (`.agents/rules/backend-expert.md`)
 

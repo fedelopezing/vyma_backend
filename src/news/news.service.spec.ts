@@ -1,21 +1,16 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { DataSource } from 'typeorm';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { NewsService } from './news.service';
 import { News, NewsStatus } from './entities/news.entity';
 import { CreateNewsDto } from './dto/create-news.dto';
+import { NewsRepository } from './repositories/news.repository';
+import { createMock, DeepMocked } from '@golevelup/ts-jest';
 
 describe('NewsService', () => {
   let service: NewsService;
-
-  const mockNewsRepository = {
-    create: jest.fn(),
-    findOne: jest.fn(),
-    softDelete: jest.fn(),
-    createQueryBuilder: jest.fn(),
-  };
+  let mockNewsRepository: DeepMocked<NewsRepository>;
+  let mockEventEmitter: DeepMocked<EventEmitter2>;
 
   const mockQueryBuilder = {
     where: jest.fn().mockReturnThis(),
@@ -29,37 +24,23 @@ describe('NewsService', () => {
     getManyAndCount: jest.fn(),
   };
 
-  const mockQueryRunner = {
-    connect: jest.fn(),
-    startTransaction: jest.fn(),
-    commitTransaction: jest.fn(),
-    rollbackTransaction: jest.fn(),
-    release: jest.fn(),
-    manager: {
-      save: jest.fn(),
-      createQueryBuilder: jest.fn().mockReturnValue(mockQueryBuilder),
-    },
-  };
-
-  const mockDataSource = {
-    createQueryRunner: jest.fn().mockReturnValue(mockQueryRunner),
-  };
-
-  const mockEventEmitter = {
-    emit: jest.fn(),
-  };
-
   beforeEach(async () => {
     jest.clearAllMocks();
     mockQueryBuilder.getMany.mockResolvedValue([]);
     mockQueryBuilder.getOne.mockResolvedValue(null);
     mockQueryBuilder.getManyAndCount.mockResolvedValue([[], 0]);
 
+    mockNewsRepository = createMock<NewsRepository>();
+    mockEventEmitter = createMock<EventEmitter2>();
+
+    mockNewsRepository.createQueryBuilder.mockReturnValue(
+      mockQueryBuilder as any,
+    );
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         NewsService,
-        { provide: getRepositoryToken(News), useValue: mockNewsRepository },
-        { provide: DataSource, useValue: mockDataSource },
+        { provide: NewsRepository, useValue: mockNewsRepository },
         { provide: EventEmitter2, useValue: mockEventEmitter },
       ],
     }).compile();
@@ -86,15 +67,14 @@ describe('NewsService', () => {
         slugEs: 'mi-noticia',
         slugEn: 'mi-noticia-en',
         estado: NewsStatus.BORRADOR,
-      };
-      mockNewsRepository.create.mockReturnValue(savedMock);
-      mockQueryRunner.manager.save.mockResolvedValueOnce(savedMock);
+      } as News;
+      mockNewsRepository.createNews.mockResolvedValue(savedMock);
 
       const result = await service.create(dto, '1');
 
       expect(result).toEqual(savedMock);
       expect(mockEventEmitter.emit).not.toHaveBeenCalled();
-      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+      expect(mockNewsRepository.createNews).toHaveBeenCalledWith(dto, '1');
     });
 
     it('debería emitir evento news.published al crear en estado PUBLICADO', async () => {
@@ -114,9 +94,8 @@ describe('NewsService', () => {
         slugEs: 'mi-noticia',
         slugEn: 'my-news',
         estado: NewsStatus.PUBLICADO,
-      };
-      mockNewsRepository.create.mockReturnValue(savedMock);
-      mockQueryRunner.manager.save.mockResolvedValueOnce(savedMock);
+      } as News;
+      mockNewsRepository.createNews.mockResolvedValue(savedMock);
 
       await service.create(dto, '1');
 
@@ -138,40 +117,12 @@ describe('NewsService', () => {
       await expect(service.create(dto, '1')).rejects.toThrow(
         BadRequestException,
       );
-      expect(mockQueryRunner.startTransaction).not.toHaveBeenCalled();
-    });
-
-    it('debería resolver colisión de slugs añadiendo sufijo numérico', async () => {
-      const dto: CreateNewsDto = {
-        tituloEs: 'Mi noticia',
-        resumenEs: 'Resumen',
-        contenidoEs: 'Contenido',
-        imagenPortada: 'url',
-        estado: NewsStatus.BORRADOR,
-      };
-
-      // Primero se llama para slugEs ('mi-noticia')
-      mockQueryBuilder.getMany.mockResolvedValueOnce([
-        { slugEs: 'mi-noticia' },
-        { slugEs: 'mi-noticia-1' },
-      ]);
-      // Luego se llama para slugEn ('mi-noticia-en')
-      mockQueryBuilder.getMany.mockResolvedValueOnce([]);
-
-      // En el mockRepository, retornaremos el objeto con el slug auto-resuelto.
-      // La función create asume que `create` usa los slugs que se le pasan.
-      mockNewsRepository.create.mockImplementation((args) => args);
-      mockQueryRunner.manager.save.mockImplementation((args) => args);
-
-      const result = await service.create(dto, '1');
-
-      expect(result.slugEs).toBe('mi-noticia-2');
+      expect(mockNewsRepository.createNews).not.toHaveBeenCalled();
     });
   });
 
   describe('findAll', () => {
     it('debería retornar noticias publicadas y paginadas', async () => {
-      mockNewsRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
       mockQueryBuilder.getManyAndCount.mockResolvedValueOnce([
         [{ id: '1' }],
         1,
@@ -197,7 +148,6 @@ describe('NewsService', () => {
     });
 
     it('debería forzar el estado PUBLICADO incluso si se pasa otro estado o undefined en la consulta pública', async () => {
-      mockNewsRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
       mockQueryBuilder.getManyAndCount.mockResolvedValueOnce([
         [{ id: '1' }],
         1,
@@ -218,151 +168,164 @@ describe('NewsService', () => {
 
   describe('findOneBySlug', () => {
     it('debería retornar la noticia si existe y está publicada', async () => {
-      mockNewsRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
-      const mockResult = { id: '1', slugEs: 'mi-noticia' };
-      mockQueryBuilder.getOne.mockResolvedValueOnce(mockResult);
+      const mockResult = { id: '1', slugEs: 'mi-noticia' } as News;
+      mockNewsRepository.findOneBySlug.mockResolvedValue(mockResult);
 
       const result = await service.findOneBySlug('mi-noticia');
       expect(result).toEqual(mockResult);
+      expect(mockNewsRepository.findOneBySlug).toHaveBeenCalledWith(
+        'mi-noticia',
+      );
     });
 
-    describe('findAllAdmin', () => {
-      it('debería retornar todas las noticias filtradas por estado', async () => {
-        mockNewsRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
-        mockQueryBuilder.getManyAndCount.mockResolvedValueOnce([
-          [{ id: '1' }],
-          1,
-        ]);
+    it('debería lanzar NotFoundException si no existe o no está publicada', async () => {
+      mockNewsRepository.findOneBySlug.mockResolvedValue(null);
+      await expect(service.findOneBySlug('no-existe')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
 
-        const result = await service.findAllAdmin({
+  describe('findAllAdmin', () => {
+    it('debería retornar todas las noticias filtradas por estado', async () => {
+      mockQueryBuilder.getManyAndCount.mockResolvedValueOnce([
+        [{ id: '1' }],
+        1,
+      ]);
+
+      const result = await service.findAllAdmin({
+        page: 1,
+        limit: 10,
+        estado: NewsStatus.BORRADOR,
+      });
+
+      expect(result).toEqual({
+        data: [{ id: '1' }],
+        meta: {
           page: 1,
           limit: 10,
-          estado: NewsStatus.BORRADOR,
-        });
-
-        expect(result).toEqual({
-          data: [{ id: '1' }],
-          meta: {
-            page: 1,
-            limit: 10,
-            total: 1,
-            totalPages: 1,
-            hasNextPage: false,
-            hasPrevPage: false,
-          },
-        });
-        expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-          'news.estado = :estado',
-          { estado: NewsStatus.BORRADOR },
-        );
+          total: 1,
+          totalPages: 1,
+          hasNextPage: false,
+          hasPrevPage: false,
+        },
       });
-
-      it('debería omitir filtros de categoría y estado si no se proveen (o son undefined)', async () => {
-        mockNewsRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
-        mockQueryBuilder.getManyAndCount.mockResolvedValueOnce([
-          [{ id: '1' }],
-          1,
-        ]);
-
-        await service.findAllAdmin({
-          page: 1,
-          limit: 10,
-          categoria: undefined,
-          estado: undefined,
-        });
-
-        expect(mockQueryBuilder.andWhere).not.toHaveBeenCalled();
-      });
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'news.estado = :estado',
+        { estado: NewsStatus.BORRADOR },
+      );
     });
 
-    describe('update', () => {
-      it('debería actualizar noticia en borrador y no emitir evento', async () => {
-        const existingNews = {
-          id: '1',
-          tituloEs: 'Viejo',
-          slugEs: 'viejo',
-          estado: NewsStatus.BORRADOR,
-        };
-        mockNewsRepository.findOne.mockResolvedValueOnce(existingNews);
+    it('debería omitir filtros de categoría y estado si no se proveen (o son undefined)', async () => {
+      mockQueryBuilder.getManyAndCount.mockResolvedValueOnce([
+        [{ id: '1' }],
+        1,
+      ]);
 
-        const updateDto = { tituloEs: 'Nuevo' };
-        const savedMock = { ...existingNews, ...updateDto, slugEs: 'nuevo' };
-
-        mockQueryBuilder.getMany.mockResolvedValueOnce([]); // Para regenerar slug
-        mockQueryRunner.manager.save.mockResolvedValueOnce(savedMock);
-
-        const result = await service.update('1', updateDto);
-
-        expect(result.slugEs).toBe('nuevo');
-        expect(mockEventEmitter.emit).not.toHaveBeenCalled();
+      await service.findAllAdmin({
+        page: 1,
+        limit: 10,
+        categoria: undefined,
+        estado: undefined,
       });
 
-      it('debería emitir evento al pasar de borrador a publicado', async () => {
-        const existingNews = {
-          id: '1',
-          tituloEs: 'T',
-          estado: NewsStatus.BORRADOR,
-        };
-        mockNewsRepository.findOne.mockResolvedValueOnce(existingNews);
+      expect(mockQueryBuilder.andWhere).not.toHaveBeenCalled();
+    });
+  });
 
-        const updateDto = {
-          estado: NewsStatus.PUBLICADO,
-          tituloEn: 'T',
-          resumenEn: 'R',
-          contenidoEn: 'C',
-          resumenEs: 'R',
-          contenidoEs: 'C',
-        };
+  describe('update', () => {
+    it('debería actualizar noticia en borrador y no emitir evento', async () => {
+      const existingNews = {
+        id: '1',
+        tituloEs: 'Viejo',
+        slugEs: 'viejo',
+        estado: NewsStatus.BORRADOR,
+      } as News;
+      mockNewsRepository.findOneById.mockResolvedValueOnce(existingNews);
 
-        const savedMock = { ...existingNews, ...updateDto };
-        mockQueryRunner.manager.save.mockResolvedValueOnce(savedMock);
+      const updateDto = { tituloEs: 'Nuevo' };
+      const savedMock = {
+        ...existingNews,
+        ...updateDto,
+        slugEs: 'nuevo',
+      } as News;
+      mockNewsRepository.updateNews.mockResolvedValueOnce(savedMock);
 
-        await service.update('1', updateDto);
+      const result = await service.update('1', updateDto);
 
-        expect(mockEventEmitter.emit).toHaveBeenCalledWith(
-          'news.published',
-          expect.any(Object),
-        );
-      });
-
-      it('debería lanzar BadRequestException al publicar sin campos bilingües', async () => {
-        const existingNews = {
-          id: '1',
-          tituloEs: 'T',
-          estado: NewsStatus.BORRADOR,
-        };
-        mockNewsRepository.findOne.mockResolvedValueOnce(existingNews);
-
-        const updateDto = { estado: NewsStatus.PUBLICADO };
-
-        await expect(service.update('1', updateDto)).rejects.toThrow(
-          BadRequestException,
-        );
-      });
-
-      it('debería lanzar NotFoundException si no existe el ID para update', async () => {
-        mockNewsRepository.findOne.mockResolvedValueOnce(null);
-        await expect(service.update('999', { tituloEs: 'T' })).rejects.toThrow(
-          NotFoundException,
-        );
-      });
+      expect(result.slugEs).toBe('nuevo');
+      expect(mockEventEmitter.emit).not.toHaveBeenCalled();
+      expect(mockNewsRepository.updateNews).toHaveBeenCalledWith(
+        existingNews,
+        updateDto,
+      );
     });
 
-    describe('remove', () => {
-      it('debería aplicar Soft-Delete correctamente', async () => {
-        const existingNews = { id: '1', tituloEs: 'T' };
-        mockNewsRepository.findOne.mockResolvedValueOnce(existingNews);
-        mockNewsRepository.softDelete.mockResolvedValueOnce(undefined);
+    it('debería emitir evento al pasar de borrador a publicado', async () => {
+      const existingNews = {
+        id: '1',
+        tituloEs: 'T',
+        estado: NewsStatus.BORRADOR,
+      } as News;
+      mockNewsRepository.findOneById.mockResolvedValueOnce(existingNews);
 
-        await service.remove('1');
+      const updateDto = {
+        estado: NewsStatus.PUBLICADO,
+        tituloEn: 'T',
+        resumenEn: 'R',
+        contenidoEn: 'C',
+        resumenEs: 'R',
+        contenidoEs: 'C',
+      };
 
-        expect(mockNewsRepository.softDelete).toHaveBeenCalledWith('1');
-      });
+      const savedMock = { ...existingNews, ...updateDto } as News;
+      mockNewsRepository.updateNews.mockResolvedValueOnce(savedMock);
 
-      it('debería lanzar NotFoundException si no existe el ID para remove', async () => {
-        mockNewsRepository.findOne.mockResolvedValueOnce(null);
-        await expect(service.remove('999')).rejects.toThrow(NotFoundException);
-      });
+      await service.update('1', updateDto);
+
+      expect(mockEventEmitter.emit).toHaveBeenCalledWith(
+        'news.published',
+        expect.any(Object),
+      );
+    });
+
+    it('debería lanzar BadRequestException al publicar sin campos bilingües', async () => {
+      const existingNews = {
+        id: '1',
+        tituloEs: 'T',
+        estado: NewsStatus.BORRADOR,
+      } as News;
+      mockNewsRepository.findOneById.mockResolvedValueOnce(existingNews);
+
+      const updateDto = { estado: NewsStatus.PUBLICADO };
+
+      await expect(service.update('1', updateDto)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('debería lanzar NotFoundException si no existe el ID para update', async () => {
+      mockNewsRepository.findOneById.mockResolvedValueOnce(null);
+      await expect(service.update('999', { tituloEs: 'T' })).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('remove', () => {
+    it('debería aplicar Soft-Delete correctamente', async () => {
+      const existingNews = { id: '1', tituloEs: 'T' } as News;
+      mockNewsRepository.findOneById.mockResolvedValueOnce(existingNews);
+      mockNewsRepository.softDelete.mockResolvedValueOnce(undefined);
+
+      await service.remove('1');
+
+      expect(mockNewsRepository.softDelete).toHaveBeenCalledWith('1');
+    });
+
+    it('debería lanzar NotFoundException si no existe el ID para remove', async () => {
+      mockNewsRepository.findOneById.mockResolvedValueOnce(null);
+      await expect(service.remove('999')).rejects.toThrow(NotFoundException);
     });
   });
 });

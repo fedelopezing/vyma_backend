@@ -1,6 +1,4 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { RolesService } from './roles.service';
 import { Role } from './entities/role.entity';
 import { User } from '../users/entities/user.entity';
@@ -11,24 +9,32 @@ import { RoleNotFoundException } from './exceptions/role-not-found.exception';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { AuthCacheKeys } from '../auth/constants/cache-keys.constant';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { RolesRepository } from './repositories/roles.repository';
+import { PermissionsRepository } from '../permissions/repositories/permissions.repository';
 
 describe('RolesService', () => {
   let service: RolesService;
-  let mockRoleRepository: DeepMocked<Repository<Role>>;
+  let mockRoleRepository: DeepMocked<RolesRepository>;
+  let mockPermissionsRepository: DeepMocked<PermissionsRepository>;
   let usersService: UsersService;
   let cacheService: CacheService;
   let mockEventEmitter: DeepMocked<EventEmitter2>;
 
   beforeEach(async () => {
-    mockRoleRepository = createMock<Repository<Role>>();
+    mockRoleRepository = createMock<RolesRepository>();
+    mockPermissionsRepository = createMock<PermissionsRepository>();
     mockEventEmitter = createMock<EventEmitter2>();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         RolesService,
         {
-          provide: getRepositoryToken(Role),
+          provide: RolesRepository,
           useValue: mockRoleRepository,
+        },
+        {
+          provide: PermissionsRepository,
+          useValue: mockPermissionsRepository,
         },
         {
           provide: UsersService,
@@ -57,33 +63,28 @@ describe('RolesService', () => {
   describe('findAll', () => {
     it('should return all roles with permissions relation', async () => {
       const mockRoles = [{ id: 1, name: 'admin', permissions: [] } as Role];
-      mockRoleRepository.find.mockResolvedValue(mockRoles);
+      mockRoleRepository.findAll.mockResolvedValue(mockRoles);
 
       const result = await service.findAll();
 
       expect(result).toEqual(mockRoles);
-      expect(mockRoleRepository.find).toHaveBeenCalledWith({
-        relations: ['permissions'],
-      });
+      expect(mockRoleRepository.findAll).toHaveBeenCalled();
     });
   });
 
   describe('findOne', () => {
     it('should return a role by id', async () => {
       const mockRole = { id: 1, name: 'admin', permissions: [] } as Role;
-      mockRoleRepository.findOne.mockResolvedValue(mockRole);
+      mockRoleRepository.findOneById.mockResolvedValue(mockRole);
 
       const result = await service.findOne(1);
 
       expect(result).toEqual(mockRole);
-      expect(mockRoleRepository.findOne).toHaveBeenCalledWith({
-        where: { id: 1 },
-        relations: ['permissions'],
-      });
+      expect(mockRoleRepository.findOneById).toHaveBeenCalledWith(1);
     });
 
     it('should throw RoleNotFoundException if role not found', async () => {
-      mockRoleRepository.findOne.mockResolvedValue(null);
+      mockRoleRepository.findOneById.mockResolvedValue(null);
 
       await expect(service.findOne(999)).rejects.toThrow(RoleNotFoundException);
     });
@@ -92,15 +93,12 @@ describe('RolesService', () => {
   describe('remove', () => {
     it('should find and remove a role', async () => {
       const mockRole = { id: 1, name: 'admin', permissions: [] } as Role;
-      mockRoleRepository.findOne.mockResolvedValue(mockRole);
+      mockRoleRepository.findOneById.mockResolvedValue(mockRole);
       mockRoleRepository.remove.mockResolvedValue(mockRole);
 
       await service.remove(1);
 
-      expect(mockRoleRepository.findOne).toHaveBeenCalledWith({
-        where: { id: 1 },
-        relations: ['permissions'],
-      });
+      expect(mockRoleRepository.findOneById).toHaveBeenCalledWith(1);
       expect(mockRoleRepository.remove).toHaveBeenCalledWith(mockRole);
     });
   });
@@ -131,16 +129,13 @@ describe('RolesService', () => {
         permissions: [],
       } as Role;
 
-      mockRoleRepository.findOne.mockResolvedValue(existingRole);
+      mockRoleRepository.findOneById.mockResolvedValue(existingRole);
       mockRoleRepository.save.mockResolvedValue(updatedRole);
 
       const result = await service.update(1, updateRoleDto);
 
       expect(result).toEqual(updatedRole);
-      expect(mockRoleRepository.findOne).toHaveBeenCalledWith({
-        where: { id: 1 },
-        relations: ['permissions'],
-      });
+      expect(mockRoleRepository.findOneById).toHaveBeenCalledWith(1);
       expect(mockRoleRepository.save).toHaveBeenCalledWith(existingRole);
       expect(mockEventEmitter.emit).toHaveBeenCalledWith(
         'role.updated',

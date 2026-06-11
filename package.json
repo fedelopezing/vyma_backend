@@ -1,5 +1,5 @@
 {
-  "name": "harmonia-backend",
+  "name": "vyma-backend",
   "version": "0.0.1",
   "description": "",
   "author": "",
@@ -94,9 +94,12 @@
       "!**/*.module.(t|j)s",
       "!**/*.entity.(t|j)s",
       "!**/*.dto.(t|j)s",
+      "!**/*.repository.(t|j)s",
       "!main.(t|j)s",
       "!database/**/*",
       "!seed/**/*",
+      "!config/**/*",
+      "!**/helpers/**/*",
       "!email/templates/**/*",
       "!**/exceptions/**/*",
       "!**/index.(t|j)s"

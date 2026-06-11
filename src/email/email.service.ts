@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { Resend } from 'resend';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { CreateEmailDto } from './dto/create-email.dto';
@@ -11,7 +11,11 @@ export class EmailService {
 
   constructor(private readonly eventEmitter: EventEmitter2) {}
 
-  async sendEmail(data: CreateEmailDto, emailFrom: string, emailTo: string[]) {
+  async sendEmail(
+    data: CreateEmailDto,
+    emailFrom: string,
+    emailTo: string[],
+  ): Promise<{ message: string; email: unknown }> {
     try {
       const email = await this.resend.emails.send({
         from: emailFrom,
@@ -27,27 +31,33 @@ export class EmailService {
         email,
       };
     } catch {
-      throw new Error('Error al enviar el correo');
+      throw new InternalServerErrorException('Error al enviar el correo');
     }
   }
 
-  async sendActivationEmail(to: string, name: string, activationToken: string) {
+  async sendActivationEmail(
+    to: string,
+    name: string,
+    activationToken: string,
+  ): Promise<{ message: string; email: unknown }> {
     try {
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
       const activationLink = `${frontendUrl}/auth/activate?token=${activationToken}`;
-      const emailFrom = process.env.EMAIL_FROM || 'no-reply@harmonia.com';
+      const emailFrom = process.env.EMAIL_FROM || 'no-reply@vyma.com';
 
       const email = await this.resend.emails.send({
         from: emailFrom,
         to: [to],
-        subject: 'Activa tu cuenta en Harmonia',
+        subject: 'Activa tu cuenta en Vyma',
         html: welcomeActivationTemplate(name, activationLink),
       });
 
       return { message: 'Correo de activación enviado', email };
     } catch (error) {
       console.error('Error al enviar el correo de activación', error);
-      throw new Error('Error al enviar el correo de activación');
+      throw new InternalServerErrorException(
+        'Error al enviar el correo de activación',
+      );
     }
   }
 }
