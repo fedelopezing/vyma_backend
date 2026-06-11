@@ -1,22 +1,9 @@
-import {
-  Controller,
-  Post,
-  Body,
-  UseGuards,
-  HttpCode,
-  HttpStatus,
-} from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto';
-import { AuthGuard } from '@nestjs/passport';
-import { RequirePermissions } from '../auth/decorators/require-permissions.decorator';
-import { PermissionsGuard } from '../auth/guards/permissions.guard';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiBearerAuth,
-  ApiResponse,
-} from '@nestjs/swagger';
+import { AuthPermissions } from '../auth/decorators';
+import { ApiTags } from '@nestjs/swagger';
+import { ApiCreateUser } from './decorators/users-swagger.decorators';
 
 @ApiTags('Users')
 @Controller('users')
@@ -25,16 +12,8 @@ export class UsersController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Create a new user (admin only)' })
-  @ApiBearerAuth()
-  @ApiResponse({
-    status: 201,
-    description: 'User created and activation email sent',
-  })
-  @ApiResponse({ status: 403, description: 'Insufficient permissions' })
-  @ApiResponse({ status: 409, description: 'Email already in use' })
-  @RequirePermissions('write:users')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @ApiCreateUser()
+  @AuthPermissions('write:users')
   async create(@Body() createUserDto: CreateUserDto) {
     const user = await this.usersService.create(createUserDto);
     return {

@@ -1,4 +1,11 @@
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiTags } from '@nestjs/swagger';
+import {
+  ApiCreateProfile,
+  ApiFindAllProfiles,
+  ApiFindOneProfile,
+  ApiUpdateProfile,
+  ApiDeleteProfile,
+} from './decorators/profiles-swagger.decorators';
 import {
   Controller,
   Get,
@@ -7,50 +14,48 @@ import {
   Patch,
   Param,
   Delete,
-  UseGuards,
+  Delete,
   ParseIntPipe,
   Req,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { User } from '../users/entities/user.entity';
-import { AuthGuard } from '@nestjs/passport';
+import { User } from '../users/entities/user.entity';
 
 import { CreateProfileDto, UpdateProfileDto } from './dto';
 import { ProfilesService } from './profiles.service';
-import { PermissionsGuard } from '../auth/guards/permissions.guard';
-import { RequirePermissions } from '../auth/decorators/require-permissions.decorator';
+import { Auth, AuthPermissions } from '../auth/decorators';
 import { checkOwnershipOrAdmin } from '../common/helpers/ownership.helper';
 
-@ApiBearerAuth()
 @ApiTags('Profiles')
 @Controller('profiles')
-@UseGuards(AuthGuard('jwt'), PermissionsGuard)
 export class ProfilesController {
   constructor(private readonly profilesService: ProfilesService) {}
 
   @Post()
-  @RequirePermissions('write:users')
-  @ApiOperation({ summary: 'Crear un perfil (solo admin)' })
+  @AuthPermissions('write:users')
+  @ApiCreateProfile()
   async create(@Body() createProfileDto: CreateProfileDto) {
     return this.profilesService.create(createProfileDto);
   }
 
   @Get()
-  @RequirePermissions('read:users')
-  @ApiOperation({ summary: 'Obtener todos los perfiles (solo admin)' })
+  @AuthPermissions('read:users')
+  @ApiFindAllProfiles()
   findAll() {
     return this.profilesService.findAll();
   }
 
   @Get(':id')
-  @RequirePermissions('read:users')
-  @ApiOperation({ summary: 'Obtener un perfil por ID' })
+  @AuthPermissions('read:users')
+  @ApiFindOneProfile()
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.profilesService.findOne(id);
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Actualizar un perfil por ID' })
+  @Auth()
+  @ApiUpdateProfile()
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateProfileDto: UpdateProfileDto,
@@ -64,8 +69,8 @@ export class ProfilesController {
   }
 
   @Delete(':id')
-  @RequirePermissions('write:users')
-  @ApiOperation({ summary: 'Eliminar un perfil por ID' })
+  @AuthPermissions('write:users')
+  @ApiDeleteProfile()
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.profilesService.remove(id);
   }

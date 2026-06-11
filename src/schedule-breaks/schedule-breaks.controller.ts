@@ -1,4 +1,11 @@
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiTags } from '@nestjs/swagger';
+import {
+  ApiCreateScheduleBreak,
+  ApiFindAllScheduleBreaks,
+  ApiFindOneScheduleBreak,
+  ApiUpdateScheduleBreak,
+  ApiDeleteScheduleBreak,
+} from './decorators/schedule-breaks-swagger.decorators';
 import {
   Controller,
   Get,
@@ -7,41 +14,42 @@ import {
   Patch,
   Param,
   Delete,
-  UseGuards,
 } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
 import { ScheduleBreaksService } from './schedule-breaks.service';
 import { CreateScheduleBreakDto } from './dto/create-schedule-break.dto';
 import { UpdateScheduleBreakDto } from './dto/update-schedule-break.dto';
-import { UserRoleGuard } from '../auth/guards/user-role.guard';
-import { RoleProtected } from '../auth/decorators/role-protected.decorator';
+import { Auth, AuthRoles } from '../auth/decorators';
 import { ValidRoles } from '../auth/interfaces/valid-roles';
 
-@ApiBearerAuth()
 @ApiTags('Schedule Breaks')
 @Controller('schedule-breaks')
-@UseGuards(AuthGuard('jwt'), UserRoleGuard)
 export class ScheduleBreaksController {
   constructor(private readonly scheduleBreaksService: ScheduleBreaksService) {}
 
   @Post()
-  @RoleProtected(ValidRoles.admin)
+  @ApiCreateScheduleBreak()
+  @AuthRoles(ValidRoles.admin)
   create(@Body() createScheduleBreakDto: CreateScheduleBreakDto) {
     return this.scheduleBreaksService.create(createScheduleBreakDto);
   }
 
+  @ApiFindAllScheduleBreaks()
+  @Auth()
   @Get()
   findAll() {
     return this.scheduleBreaksService.findAll();
   }
 
+  @ApiFindOneScheduleBreak()
+  @Auth()
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.scheduleBreaksService.findOne(+id);
   }
 
   @Patch(':id')
-  @RoleProtected(ValidRoles.admin)
+  @ApiUpdateScheduleBreak()
+  @AuthRoles(ValidRoles.admin)
   update(
     @Param('id') id: string,
     @Body() updateScheduleBreakDto: UpdateScheduleBreakDto,
@@ -50,7 +58,8 @@ export class ScheduleBreaksController {
   }
 
   @Delete(':id')
-  @RoleProtected(ValidRoles.admin)
+  @ApiDeleteScheduleBreak()
+  @AuthRoles(ValidRoles.admin)
   remove(@Param('id') id: string) {
     return this.scheduleBreaksService.remove(+id);
   }

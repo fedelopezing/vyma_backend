@@ -1,20 +1,17 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Controller, Get } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
+import { ApiFindAllPermissions } from './decorators/permissions-swagger.decorators';
 import { PermissionsService } from './permissions.service';
-import { AuthGuard } from '@nestjs/passport';
-import { PermissionsGuard } from '../auth/guards/permissions.guard';
-import { RequirePermissions } from '../auth/decorators/require-permissions.decorator';
+import { AuthPermissions } from '../auth/decorators';
 
 @ApiTags('Permissions')
-@ApiBearerAuth()
-@UseGuards(AuthGuard('jwt'), PermissionsGuard)
 @Controller('permissions')
 export class PermissionsController {
   constructor(private readonly permissionsService: PermissionsService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Obtener todos los permisos disponibles' })
-  @RequirePermissions('read:users')
+  @ApiFindAllPermissions()
+  @AuthPermissions('read:users')
   findAll() {
     return this.permissionsService.findAll();
   }
