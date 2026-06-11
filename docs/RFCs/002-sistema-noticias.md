@@ -26,7 +26,7 @@ El backend de NestJS actuará como el orquestador principal. Para mantener la ve
 sequenceDiagram
     autonumber
     actor Admin as Administrador (Next.js)
-    participant API as NestJS API (Harmonia)
+    participant API as NestJS API (Vyma)
     participant DB as PostgreSQL (TypeORM)
     participant EV as Event Emitter (Interno)
     participant Astro as Astro Public Portal

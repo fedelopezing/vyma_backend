@@ -43,12 +43,12 @@ export class EmailService {
     try {
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
       const activationLink = `${frontendUrl}/auth/activate?token=${activationToken}`;
-      const emailFrom = process.env.EMAIL_FROM || 'no-reply@harmonia.com';
+      const emailFrom = process.env.EMAIL_FROM || 'no-reply@vyma.com';
 
       const email = await this.resend.emails.send({
         from: emailFrom,
         to: [to],
-        subject: 'Activa tu cuenta en Harmonia',
+        subject: 'Activa tu cuenta en Vyma',
         html: welcomeActivationTemplate(name, activationLink),
       });
 

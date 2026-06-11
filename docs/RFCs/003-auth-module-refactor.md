@@ -1,7 +1,7 @@
 # RFC: Refactor del Módulo de Autenticación (RFC-003)
 
 **Fecha:** 2026-06-10
-**Autor:** Arquitecto Tech Lead (Harmonia)
+**Autor:** Arquitecto Tech Lead (Vyma)
 **Estado:** Draft
 
 ---
@@ -340,8 +340,8 @@ JwtModule.registerAsync({
 **Variables de entorno requeridas (nuevas):**
 ```
 JWT_SECRET=<min 32 chars random string>
-JWT_ISSUER=harmonia-api
-JWT_AUDIENCE=harmonia-client
+JWT_ISSUER=vyma-api
+JWT_AUDIENCE=vyma-client
 JWT_REFRESH_EXPIRES_DAYS=7
 ```
 

@@ -12,7 +12,7 @@ export class SendMessageDto {
 
   @ApiProperty({
     description: 'Mensaje de texto a enviar por WhatsApp',
-    example: 'Hola, este es un mensaje de prueba de Harmonia.',
+    example: 'Hola, este es un mensaje de prueba de Vyma.',
   })
   @IsNotEmpty()
   @IsString()
