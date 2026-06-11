@@ -49,7 +49,7 @@ export class WhatsappConnectionService
     }
   }
 
-  private async buildClient() {
+  private async buildClient(): Promise<void> {
     const stage = this.configService.get<string>('STAGE', 'dev');
 
     const puppeteerConfig =
@@ -112,7 +112,7 @@ export class WhatsappConnectionService
     });
   }
 
-  private async initializeClient() {
+  private async initializeClient(): Promise<void> {
     if (this.initializing) return;
     this.initializing = true;
 

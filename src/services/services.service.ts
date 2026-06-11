@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { ServicesRepository } from './repositories/services.repository';
 
 import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
@@ -10,15 +9,14 @@ import { ServiceNotFoundException } from './exceptions/service-not-found.excepti
 
 @Injectable()
 export class ServicesService {
-  constructor(
-    @InjectRepository(Service)
-    private readonly serviceRepository: Repository<Service>,
-  ) {}
+  constructor(private readonly servicesRepository: ServicesRepository) {}
 
-  async create(createServiceDto: CreateServiceDto) {
+  async create(
+    createServiceDto: CreateServiceDto,
+  ): Promise<{ message: string; data?: Service }> {
     try {
-      const service = this.serviceRepository.create(createServiceDto);
-      await this.serviceRepository.save(service);
+      const service = this.servicesRepository.create(createServiceDto);
+      await this.servicesRepository.save(service);
 
       return {
         message: `El servicio ha sido creado correctamente!`,
@@ -29,28 +27,26 @@ export class ServicesService {
     }
   }
 
-  async findAll(name?: string) {
-    const query = this.serviceRepository.createQueryBuilder('service');
-
-    if (name) {
-      query.where('LOWER(service.name) LIKE :name', {
-        name: `%${name.toLowerCase()}%`,
-      });
-    }
-
-    return await query.getMany();
+  async findAll(name?: string): Promise<Service[]> {
+    return await this.servicesRepository.findAll(name);
   }
 
-  async findOne(id: number) {
-    const service = await this.serviceRepository.findOneBy({ id });
+  async findOne(id: number): Promise<Service> {
+    const service = await this.servicesRepository.findOneById(id);
     if (!service) throw new ServiceNotFoundException(id);
 
     return service;
   }
 
-  async update(id: number, updateServiceDto: UpdateServiceDto) {
+  async update(
+    id: number,
+    updateServiceDto: UpdateServiceDto,
+  ): Promise<{ message: string; data?: UpdateServiceDto }> {
     try {
-      const service = await this.serviceRepository.update(id, updateServiceDto);
+      const service = await this.servicesRepository.update(
+        id,
+        updateServiceDto,
+      );
 
       if (service.affected === 0) throw new ServiceNotFoundException(id);
 
@@ -64,10 +60,10 @@ export class ServicesService {
     }
   }
 
-  async remove(id: number) {
+  async remove(id: number): Promise<{ message: string } | void> {
     const service = await this.findOne(id);
     try {
-      await this.serviceRepository.softRemove(service);
+      await this.servicesRepository.softRemove(service);
       return { message: `El servicio fue eliminado correctamente!` };
     } catch (error) {
       handleDBErrors('El servicio', error);

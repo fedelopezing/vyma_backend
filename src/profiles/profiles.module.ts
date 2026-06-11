@@ -6,6 +6,7 @@ import { ProfilesController } from './profiles.controller';
 import { ProfilesService } from './profiles.service';
 import { ProfessionsModule } from '../professions/professions.module';
 import { AuthModule } from '../auth/auth.module';
+import { ProfilesRepository } from './repositories/profiles.repository';
 
 @Module({
   imports: [
@@ -13,8 +14,8 @@ import { AuthModule } from '../auth/auth.module';
     ProfessionsModule,
     forwardRef(() => AuthModule),
   ],
-  providers: [ProfilesService],
+  providers: [ProfilesService, ProfilesRepository],
   controllers: [ProfilesController],
-  exports: [ProfilesService],
+  exports: [ProfilesService, ProfilesRepository],
 })
 export class ProfilesModule {}

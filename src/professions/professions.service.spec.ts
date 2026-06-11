@@ -1,16 +1,15 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ProfessionsService } from './professions.service';
-import { getRepositoryToken } from '@nestjs/typeorm';
 import { Profession } from './entities/profession.entity';
 import { ConflictException } from '@nestjs/common';
 import { ProfessionNotFoundException } from './exceptions/profession-not-found.exception';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { faker } from '@faker-js/faker';
-import { Repository } from 'typeorm';
+import { ProfessionsRepository } from './repositories/professions.repository';
 
 describe('ProfessionsService', () => {
   let service: ProfessionsService;
-  let mockRepository: DeepMocked<Repository<Profession>>;
+  let mockRepository: DeepMocked<ProfessionsRepository>;
 
   const createFakeProfession = (): Profession => {
     const profession = new Profession();
@@ -22,13 +21,13 @@ describe('ProfessionsService', () => {
   };
 
   beforeEach(async () => {
-    mockRepository = createMock<Repository<Profession>>();
+    mockRepository = createMock<ProfessionsRepository>();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ProfessionsService,
         {
-          provide: getRepositoryToken(Profession),
+          provide: ProfessionsRepository,
           useValue: mockRepository,
         },
       ],
@@ -53,7 +52,8 @@ describe('ProfessionsService', () => {
 
       const result = await service.create(dto);
 
-      expect(result.data).toEqual(profession);
+      expect(result).toBeDefined();
+      expect(result!.data).toEqual(profession);
       expect(mockRepository.create).toHaveBeenCalledWith(dto);
       expect(mockRepository.save).toHaveBeenCalledWith(profession);
     });
@@ -69,11 +69,11 @@ describe('ProfessionsService', () => {
   describe('findAll', () => {
     it('should return an array of professions', async () => {
       const professions = [createFakeProfession(), createFakeProfession()];
-      mockRepository.find.mockResolvedValue(professions);
+      mockRepository.findAll.mockResolvedValue(professions);
 
       const result = await service.findAll();
       expect(result).toEqual(professions);
-      expect(mockRepository.find).toHaveBeenCalled();
+      expect(mockRepository.findAll).toHaveBeenCalled();
     });
   });
 
@@ -81,15 +81,15 @@ describe('ProfessionsService', () => {
     it('should return a profession by id', async () => {
       const profession = createFakeProfession();
       const id = profession.id;
-      mockRepository.findOneBy.mockResolvedValue(profession);
+      mockRepository.findOneById.mockResolvedValue(profession);
 
       const result = await service.findOne(id);
       expect(result).toEqual(profession);
-      expect(mockRepository.findOneBy).toHaveBeenCalledWith({ id });
+      expect(mockRepository.findOneById).toHaveBeenCalledWith(id);
     });
 
     it('should throw ProfessionNotFoundException if profession not found', async () => {
-      mockRepository.findOneBy.mockResolvedValue(null);
+      mockRepository.findOneById.mockResolvedValue(null);
       await expect(service.findOne(faker.number.int())).rejects.toThrow(
         ProfessionNotFoundException,
       );
@@ -107,7 +107,8 @@ describe('ProfessionsService', () => {
       });
 
       const result = await service.update(id, dto);
-      expect(result.data).toEqual(dto);
+      expect(result).toBeDefined();
+      expect(result!.data).toEqual(dto);
       expect(mockRepository.update).toHaveBeenCalledWith(id, dto);
     });
 
@@ -127,11 +128,14 @@ describe('ProfessionsService', () => {
     it('should remove a profession successfully', async () => {
       const profession = createFakeProfession();
       const id = profession.id;
-      mockRepository.findOneBy.mockResolvedValue(profession);
+      mockRepository.findOneById.mockResolvedValue(profession);
       mockRepository.softRemove.mockResolvedValue(profession);
 
       const result = await service.remove(id);
-      expect(result.message).toBe('La profesión fue eliminado correctamente!');
+      expect(result).toBeDefined();
+      expect((result as any).message).toBe(
+        'La profesión fue eliminado correctamente!',
+      );
       expect(mockRepository.softRemove).toHaveBeenCalledWith(profession);
     });
   });

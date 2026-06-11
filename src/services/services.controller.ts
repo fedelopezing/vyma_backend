@@ -15,7 +15,6 @@ import {
   Param,
   Delete,
   Query,
-  Query,
 } from '@nestjs/common';
 import { ServicesService } from './services.service';
 import { CreateServiceDto } from './dto/create-service.dto';

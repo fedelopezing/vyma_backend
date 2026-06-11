@@ -14,7 +14,6 @@ import {
   Patch,
   Param,
   Delete,
-  Delete,
 } from '@nestjs/common';
 import { SchedulesService } from './schedules.service';
 import { CreateScheduleDto } from './dto/create-schedule.dto';

@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { ProfessionsRepository } from './repositories/professions.repository';
 
 import { CreateProfessionDto, UpdateProfessionDto } from './dto';
 import { Profession } from './entities/profession.entity';
@@ -9,15 +8,14 @@ import { ProfessionNotFoundException } from './exceptions/profession-not-found.e
 
 @Injectable()
 export class ProfessionsService {
-  constructor(
-    @InjectRepository(Profession)
-    private readonly professionRepository: Repository<Profession>,
-  ) {}
+  constructor(private readonly professionsRepository: ProfessionsRepository) {}
 
-  async create(createProfessionDto: CreateProfessionDto) {
+  async create(
+    createProfessionDto: CreateProfessionDto,
+  ): Promise<{ message: string; data?: Profession }> {
     try {
-      const profession = this.professionRepository.create(createProfessionDto);
-      await this.professionRepository.save(profession);
+      const profession = this.professionsRepository.create(createProfessionDto);
+      await this.professionsRepository.save(profession);
 
       return {
         message: `La profesión ha sido creado correctamente!`,
@@ -28,20 +26,23 @@ export class ProfessionsService {
     }
   }
 
-  async findAll() {
-    return await this.professionRepository.find();
+  async findAll(): Promise<Profession[]> {
+    return await this.professionsRepository.findAll();
   }
 
-  async findOne(id: number) {
-    const profession = await this.professionRepository.findOneBy({ id });
+  async findOne(id: number): Promise<Profession> {
+    const profession = await this.professionsRepository.findOneById(id);
     if (!profession) throw new ProfessionNotFoundException(id);
 
     return profession;
   }
 
-  async update(id: number, updateProfessionDto: UpdateProfessionDto) {
+  async update(
+    id: number,
+    updateProfessionDto: UpdateProfessionDto,
+  ): Promise<{ message: string; data?: UpdateProfessionDto }> {
     try {
-      const profession = await this.professionRepository.update(
+      const profession = await this.professionsRepository.update(
         id,
         updateProfessionDto,
       );
@@ -57,10 +58,10 @@ export class ProfessionsService {
     }
   }
 
-  async remove(id: number) {
+  async remove(id: number): Promise<{ message: string } | void> {
     const profession = await this.findOne(id);
     try {
-      await this.professionRepository.softRemove(profession);
+      await this.professionsRepository.softRemove(profession);
       return { message: `La profesión fue eliminado correctamente!` };
     } catch (error) {
       handleDBErrors('La profesión', error);

@@ -2,6 +2,7 @@ import { Injectable, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, EntityManager, DataSource, DeepPartial } from 'typeorm';
 import { User } from '../entities/user.entity';
+import { runInTransaction } from '../../common/helpers/transaction.helper';
 
 @Injectable()
 export class UsersRepository {
@@ -10,6 +11,12 @@ export class UsersRepository {
     private readonly repository: Repository<User>,
     private readonly dataSource: DataSource,
   ) {}
+
+  async runTransaction<T>(
+    cb: (manager: EntityManager) => Promise<T>,
+  ): Promise<T> {
+    return runInTransaction(this.dataSource, (qr) => cb(qr.manager));
+  }
 
   async create(
     user: DeepPartial<User>,

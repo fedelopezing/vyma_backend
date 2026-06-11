@@ -1,17 +1,16 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ServicesService } from './services.service';
-import { getRepositoryToken } from '@nestjs/typeorm';
 import { Service } from './entities/service.entity';
 import { ConflictException } from '@nestjs/common';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { faker } from '@faker-js/faker';
-import { Repository, SelectQueryBuilder } from 'typeorm';
 import { CreateServiceDto } from './dto/create-service.dto';
 import { ServiceNotFoundException } from './exceptions/service-not-found.exception';
+import { ServicesRepository } from './repositories/services.repository';
+
 describe('ServicesService', () => {
   let service: ServicesService;
-  let mockRepository: DeepMocked<Repository<Service>>;
-  let mockQueryBuilder: DeepMocked<SelectQueryBuilder<Service>>;
+  let mockRepository: DeepMocked<ServicesRepository>;
 
   const createFakeService = (): Service => {
     const s = new Service();
@@ -27,16 +26,13 @@ describe('ServicesService', () => {
   };
 
   beforeEach(async () => {
-    mockRepository = createMock<Repository<Service>>();
-    mockQueryBuilder = createMock<SelectQueryBuilder<Service>>();
-    mockQueryBuilder.where.mockReturnThis();
-    mockRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
+    mockRepository = createMock<ServicesRepository>();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ServicesService,
         {
-          provide: getRepositoryToken(Service),
+          provide: ServicesRepository,
           useValue: mockRepository,
         },
       ],
@@ -63,7 +59,8 @@ describe('ServicesService', () => {
 
       const result = await service.create(dto);
 
-      expect(result.data).toEqual(s);
+      expect(result).toBeDefined();
+      expect(result!.data).toEqual(s);
       expect(mockRepository.create).toHaveBeenCalledWith(dto);
       expect(mockRepository.save).toHaveBeenCalledWith(s);
     });
@@ -81,28 +78,21 @@ describe('ServicesService', () => {
   describe('findAll', () => {
     it('should return an array of services without name filter', async () => {
       const services = [createFakeService(), createFakeService()];
-      mockQueryBuilder.getMany.mockResolvedValue(services);
+      mockRepository.findAll.mockResolvedValue(services);
 
       const result = await service.findAll();
       expect(result).toEqual(services);
-      expect(mockRepository.createQueryBuilder).toHaveBeenCalledWith('service');
-      expect(mockQueryBuilder.where).not.toHaveBeenCalled();
-      expect(mockQueryBuilder.getMany).toHaveBeenCalled();
+      expect(mockRepository.findAll).toHaveBeenCalledWith(undefined);
     });
 
     it('should return an array of services with name filter', async () => {
       const name = faker.word.noun();
       const services = [createFakeService()];
-      mockQueryBuilder.getMany.mockResolvedValue(services);
+      mockRepository.findAll.mockResolvedValue(services);
 
       const result = await service.findAll(name);
       expect(result).toEqual(services);
-      expect(mockRepository.createQueryBuilder).toHaveBeenCalledWith('service');
-      expect(mockQueryBuilder.where).toHaveBeenCalledWith(
-        'LOWER(service.name) LIKE :name',
-        { name: `%${name.toLowerCase()}%` },
-      );
-      expect(mockQueryBuilder.getMany).toHaveBeenCalled();
+      expect(mockRepository.findAll).toHaveBeenCalledWith(name);
     });
   });
 
@@ -110,15 +100,15 @@ describe('ServicesService', () => {
     it('should return a service by id', async () => {
       const s = createFakeService();
       const id = s.id;
-      mockRepository.findOneBy.mockResolvedValue(s);
+      mockRepository.findOneById.mockResolvedValue(s);
 
       const result = await service.findOne(id);
       expect(result).toEqual(s);
-      expect(mockRepository.findOneBy).toHaveBeenCalledWith({ id });
+      expect(mockRepository.findOneById).toHaveBeenCalledWith(id);
     });
 
     it('should throw ServiceNotFoundException if service not found', async () => {
-      mockRepository.findOneBy.mockResolvedValue(null);
+      mockRepository.findOneById.mockResolvedValue(null);
       await expect(service.findOne(999)).rejects.toThrow(
         ServiceNotFoundException,
       );
@@ -136,7 +126,8 @@ describe('ServicesService', () => {
       });
 
       const result = await service.update(id, dto);
-      expect(result.data).toEqual(dto);
+      expect(result).toBeDefined();
+      expect(result!.data).toEqual(dto);
       expect(mockRepository.update).toHaveBeenCalledWith(id, dto);
     });
 
@@ -157,11 +148,14 @@ describe('ServicesService', () => {
     it('should remove a service successfully', async () => {
       const s = createFakeService();
       const id = s.id;
-      mockRepository.findOneBy.mockResolvedValue(s);
+      mockRepository.findOneById.mockResolvedValue(s);
       mockRepository.softRemove.mockResolvedValue(s);
 
       const result = await service.remove(id);
-      expect(result.message).toBe('El servicio fue eliminado correctamente!');
+      expect(result).toBeDefined();
+      expect((result as any).message).toBe(
+        'El servicio fue eliminado correctamente!',
+      );
       expect(mockRepository.softRemove).toHaveBeenCalledWith(s);
     });
   });

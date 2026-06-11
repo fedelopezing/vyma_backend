@@ -14,12 +14,10 @@ import {
   Patch,
   Param,
   Delete,
-  Delete,
   ParseIntPipe,
   Req,
 } from '@nestjs/common';
 import { Request } from 'express';
-import { User } from '../users/entities/user.entity';
 import { User } from '../users/entities/user.entity';
 
 import { CreateProfileDto, UpdateProfileDto } from './dto';

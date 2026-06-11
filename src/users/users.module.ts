@@ -7,6 +7,7 @@ import { ActivationTokensService } from './activation-tokens.service';
 import { UsersController } from './users.controller';
 import { UserCreatedListener } from './listeners/user-created.listener';
 import { UsersRepository } from './repositories/users.repository';
+import { ActivationTokensRepository } from './repositories/activation-tokens.repository';
 import { EmailModule } from '../email/email.module';
 import { AuthModule } from '../auth/auth.module';
 
@@ -22,12 +23,14 @@ import { AuthModule } from '../auth/auth.module';
     ActivationTokensService,
     UserCreatedListener,
     UsersRepository,
+    ActivationTokensRepository,
   ],
   exports: [
     TypeOrmModule,
     UsersService,
     ActivationTokensService,
     UsersRepository,
+    ActivationTokensRepository,
   ],
 })
 export class UsersModule {}

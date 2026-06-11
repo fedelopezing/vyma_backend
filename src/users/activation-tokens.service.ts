@@ -1,14 +1,14 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, EntityManager } from 'typeorm';
+import { EntityManager } from 'typeorm';
 import { ActivationToken } from './entities/activation-token.entity';
+import { ActivationTokensRepository } from './repositories/activation-tokens.repository';
 import { randomUUID } from 'crypto';
+import { User } from './entities/user.entity';
 
 @Injectable()
 export class ActivationTokensService {
   constructor(
-    @InjectRepository(ActivationToken)
-    private readonly activationTokenRepository: Repository<ActivationToken>,
+    private readonly activationTokensRepository: ActivationTokensRepository,
   ) {}
 
   async createToken(userId: number, manager?: EntityManager): Promise<string> {
@@ -18,34 +18,27 @@ export class ActivationTokensService {
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 24); // 24 horas de validez
 
-    const repo = manager
-      ? manager.getRepository(ActivationToken)
-      : this.activationTokenRepository;
+    await this.activationTokensRepository.deleteByUserId(userId, manager);
 
-    await repo.delete({ user: { id: userId } });
+    const token = this.activationTokensRepository.create(
+      {
+        tokenHash,
+        expiresAt,
+        user: { id: userId } as User,
+      },
+      manager,
+    );
 
-    const token = repo.create({
-      tokenHash,
-      expiresAt,
-      user: { id: userId },
-    });
-
-    await repo.save(token);
+    await this.activationTokensRepository.save(token, manager);
 
     return rawToken;
   }
 
   async findActiveToken(hashedToken: string): Promise<ActivationToken | null> {
-    return this.activationTokenRepository.findOne({
-      where: { tokenHash: hashedToken, isUsed: false },
-      relations: ['user'],
-    });
+    return this.activationTokensRepository.findActiveToken(hashedToken);
   }
 
   async markAsUsed(id: number, manager?: EntityManager): Promise<void> {
-    const repo = manager
-      ? manager.getRepository(ActivationToken)
-      : this.activationTokenRepository;
-    await repo.update(id, { isUsed: true });
+    await this.activationTokensRepository.update(id, { isUsed: true }, manager);
   }
 }

@@ -1,19 +1,17 @@
 import { Injectable } from '@nestjs/common';
-import { EntityManager, DataSource } from 'typeorm';
+import { EntityManager } from 'typeorm';
 import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { ActivationTokensService } from './activation-tokens.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import * as bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
-import { runInTransaction } from '../common/helpers/transaction.helper';
 import { UsersRepository } from './repositories/users.repository';
 
 @Injectable()
 export class UsersService {
   constructor(
     private readonly usersRepository: UsersRepository,
-    private readonly dataSource: DataSource,
     private readonly activationTokensService: ActivationTokensService,
     private readonly eventEmitter: EventEmitter2,
   ) {}
@@ -53,7 +51,7 @@ export class UsersService {
     if (manager) {
       return executeCreate(manager);
     }
-    return runInTransaction(this.dataSource, (qr) => executeCreate(qr.manager));
+    return this.usersRepository.runTransaction((mgr) => executeCreate(mgr));
   }
 
   async findOneByEmailForLogin(email: string): Promise<User | null> {
