@@ -120,6 +120,9 @@ export class AuthService {
       await this.userCompanyRepository.findMembershipsByUserId(user.id);
 
     if (memberships.length === 0) {
+      if (user.isSuperAdmin) {
+        return this.generateTokens(user, undefined, ipAddress, userAgent);
+      }
       throw new UnauthorizedException('User has no company memberships');
     }
 
@@ -220,6 +223,9 @@ export class AuthService {
       await this.userCompanyRepository.findMembershipsByUserId(user.id);
 
     if (memberships.length === 0) {
+      if (user.isSuperAdmin) {
+        return this.generateTokens(user, undefined, ipAddress, userAgent);
+      }
       throw new UnauthorizedException('User has no company memberships');
     }
 
@@ -242,7 +248,7 @@ export class AuthService {
 
   private async generateTokens(
     user: User,
-    membership: UserCompany,
+    membership?: UserCompany,
     ipAddress?: string,
     userAgent?: string,
   ): Promise<LoginResponse> {
@@ -250,9 +256,9 @@ export class AuthService {
       sub: user.id,
       uuid: user.uuid,
       email: user.email,
-      role: user.role?.name || membership.role?.name || 'client',
-      companyId: membership.companyId,
-      companyUuid: membership.company?.uuid,
+      role: user.role?.name || membership?.role?.name || 'client',
+      companyId: membership?.companyId,
+      companyUuid: membership?.company?.uuid,
       isSuperAdmin: user.isSuperAdmin ?? false,
     };
 
@@ -283,7 +289,7 @@ export class AuthService {
         name: user.name,
         email: user.email,
         role: user.role?.name,
-        company: membership.company
+        company: membership?.company
           ? {
               id: membership.company.id,
               uuid: membership.company.uuid,

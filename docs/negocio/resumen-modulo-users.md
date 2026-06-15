@@ -6,14 +6,20 @@ Este documento detalla el propósito de negocio, la arquitectura técnica y el c
 
 ## 1. Propósito de Negocio
 
-El módulo `users` se encarga de la gestión y aprovisionamiento de las identidades de usuario en la plataforma. Controla la creación administrativa de cuentas, la asignación de roles y la orquestación inicial para el proceso de activación de cuentas por correo electrónico.
+El módulo `users` se encarga de la gestión y aprovisionamiento de las identidades de usuario en la plataforma. Controla la creación administrativa de cuentas, la asignación de roles globales por compatibilidad y la orquestación inicial para el proceso de activación de cuentas por correo electrónico.
+
+En el esquema multi-tenant:
+*   Las identidades son globales, pero su acceso a recursos está condicionado a sus **membresías** (`UserCompany`) en las empresas registradas.
+*   Se introduce el flag **`isSuperAdmin`** a nivel de usuario, el cual otorga privilegios ilimitados de administración sobre todas las empresas de la plataforma, omitiendo las validaciones del `TenantGuard`.
 
 ---
 
 ## 2. Flujo de Entrada (Endpoints y API)
 
 El módulo restringe la creación de cuentas exclusivamente a administradores:
-*   `POST /users`: Recibe los datos básicos del usuario (`name`, `email`, `roleId`). Está protegido por `AuthGuard('jwt')` y `UserRoleGuard`, garantizando que únicamente usuarios con el rol `admin` puedan consumirlo.
+*   `POST /users`: Registra un usuario básico global (`name`, `email`, `roleId`). Está protegido por `AuthGuard('jwt')` y `UserRoleGuard` (para que solo un rol `admin` pueda invocarlo).
+*   *Asociación a Empresas:* La adición y remoción de miembros a un tenant específico se realiza desde el módulo de empresas (`POST /companies/:uuid/members` y `DELETE /companies/:uuid/members/:userUuid`), no mediante este controlador.
+
 
 ---
 

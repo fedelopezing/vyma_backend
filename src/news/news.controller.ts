@@ -31,8 +31,7 @@ import { UpdateNewsDto } from './dto/update-news.dto';
 import { NewsPaginationDto } from './dto/news-pagination.dto';
 import { News } from './entities/news.entity';
 import { PaginatedResponse } from '../common/interfaces';
-import { AuthRoles } from '../auth/decorators';
-import { ValidRoles } from '../auth/interfaces/valid-roles';
+import { AuthPermissions } from '../auth/decorators';
 import { TenantGuard } from '../common/guards/tenant.guard';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 
@@ -48,7 +47,7 @@ export class NewsController {
   // ─── Endpoints administrativos (tenant-scoped) ─────────────────────────────
 
   @Get('admin')
-  @AuthRoles(ValidRoles.admin, ValidRoles.manager)
+  @AuthPermissions('read:news')
   @UseGuards(AuthGuard('jwt'), TenantGuard)
   @ApiFindAllAdminNews()
   findAllAdmin(
@@ -59,7 +58,7 @@ export class NewsController {
   }
 
   @Post('admin')
-  @AuthRoles(ValidRoles.admin, ValidRoles.manager)
+  @AuthPermissions('create:news')
   @UseGuards(AuthGuard('jwt'), TenantGuard)
   @ApiCreateNews()
   create(
@@ -74,7 +73,7 @@ export class NewsController {
   }
 
   @Put('admin/:id')
-  @AuthRoles(ValidRoles.admin, ValidRoles.manager)
+  @AuthPermissions('update:news')
   @UseGuards(AuthGuard('jwt'), TenantGuard)
   @ApiUpdateNews()
   update(
@@ -85,7 +84,7 @@ export class NewsController {
   }
 
   @Delete('admin/:id')
-  @AuthRoles(ValidRoles.admin, ValidRoles.manager)
+  @AuthPermissions('delete:news')
   @UseGuards(AuthGuard('jwt'), TenantGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiDeleteNews()

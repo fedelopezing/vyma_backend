@@ -1,21 +1,29 @@
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import {
-  Controller,
-  Post,
   Body,
-  Req,
-  UseGuards,
+  Controller,
   HttpCode,
   HttpStatus,
+  Post,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
-import { Request } from 'express';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { AuthGuard } from '@nestjs/passport';
+import { ApiTags } from '@nestjs/swagger';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
+import { Request } from 'express';
 
 import { AuthService } from './auth.service';
 import {
-  LoginUserDto,
+  ApiActivateAccount,
+  ApiLogin,
+  ApiLogout,
+  ApiRefreshTokens,
+  ApiResendActivation,
+  ApiSelectCompany,
+} from './decorators';
+import {
   ActivateAccountDto,
+  LoginUserDto,
   RefreshTokenDto,
   ResendActivationDto,
   SelectCompanyDto,
@@ -35,9 +43,7 @@ export class AuthController {
   @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('activate')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Activate account using activation token' })
-  @ApiResponse({ status: 200, description: 'Account activated successfully.' })
-  @ApiResponse({ status: 400, description: 'Token invalid or expired.' })
+  @ApiActivateAccount()
   async activate(
     @Body() activateAccountDto: ActivateAccountDto,
   ): Promise<MessageResponse> {
@@ -47,11 +53,7 @@ export class AuthController {
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('resend-activation')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Resend account activation email' })
-  @ApiResponse({
-    status: 200,
-    description: 'Activation email sent if registered.',
-  })
+  @ApiResendActivation()
   async resendActivation(
     @Body() resendActivationDto: ResendActivationDto,
   ): Promise<MessageResponse> {
@@ -61,17 +63,7 @@ export class AuthController {
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({
-    summary: 'Login — returns JWT or selection token for multi-company users',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Login successful. Returns JWT or requiresCompanySelection.',
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Invalid credentials or no company memberships.',
-  })
+  @ApiLogin()
   async login(
     @Body() loginDto: LoginUserDto,
     @Req() req: Request,
@@ -85,21 +77,7 @@ export class AuthController {
   @Post('select-company')
   @HttpCode(HttpStatus.OK)
   @UseGuards(AuthGuard('jwt'))
-  @ApiOperation({
-    summary: 'Select active company from multi-tenant login (Case B)',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'JWT with companyId emitted for selected company.',
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Selection token invalid or expired.',
-  })
-  @ApiResponse({
-    status: 403,
-    description: 'User is not a member of the selected company.',
-  })
+  @ApiSelectCompany()
   async selectCompany(
     @Body() dto: SelectCompanyDto,
     @Req() req: Request,
@@ -119,12 +97,7 @@ export class AuthController {
   @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Refresh access token using refresh token' })
-  @ApiResponse({ status: 200, description: 'New tokens issued.' })
-  @ApiResponse({
-    status: 401,
-    description: 'Invalid, expired or revoked refresh token.',
-  })
+  @ApiRefreshTokens()
   async refresh(
     @Body() refreshTokenDto: RefreshTokenDto,
     @Req() req: Request,
@@ -141,8 +114,7 @@ export class AuthController {
   @Post('logout')
   @UseGuards(AuthGuard('jwt'))
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Logout — revokes refresh token' })
-  @ApiResponse({ status: 200, description: 'Logged out successfully.' })
+  @ApiLogout()
   async logout(
     @Body() refreshTokenDto: RefreshTokenDto,
   ): Promise<MessageResponse> {

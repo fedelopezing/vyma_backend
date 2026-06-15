@@ -23,8 +23,7 @@ import { Request } from 'express';
 import { SchedulesService } from './schedules.service';
 import { CreateScheduleDto } from './dto/create-schedule.dto';
 import { UpdateScheduleDto } from './dto/update-schedule.dto';
-import { Auth, AuthRoles } from '../auth/decorators';
-import { ValidRoles } from '../auth/interfaces/valid-roles';
+import { Auth, AuthPermissions } from '../auth/decorators';
 import { TenantGuard } from '../common/guards/tenant.guard';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 
@@ -40,7 +39,7 @@ export class SchedulesController {
 
   @Post()
   @ApiCreateSchedule()
-  @AuthRoles(ValidRoles.admin)
+  @AuthPermissions('write:schedules')
   create(
     @Body() createScheduleDto: CreateScheduleDto,
     @Req() req: AuthenticatedRequest,
@@ -67,7 +66,7 @@ export class SchedulesController {
 
   @Patch(':id')
   @ApiUpdateSchedule()
-  @AuthRoles(ValidRoles.admin)
+  @AuthPermissions('write:schedules')
   update(
     @Param('id') id: string,
     @Body() updateScheduleDto: UpdateScheduleDto,
@@ -82,7 +81,7 @@ export class SchedulesController {
 
   @Delete(':id')
   @ApiDeleteSchedule()
-  @AuthRoles(ValidRoles.admin)
+  @AuthPermissions('write:schedules')
   remove(@Param('id') id: string, @Req() req: AuthenticatedRequest): string {
     return this.schedulesService.remove(+id, req.user.companyId ?? 0);
   }

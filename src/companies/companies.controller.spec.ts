@@ -7,6 +7,8 @@ import { CreateCompanyDto, UpdateCompanyDto, AddMemberDto } from './dto';
 import { Company } from './entities/company.entity';
 import { UserCompany } from './entities/user-company.entity';
 
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
+
 const mockSuperAdminReq = {
   user: { isSuperAdmin: true },
 } as unknown as Parameters<CompaniesController['create']>[1];
@@ -34,7 +36,10 @@ describe('CompaniesController', () => {
           },
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(PermissionsGuard)
+      .useValue({ canActivate: jest.fn().mockReturnValue(true) })
+      .compile();
 
     controller = module.get<CompaniesController>(CompaniesController);
     service = module.get(CompaniesService);

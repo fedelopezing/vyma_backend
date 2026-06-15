@@ -154,6 +154,58 @@ describe('AuthService', () => {
     });
   });
 
+  // ─── resendActivation ─────────────────────────────────────────────────────
+
+  describe('resendActivation', () => {
+    const resendDto = { email: 'inactive@example.com' };
+
+    it('should send activation email if user is found and inactive', async () => {
+      const mockInactiveUser = mockUser({ isActive: false });
+      mockUsersService.findOneByEmailForLogin.mockResolvedValue(
+        mockInactiveUser,
+      );
+      mockActivationTokensService.createToken.mockResolvedValue(
+        'raw-activation-token',
+      );
+
+      const result = await service.resendActivation(resendDto);
+
+      expect(result).toEqual({
+        message:
+          'Si el correo electrónico está registrado, se enviará un enlace de activación',
+      });
+      expect(mockActivationTokensService.createToken).toHaveBeenCalledWith(
+        mockInactiveUser.id,
+      );
+      expect(mockEventEmitter.emit).toHaveBeenCalledWith('user.created', {
+        user: mockInactiveUser,
+        activationToken: 'raw-activation-token',
+      });
+    });
+
+    it('should do nothing if user is active', async () => {
+      mockUsersService.findOneByEmailForLogin.mockResolvedValue(
+        mockUser({ isActive: true }),
+      );
+      const result = await service.resendActivation(resendDto);
+      expect(result).toEqual({
+        message:
+          'Si el correo electrónico está registrado, se enviará un enlace de activación',
+      });
+      expect(mockActivationTokensService.createToken).not.toHaveBeenCalled();
+    });
+
+    it('should do nothing if user is not found', async () => {
+      mockUsersService.findOneByEmailForLogin.mockResolvedValue(null);
+      const result = await service.resendActivation(resendDto);
+      expect(result).toEqual({
+        message:
+          'Si el correo electrónico está registrado, se enviará un enlace de activación',
+      });
+      expect(mockActivationTokensService.createToken).not.toHaveBeenCalled();
+    });
+  });
+
   // ─── login ────────────────────────────────────────────────────────────────
 
   describe('login', () => {
@@ -194,6 +246,23 @@ describe('AuthService', () => {
       await expect(service.login(credentials)).rejects.toThrow(
         UnauthorizedException,
       );
+    });
+
+    it('should return full JWT for isSuperAdmin user even when they have no memberships', async () => {
+      mockUsersService.findOneByEmailForLogin.mockResolvedValue(
+        mockUser({ isSuperAdmin: true }),
+      );
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      (bcrypt.hash as jest.Mock).mockResolvedValue('hashed_refresh');
+      mockUserCompanyRepository.findMembershipsByUserId.mockResolvedValue([]);
+      mockJwtService.sign.mockReturnValue('superadmin-token');
+      mockRefreshTokenRepo.create.mockReturnValue({} as RefreshToken);
+      mockRefreshTokenRepo.save.mockResolvedValue({} as RefreshToken);
+
+      const result = await service.login(credentials);
+
+      expect(result).toHaveProperty('accessToken', 'superadmin-token');
+      expect(result).not.toHaveProperty('requiresCompanySelection');
     });
 
     it('Case A: should return full JWT when user has exactly 1 membership', async () => {
@@ -272,6 +341,163 @@ describe('AuthService', () => {
       const result = await service.selectCompany(selectionToken, dto);
 
       expect(result).toHaveProperty('accessToken', 'final-access-token');
+    });
+
+    it('should throw ForbiddenException if user is inactive in the company', async () => {
+      mockJwtService.verify.mockReturnValue({ sub: 10 });
+      mockUserCompanyRepository.findMembershipsByUserId.mockResolvedValue([
+        mockMembership(1),
+      ]);
+      mockUserCompanyRepository.isActiveMember.mockResolvedValue(false);
+
+      await expect(service.selectCompany(selectionToken, dto)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('should throw UnauthorizedException if user not found in selectCompany', async () => {
+      mockJwtService.verify.mockReturnValue({ sub: 10 });
+      mockUserCompanyRepository.findMembershipsByUserId.mockResolvedValue([
+        mockMembership(1),
+      ]);
+      mockUserCompanyRepository.isActiveMember.mockResolvedValue(true);
+      mockUsersService.findOneById.mockResolvedValue(null);
+
+      await expect(service.selectCompany(selectionToken, dto)).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+
+    it('should throw UnauthorizedException if user is inactive in selectCompany', async () => {
+      mockJwtService.verify.mockReturnValue({ sub: 10 });
+      mockUserCompanyRepository.findMembershipsByUserId.mockResolvedValue([
+        mockMembership(1),
+      ]);
+      mockUserCompanyRepository.isActiveMember.mockResolvedValue(true);
+      mockUsersService.findOneById.mockResolvedValue(
+        mockUser({ isActive: false }),
+      );
+
+      await expect(service.selectCompany(selectionToken, dto)).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+  });
+
+  // ─── refreshTokens ────────────────────────────────────────────────────────
+
+  describe('refreshTokens', () => {
+    const token = 'refresh-token-uuid';
+
+    it('should throw UnauthorizedException if refresh token record is not found', async () => {
+      mockRefreshTokenRepo.findOneByTokenWithUser.mockResolvedValue(null);
+
+      await expect(service.refreshTokens(token)).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+
+    it('should throw UnauthorizedException and revoke all sessions if refresh token is already revoked', async () => {
+      const mockRecord = {
+        isRevoked: true,
+        user: { id: 10 },
+      } as RefreshToken;
+      mockRefreshTokenRepo.findOneByTokenWithUser.mockResolvedValue(mockRecord);
+
+      await expect(service.refreshTokens(token)).rejects.toThrow(
+        UnauthorizedException,
+      );
+      expect(
+        mockRefreshTokenRepo.updateRevokeStatusByUser,
+      ).toHaveBeenCalledWith(10, true);
+    });
+
+    it('should throw UnauthorizedException if refresh token is expired', async () => {
+      const mockRecord = {
+        isRevoked: false,
+        expiresAt: new Date(Date.now() - 10000),
+        user: { id: 10 },
+      } as RefreshToken;
+      mockRefreshTokenRepo.findOneByTokenWithUser.mockResolvedValue(mockRecord);
+
+      await expect(service.refreshTokens(token)).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+
+    it('should throw UnauthorizedException if user is inactive or not found during refresh', async () => {
+      const mockRecord = {
+        isRevoked: false,
+        expiresAt: new Date(Date.now() + 10000),
+        user: { id: 10 },
+      } as RefreshToken;
+      mockRefreshTokenRepo.findOneByTokenWithUser.mockResolvedValue(mockRecord);
+      mockUsersService.findOneById.mockResolvedValue(null);
+
+      await expect(service.refreshTokens(token)).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+
+    it('should throw UnauthorizedException if user has no memberships during refresh', async () => {
+      const mockRecord = {
+        isRevoked: false,
+        expiresAt: new Date(Date.now() + 10000),
+        user: { id: 10 },
+      } as RefreshToken;
+      mockRefreshTokenRepo.findOneByTokenWithUser.mockResolvedValue(mockRecord);
+      mockUsersService.findOneById.mockResolvedValue(mockUser());
+      mockUserCompanyRepository.findMembershipsByUserId.mockResolvedValue([]);
+
+      await expect(service.refreshTokens(token)).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+
+    it('should refresh tokens successfully for isSuperAdmin user even when they have no memberships', async () => {
+      const mockRecord = {
+        isRevoked: false,
+        expiresAt: new Date(Date.now() + 10000),
+        user: { id: 10 },
+      } as RefreshToken;
+      mockRefreshTokenRepo.findOneByTokenWithUser.mockResolvedValue(mockRecord);
+      mockUsersService.findOneById.mockResolvedValue(
+        mockUser({ isSuperAdmin: true }),
+      );
+      mockUserCompanyRepository.findMembershipsByUserId.mockResolvedValue([]);
+      mockJwtService.sign.mockReturnValue('new-access-token');
+      (bcrypt.hash as jest.Mock).mockResolvedValue('hashed_refresh');
+      mockRefreshTokenRepo.create.mockReturnValue({} as RefreshToken);
+      mockRefreshTokenRepo.save.mockResolvedValue({} as RefreshToken);
+
+      const result = await service.refreshTokens(token);
+
+      expect(result).toHaveProperty('accessToken', 'new-access-token');
+      expect(mockRecord.isRevoked).toBe(true);
+      expect(mockRefreshTokenRepo.save).toHaveBeenCalledWith(mockRecord);
+    });
+
+    it('should refresh tokens successfully', async () => {
+      const mockRecord = {
+        isRevoked: false,
+        expiresAt: new Date(Date.now() + 10000),
+        user: { id: 10 },
+      } as RefreshToken;
+      mockRefreshTokenRepo.findOneByTokenWithUser.mockResolvedValue(mockRecord);
+      mockUsersService.findOneById.mockResolvedValue(mockUser());
+      mockUserCompanyRepository.findMembershipsByUserId.mockResolvedValue([
+        mockMembership(1),
+      ]);
+      mockJwtService.sign.mockReturnValue('new-access-token');
+      (bcrypt.hash as jest.Mock).mockResolvedValue('hashed_refresh');
+      mockRefreshTokenRepo.create.mockReturnValue({} as RefreshToken);
+      mockRefreshTokenRepo.save.mockResolvedValue({} as RefreshToken);
+
+      const result = await service.refreshTokens(token);
+
+      expect(result).toHaveProperty('accessToken', 'new-access-token');
+      expect(mockRecord.isRevoked).toBe(true);
+      expect(mockRefreshTokenRepo.save).toHaveBeenCalledWith(mockRecord);
     });
   });
 

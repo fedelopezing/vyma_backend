@@ -5,6 +5,8 @@ import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { faker } from '@faker-js/faker';
 import { UserCompanyRepository } from '../companies/repositories/user-company.repository';
 
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
+
 describe('SchedulesController', () => {
   let controller: SchedulesController;
   let mockService: DeepMocked<SchedulesService>;
@@ -30,7 +32,10 @@ describe('SchedulesController', () => {
           useValue: { isActiveMember: jest.fn().mockResolvedValue(true) },
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(PermissionsGuard)
+      .useValue({ canActivate: jest.fn().mockReturnValue(true) })
+      .compile();
 
     controller = module.get<SchedulesController>(SchedulesController);
   });
@@ -49,6 +54,17 @@ describe('SchedulesController', () => {
     expect(mockService.create).toHaveBeenCalledWith({}, 2);
   });
 
+  it('should create a schedule with default companyId 0', () => {
+    const expectedResult = faker.lorem.sentence();
+    mockService.create.mockReturnValue(expectedResult as never);
+    const mockReqEmpty = { user: {} };
+
+    expect(controller.create({} as never, mockReqEmpty as never)).toBe(
+      expectedResult,
+    );
+    expect(mockService.create).toHaveBeenCalledWith({}, 0);
+  });
+
   it('should return all schedules', () => {
     const expectedResult = faker.lorem.sentence();
     mockService.findAll.mockReturnValue(expectedResult as never);
@@ -57,12 +73,30 @@ describe('SchedulesController', () => {
     expect(mockService.findAll).toHaveBeenCalledWith(2);
   });
 
+  it('should return all schedules with default companyId 0', () => {
+    const expectedResult = faker.lorem.sentence();
+    mockService.findAll.mockReturnValue(expectedResult as never);
+    const mockReqEmpty = { user: {} };
+
+    expect(controller.findAll(mockReqEmpty as never)).toBe(expectedResult);
+    expect(mockService.findAll).toHaveBeenCalledWith(0);
+  });
+
   it('should return a schedule by id', () => {
     const expectedResult = faker.lorem.sentence();
     mockService.findOne.mockReturnValue(expectedResult as never);
 
     expect(controller.findOne('1', mockReq as never)).toBe(expectedResult);
     expect(mockService.findOne).toHaveBeenCalledWith(1, 2);
+  });
+
+  it('should return a schedule by id with default companyId 0', () => {
+    const expectedResult = faker.lorem.sentence();
+    mockService.findOne.mockReturnValue(expectedResult as never);
+    const mockReqEmpty = { user: {} };
+
+    expect(controller.findOne('1', mockReqEmpty as never)).toBe(expectedResult);
+    expect(mockService.findOne).toHaveBeenCalledWith(1, 0);
   });
 
   it('should update a schedule', () => {
@@ -75,11 +109,31 @@ describe('SchedulesController', () => {
     expect(mockService.update).toHaveBeenCalledWith(1, {}, 2);
   });
 
+  it('should update a schedule with default companyId 0', () => {
+    const expectedResult = faker.lorem.sentence();
+    mockService.update.mockReturnValue(expectedResult as never);
+    const mockReqEmpty = { user: {} };
+
+    expect(controller.update('1', {} as never, mockReqEmpty as never)).toBe(
+      expectedResult,
+    );
+    expect(mockService.update).toHaveBeenCalledWith(1, {}, 0);
+  });
+
   it('should remove a schedule', () => {
     const expectedResult = faker.lorem.sentence();
     mockService.remove.mockReturnValue(expectedResult as never);
 
     expect(controller.remove('1', mockReq as never)).toBe(expectedResult);
     expect(mockService.remove).toHaveBeenCalledWith(1, 2);
+  });
+
+  it('should remove a schedule with default companyId 0', () => {
+    const expectedResult = faker.lorem.sentence();
+    mockService.remove.mockReturnValue(expectedResult as never);
+    const mockReqEmpty = { user: {} };
+
+    expect(controller.remove('1', mockReqEmpty as never)).toBe(expectedResult);
+    expect(mockService.remove).toHaveBeenCalledWith(1, 0);
   });
 });

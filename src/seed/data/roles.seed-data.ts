@@ -2,7 +2,9 @@ import { ValidRoles } from '../../auth/interfaces/valid-roles';
 
 export const SEED_PERMISSIONS = [
   'read:professions',
+  'write:professions',
   'read:services',
+  'write:services',
   'read:schedules',
   'write:schedules',
   'read:news',
@@ -12,6 +14,10 @@ export const SEED_PERMISSIONS = [
   'delete:news',
   'read:users',
   'write:users',
+  'read:companies',
+  'write:companies',
+  'read:schedule-breaks',
+  'write:schedule-breaks',
 ] as const;
 
 export type SeedPermission = (typeof SEED_PERMISSIONS)[number];
@@ -30,7 +36,9 @@ export const SEED_TABLES_ORDER = [
   'professions',
   'news',
   'profiles',
+  'user_companies',
   'users',
+  'companies',
   'roles',
   'permissions',
 ] as const;
@@ -55,6 +63,12 @@ const ALL_PERMS = [
   ...NEWS_PERMS,
   'read:users',
   'write:users',
+  'write:professions',
+  'write:services',
+  'read:companies',
+  'write:companies',
+  'read:schedule-breaks',
+  'write:schedule-breaks',
 ] as SeedPermission[];
 
 export const SEED_ROLES_CONFIG: SeedRoleConfig[] = [

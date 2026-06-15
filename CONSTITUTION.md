@@ -90,6 +90,7 @@ src/
 3. **Barrel Exports en DTOs**: La carpeta `dto/` de cada módulo **debe** incluir un `index.ts` que exporte todos sus DTOs.
 4. **Excepciones Modulares en Archivos Separados**: Cada excepción de negocio reside en su propio archivo dentro de `exceptions/`.
 5. **No Inventar Carpetas**: No crear subcarpetas fuera de la estructura establecida. Si se necesita una nueva carpeta, documentarla aquí primero.
+6. **Decoradores de Swagger Separados**: Todos los decoradores de Swagger/OpenAPI de los controladores deben ser extraídos a un archivo de decoradores específico (`[feature]-swagger.decorators.ts`) dentro de la carpeta `decorators/` del propio módulo para mantener limpio el controlador, o en `src/common/decorators/` si son compartidos globalmente.
 
 ---
 
@@ -781,22 +782,50 @@ describe('UsersService', () => {
 
 ## 15. Documentación de API
 
-### Swagger/OpenAPI Completo
+### Swagger/OpenAPI Completo y Separación de Decoradores
 
-Todos los endpoints deben estar documentados:
+Todos los endpoints deben estar documentados usando decoradores de Swagger/OpenAPI. Para mantener los controladores limpios y legibles, **está prohibido declarar múltiples decoradores de Swagger de forma inline directamente sobre los métodos del controlador**.
+
+En su lugar, se deben agrupar utilizando `applyDecorators` y ubicarse en:
+- **Decoradores propios del módulo:** En `src/[feature-name]/decorators/[feature]-swagger.decorators.ts`.
+- **Decoradores compartidos globalmente:** En `src/common/decorators/`.
+
+#### Ejemplo de Definición de Decorador de Swagger
 
 ```typescript
+// src/users/decorators/users-swagger.decorators.ts
+import { applyDecorators } from '@nestjs/common';
+import { ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { UserResponseDto } from '../dto/user-response.dto';
+
+export function ApiCreateUser() {
+  return applyDecorators(
+    ApiOperation({ summary: 'Crear un nuevo usuario' }),
+    ApiResponse({ status: 201, description: 'Usuario creado exitosamente', type: UserResponseDto }),
+    ApiResponse({ status: 409, description: 'El email ya está registrado' }),
+    ApiResponse({ status: 400, description: 'Datos de entrada inválidos' }),
+  );
+}
+```
+
+#### Ejemplo de Uso en el Controlador
+
+```typescript
+// src/users/users.controller.ts
+import { ApiTags } from '@nestjs/swagger';
+import { Controller, Post, Body } from '@nestjs/common';
+import { CreateUserDto, UserResponseDto } from './dto';
+import { ApiCreateUser } from './decorators/users-swagger.decorators';
+
 @ApiTags('Users')
 @Controller('users')
 export class UsersController {
-  @ApiOperation({ summary: 'Crear un nuevo usuario' })
-  @ApiResponse({ status: 201, description: 'Usuario creado exitosamente', type: UserResponseDto })
-  @ApiResponse({ status: 409, description: 'El email ya está registrado' })
-  @ApiResponse({ status: 400, description: 'Datos de entrada inválidos' })
   @Post()
+  @ApiCreateUser() // Decorador limpio y separado
   create(@Body() dto: CreateUserDto): Promise<UserResponseDto> { ... }
 }
 ```
+
 
 ### DTOs de Respuesta Separados
 

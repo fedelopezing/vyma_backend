@@ -6,6 +6,7 @@ import { UpdateNewsDto } from './dto/update-news.dto';
 import { NewsPaginationDto } from './dto/news-pagination.dto';
 import { News, NewsStatus } from './entities/news.entity';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { UserCompanyRepository } from '../companies/repositories/user-company.repository';
 
 describe('NewsController', () => {
@@ -54,7 +55,10 @@ describe('NewsController', () => {
           useValue: { isActiveMember: jest.fn().mockResolvedValue(true) },
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(PermissionsGuard)
+      .useValue({ canActivate: jest.fn().mockReturnValue(true) })
+      .compile();
 
     controller = module.get<NewsController>(NewsController);
     newsService = module.get(NewsService);

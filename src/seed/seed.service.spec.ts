@@ -19,6 +19,11 @@ describe('SeedService', () => {
   const mockPermissionsMap = {} as Record<string, unknown>;
   const mockRolesMap = {} as Record<string, unknown>;
   const mockUser = { id: 1, email: 'superadmin@mail.com' };
+  const mockCompaniesMap = {
+    CCPS: { id: 1, name: 'CCPS' },
+    biolimpieza: { id: 2, name: 'biolimpieza' },
+    natynails: { id: 3, name: 'natynails' },
+  };
 
   beforeEach(async () => {
     seedRepository = createMock<SeedRepository>();
@@ -28,7 +33,9 @@ describe('SeedService', () => {
       mockPermissionsMap as never,
     );
     seedRepository.createRoles.mockResolvedValue(mockRolesMap as never);
+    seedRepository.createCompanies.mockResolvedValue(mockCompaniesMap as never);
     seedRepository.createAdminUser.mockResolvedValue(mockUser as never);
+    seedRepository.createAdditionalUsers.mockResolvedValue();
     seedRepository.createNews.mockResolvedValue();
 
     const module: TestingModule = await Test.createTestingModule({
@@ -63,13 +70,22 @@ describe('SeedService', () => {
         mockQueryRunner,
         mockPermissionsMap,
       );
+      expect(seedRepository.createCompanies).toHaveBeenCalledWith(
+        mockQueryRunner,
+      );
       expect(seedRepository.createAdminUser).toHaveBeenCalledWith(
         mockQueryRunner,
         mockRolesMap,
       );
+      expect(seedRepository.createAdditionalUsers).toHaveBeenCalledWith(
+        mockQueryRunner,
+        mockRolesMap,
+        mockCompaniesMap,
+      );
       expect(seedRepository.createNews).toHaveBeenCalledWith(
         mockQueryRunner,
         mockUser,
+        mockCompaniesMap['CCPS'],
       );
       expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
       expect(mockQueryRunner.release).toHaveBeenCalled();

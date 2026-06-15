@@ -45,6 +45,7 @@ export class UsersRepository {
         isActive: true,
         id: true,
         name: true,
+        isSuperAdmin: true,
         role: { id: true, name: true },
       },
       relations: ['profile', 'role'],

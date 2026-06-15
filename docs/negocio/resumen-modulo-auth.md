@@ -15,20 +15,24 @@ El módulo `auth` centraliza la seguridad de la aplicación, controlando quién 
 
 ## 2. Flujo de Entrada (Endpoints y API)
 
-El controlador expone cuatro endpoints públicos/protegidos bajo `POST /auth`:
-1. `/activate`: Recibe un token temporal y una nueva contraseña para habilitar al usuario.
-2. `/login`: Genera un par de tokens (Access Token de corta duración y Refresh Token de larga duración) al validar correo y contraseña. Implementa limitación de tasa (rate limiting) a máximo 5 intentos por minuto.
-3. `/refresh`: Permite obtener un nuevo par de tokens usando el Refresh Token antes de que la sesión expire.
-4. `/logout` (Protegido por JWT): Revoca manualmente el Refresh Token del usuario invalidando su sesión activa.
+El controlador expone endpoints bajo `POST /auth`:
+1. `/activate` (Público): Recibe un token temporal y una nueva contraseña para habilitar al usuario.
+2. `/login` (Público): Valida correo y contraseña. Implementa limitación de tasa (rate limiting) a máximo 5 intentos por minuto. Su comportamiento varía según las membresías del usuario:
+   * **Caso A (Una Empresa):** Si el usuario pertenece a una sola empresa, emite directamente el par de tokens (`accessToken` y `refreshToken`) con el contexto de la empresa.
+   * **Caso B (Múltiples Empresas):** Si pertenece a 2 o más empresas, devuelve un objeto indicando `{ requiresCompanySelection: true, selectionToken, companies }`.
+3. `/select-company` (Público, con token temporal): Recibe el `companyUuid` en el cuerpo y el `selectionToken` en la cabecera. Valida la membresía y emite el par de tokens definitivo.
+4. `/refresh` (Público): Permite obtener un nuevo par de tokens usando el Refresh Token antes de que la sesión expire.
+5. `/logout` (Protegido por JWT): Revoca manualmente el Refresh Token del usuario invalidando su sesión activa.
 
 ---
 
 ## 3. Elementos de Seguridad (Guards, Decorators y Strategies)
 
 La validación y seguridad de accesos se realiza a través de las siguientes piezas:
-* **`JwtStrategy` (Passport):** Intercepta la cabecera `Authorization: Bearer <token>` de las peticiones HTTP y extrae el identificador del usuario (`sub`). Valida que el token sea legítimo y que el usuario esté activo.
-* **`PermissionsGuard` & `@RequirePermissions`:** Es el mecanismo de autorización recomendado. Evalúa dinámicamente si el usuario autenticado tiene asignados los permisos necesarios para ejecutar la acción solicitada.
-* **`UserRoleGuard` (Deprecado):** Realizaba validaciones estáticas basadas en nombres de rol rígidos. Ha sido sustituido por el modelo de permisos dinámicos.
+*   **`JwtStrategy` (Passport):** Intercepta la cabecera `Authorization: Bearer <token>` de las peticiones HTTP y extrae el payload. Inyecta en `req.user` las propiedades: `sub` (userId), `uuid` (userUuid), `email`, `role` (dentro de la empresa activa), `companyId` (contexto activo), `companyUuid` e `isSuperAdmin`.
+*   **`TenantGuard`:** Guard complementario aplicado en controladores de negocio. Asegura que el `companyId` del token JWT corresponda a una membresía activa del usuario (a menos que el usuario sea `isSuperAdmin`).
+*   **`PermissionsGuard` & `@RequirePermissions`:** Es el mecanismo de autorización recomendado. Evalúa dinámicamente si el usuario autenticado tiene asignados los permisos necesarios para ejecutar la acción solicitada.
+*   **`UserRoleGuard` (Deprecado):** Realizaba validaciones estáticas basadas en nombres de rol rígidos. Ha sido sustituido por el modelo de permisos dinámicos.
 
 ---
 

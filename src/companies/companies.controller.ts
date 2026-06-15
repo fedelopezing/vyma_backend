@@ -17,9 +17,7 @@ import { Request } from 'express';
 
 import { CompaniesService } from './companies.service';
 import { CreateCompanyDto, UpdateCompanyDto, AddMemberDto } from './dto';
-import { Auth } from '../auth/decorators/auth.decorator';
-import { AuthRoles } from '../auth/decorators/auth-roles.decorator';
-import { ValidRoles } from '../auth/interfaces/valid-roles';
+import { Auth, AuthPermissions } from '../auth/decorators';
 import { Company } from './entities/company.entity';
 import { UserCompany } from './entities/user-company.entity';
 import {
@@ -92,7 +90,7 @@ export class CompaniesController {
   // ─── Admin / SuperAdmin endpoints ─────────────────────────────────────────
 
   @Get(':uuid')
-  @AuthRoles(ValidRoles.admin)
+  @AuthPermissions('read:companies')
   @ApiFindCompanyByUuid()
   findByUuid(@Param('uuid', ParseUUIDPipe) uuid: string): Promise<Company> {
     return this.companiesService.findByUuid(uuid);
@@ -101,7 +99,7 @@ export class CompaniesController {
   // ─── Member management (TenantGuard added in Layer 5) ────────────────────
 
   @Post(':uuid/members')
-  @AuthRoles(ValidRoles.admin)
+  @AuthPermissions('write:companies')
   @HttpCode(HttpStatus.CREATED)
   @ApiAddCompanyMember()
   addMember(
@@ -112,7 +110,7 @@ export class CompaniesController {
   }
 
   @Delete(':uuid/members/:userUuid')
-  @AuthRoles(ValidRoles.admin)
+  @AuthPermissions('write:companies')
   @HttpCode(HttpStatus.OK)
   @ApiRemoveCompanyMember()
   removeMember(

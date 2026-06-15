@@ -133,7 +133,7 @@ describe('ProfessionsService', () => {
 
       const result = await service.remove(id);
       expect(result).toBeDefined();
-      expect((result as any).message).toBe(
+      expect((result as unknown as { message: string }).message).toBe(
         'La profesión fue eliminado correctamente!',
       );
       expect(mockRepository.softRemove).toHaveBeenCalledWith(profession);

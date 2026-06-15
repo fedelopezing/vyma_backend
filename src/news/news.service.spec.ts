@@ -5,6 +5,7 @@ import { NewsService } from './news.service';
 import { News, NewsStatus } from './entities/news.entity';
 import { CreateNewsDto } from './dto/create-news.dto';
 import { NewsRepository } from './repositories/news.repository';
+import { SelectQueryBuilder } from 'typeorm';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 
 describe('NewsService', () => {
@@ -34,7 +35,7 @@ describe('NewsService', () => {
     mockEventEmitter = createMock<EventEmitter2>();
 
     mockNewsRepository.createQueryBuilder.mockReturnValue(
-      mockQueryBuilder as any,
+      mockQueryBuilder as unknown as SelectQueryBuilder<News>,
     );
 
     const module: TestingModule = await Test.createTestingModule({
