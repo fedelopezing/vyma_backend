@@ -65,5 +65,8 @@ export const SEED_ROLES_CONFIG: SeedRoleConfig[] = [
   { name: ValidRoles.professional, permissions: BASIC_PERMS },
   { name: ValidRoles.client, permissions: BASIC_PERMS },
   { name: ValidRoles.user, permissions: BASIC_PERMS },
-  { name: ValidRoles.ccps, permissions: NEWS_PERMS },
+  {
+    name: ValidRoles.manager,
+    permissions: [...BASIC_PERMS, ...NEWS_PERMS],
+  },
 ];

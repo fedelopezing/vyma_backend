@@ -45,7 +45,7 @@ export class NewsController {
   // ─── Endpoints administrativos ─────────────────────────────────────────────
 
   @Get('admin')
-  @AuthRoles(ValidRoles.admin, ValidRoles.ccps)
+  @AuthRoles(ValidRoles.admin, ValidRoles.manager)
   @ApiFindAllAdminNews()
   findAllAdmin(
     @Query() paginationDto: NewsPaginationDto,
@@ -54,7 +54,7 @@ export class NewsController {
   }
 
   @Post('admin')
-  @AuthRoles(ValidRoles.admin, ValidRoles.ccps)
+  @AuthRoles(ValidRoles.admin, ValidRoles.manager)
   @ApiCreateNews()
   create(
     @Body() createNewsDto: CreateNewsDto,
@@ -64,7 +64,7 @@ export class NewsController {
   }
 
   @Put('admin/:id')
-  @AuthRoles(ValidRoles.admin, ValidRoles.ccps)
+  @AuthRoles(ValidRoles.admin, ValidRoles.manager)
   @ApiUpdateNews()
   update(
     @Param('id') id: string,
@@ -74,7 +74,7 @@ export class NewsController {
   }
 
   @Delete('admin/:id')
-  @AuthRoles(ValidRoles.admin, ValidRoles.ccps)
+  @AuthRoles(ValidRoles.admin, ValidRoles.manager)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiDeleteNews()
   remove(@Param('id') id: string): Promise<void> {
