@@ -3,5 +3,9 @@ export interface JwtPayload {
   uuid: string;
   email: string;
   role: string;
+  companyId?: number;
+  companyUuid?: string;
+  isSuperAdmin: boolean;
   iat?: number;
+  exp?: number;
 }

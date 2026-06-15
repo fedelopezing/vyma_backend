@@ -70,11 +70,15 @@ describe('NewsService', () => {
       } as News;
       mockNewsRepository.createNews.mockResolvedValue(savedMock);
 
-      const result = await service.create(dto, '1');
+      const result = await service.create(dto, '1', undefined);
 
       expect(result).toEqual(savedMock);
       expect(mockEventEmitter.emit).not.toHaveBeenCalled();
-      expect(mockNewsRepository.createNews).toHaveBeenCalledWith(dto, '1');
+      expect(mockNewsRepository.createNews).toHaveBeenCalledWith(
+        dto,
+        '1',
+        undefined,
+      );
     });
 
     it('debería emitir evento news.published al crear en estado PUBLICADO', async () => {
@@ -97,7 +101,7 @@ describe('NewsService', () => {
       } as News;
       mockNewsRepository.createNews.mockResolvedValue(savedMock);
 
-      await service.create(dto, '1');
+      await service.create(dto, '1', undefined);
 
       expect(mockEventEmitter.emit).toHaveBeenCalledWith(
         'news.published',
@@ -114,10 +118,33 @@ describe('NewsService', () => {
         estado: NewsStatus.PUBLICADO,
       };
 
-      await expect(service.create(dto, '1')).rejects.toThrow(
+      await expect(service.create(dto, '1', undefined)).rejects.toThrow(
         BadRequestException,
       );
       expect(mockNewsRepository.createNews).not.toHaveBeenCalled();
+    });
+
+    it('debería pasar companyId al repositorio al crear', async () => {
+      const dto: CreateNewsDto = {
+        tituloEs: 'Mi noticia',
+        resumenEs: 'Resumen',
+        contenidoEs: 'Contenido',
+        imagenPortada: 'url',
+        estado: NewsStatus.BORRADOR,
+      };
+
+      const savedMock = {
+        id: '1',
+        slugEs: 'mi-noticia',
+        slugEn: 'mi-noticia-en',
+        estado: NewsStatus.BORRADOR,
+        companyId: 5,
+      } as News;
+      mockNewsRepository.createNews.mockResolvedValue(savedMock);
+
+      await service.create(dto, '1', 5);
+
+      expect(mockNewsRepository.createNews).toHaveBeenCalledWith(dto, '1', 5);
     });
   });
 
@@ -230,6 +257,36 @@ describe('NewsService', () => {
       });
 
       expect(mockQueryBuilder.andWhere).not.toHaveBeenCalled();
+    });
+
+    it('debería filtrar por companyId cuando se provee', async () => {
+      mockQueryBuilder.getManyAndCount.mockResolvedValueOnce([
+        [{ id: '1' }],
+        1,
+      ]);
+
+      await service.findAllAdmin({ page: 1, limit: 10 }, 7);
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'news.companyId = :companyId',
+        { companyId: 7 },
+      );
+    });
+
+    it('no debería filtrar por companyId si no se provee', async () => {
+      mockQueryBuilder.getManyAndCount.mockResolvedValueOnce([
+        [{ id: '1' }],
+        1,
+      ]);
+
+      await service.findAllAdmin({ page: 1, limit: 10 }, undefined);
+
+      const calls: [string, unknown][] = mockQueryBuilder.andWhere.mock
+        .calls as [string, unknown][];
+      const companyIdCall = calls.find(([query]) =>
+        query.includes('companyId'),
+      );
+      expect(companyIdCall).toBeUndefined();
     });
   });
 

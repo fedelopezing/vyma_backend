@@ -15,6 +15,7 @@ import { UsersModule } from '../users/users.module';
 import { CommonModule } from '../common/common.module';
 import { RolesModule } from '../roles/roles.module';
 import { PermissionsModule } from '../permissions/permissions.module';
+import { CompaniesModule } from '../companies/companies.module';
 
 import { RoleCacheListener } from './listeners/role-cache.listener';
 import { TokenCleanupCron } from './cron/token-cleanup.cron';
@@ -36,6 +37,7 @@ import { RefreshTokenRepository } from './repositories/refresh-token.repository'
     UsersModule,
     RolesModule,
     PermissionsModule,
+    forwardRef(() => CompaniesModule),
 
     TypeOrmModule.forFeature([RefreshToken]),
     PassportModule.register({ defaultStrategy: 'jwt' }),

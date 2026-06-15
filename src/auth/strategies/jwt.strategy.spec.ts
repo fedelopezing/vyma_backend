@@ -49,6 +49,7 @@ describe('JwtStrategy', () => {
         uuid: faker.string.uuid(),
         email: faker.internet.email(),
         role: 'client',
+        isSuperAdmin: false,
       };
       const expectedUser = createMock<User>({
         id: payload.sub,
@@ -62,7 +63,15 @@ describe('JwtStrategy', () => {
       const result = await strategy.validate(payload);
 
       expect(mockUsersService.findOneById).toHaveBeenCalledWith(payload.sub);
-      expect(result).toEqual(expectedUser);
+      expect(result).toEqual({
+        sub: payload.sub,
+        uuid: payload.uuid,
+        email: payload.email,
+        role: payload.role,
+        companyId: undefined,
+        companyUuid: undefined,
+        isSuperAdmin: false,
+      });
     });
 
     it('should throw UnauthorizedException if user is not found', async () => {
@@ -71,6 +80,7 @@ describe('JwtStrategy', () => {
         uuid: faker.string.uuid(),
         email: faker.internet.email(),
         role: 'client',
+        isSuperAdmin: false,
       };
 
       jest.spyOn(mockUsersService, 'findOneById').mockResolvedValue(null);
@@ -89,6 +99,7 @@ describe('JwtStrategy', () => {
         uuid: faker.string.uuid(),
         email: faker.internet.email(),
         role: 'client',
+        isSuperAdmin: false,
       };
       const inactiveUser = createMock<User>({
         id: payload.sub,

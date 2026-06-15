@@ -52,7 +52,7 @@ Perform a rigorous, automated, and manual inspection of the codebase to ensure a
   6. **Code Cleanup & Unused Imports:** 
      - Are there any unused imports or variables left in the files? (They must be actively identified and removed to keep the code clean).
   7. **Architecture Convention Compliance:**
-     - Does the codebase adhere strictly to the naming casing, suffixes, folder structures, and developer/reviewer rules defined in [convencion-arquitectura.md](file:///c:/Users/fedel/NestJs/vyma_backend/docs/convencion-arquitectura.md)?
+     - Does the codebase adhere strictly to the naming casing, suffixes, folder structures, coding standards, and developer/reviewer rules defined in the project [CONSTITUTION.md](file:///c:/Users/fedel/NestJs/vyma_backend/CONSTITUTION.md)?
      - Verify that Custom Repositories exist in the `repositories/` directory and use the `.repository.ts` suffix.
      - Verify that Custom Exception Filters exist in the `filters/` directory and use the `.filter.ts` suffix.
 

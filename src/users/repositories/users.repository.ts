@@ -55,6 +55,10 @@ export class UsersRepository {
     return this.repository.findOne({ where: { id }, relations: ['role'] });
   }
 
+  async findOneByUuid(uuid: string): Promise<User | null> {
+    return this.repository.findOne({ where: { uuid } });
+  }
+
   async findOneWithPermissions(id: number): Promise<User | null> {
     return this.repository.findOne({
       where: { id },

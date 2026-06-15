@@ -36,7 +36,11 @@ export class NewsRepository {
       .getOne();
   }
 
-  async createNews(dto: CreateNewsDto, autorId: string): Promise<News> {
+  async createNews(
+    dto: CreateNewsDto,
+    autorId: string,
+    companyId?: number,
+  ): Promise<News> {
     return runInTransaction(this.dataSource, async (qr) => {
       const slugs = await resolveNewsSlugs(dto.tituloEs, dto.tituloEn, qr);
 
@@ -44,6 +48,7 @@ export class NewsRepository {
         ...dto,
         ...slugs,
         autor: { id: parseInt(autorId, 10) } as User,
+        ...(companyId !== undefined && { companyId }),
       });
 
       return qr.manager.save(news);

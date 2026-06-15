@@ -62,6 +62,10 @@ export class UsersService {
     return this.usersRepository.findOneById(id);
   }
 
+  async findOneByUuid(uuid: string): Promise<User | null> {
+    return this.usersRepository.findOneByUuid(uuid);
+  }
+
   async findOneWithPermissions(id: number): Promise<User | null> {
     return this.usersRepository.findOneWithPermissions(id);
   }

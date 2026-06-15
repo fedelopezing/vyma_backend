@@ -5,7 +5,11 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
+  Index,
 } from 'typeorm';
+import { Company } from '../../companies/entities/company.entity';
 
 @Entity('services')
 export class Service {
@@ -26,6 +30,14 @@ export class Service {
 
   @Column('boolean', { default: true })
   isActive: boolean;
+
+  @Index()
+  @Column({ name: 'company_id', type: 'bigint' })
+  companyId: number;
+
+  @ManyToOne(() => Company, { nullable: false, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'company_id' })
+  company: Company;
 
   @CreateDateColumn({ type: 'timestamp', name: 'created_at' })
   createdAt: Date;

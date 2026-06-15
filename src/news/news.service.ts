@@ -62,11 +62,12 @@ export class NewsService {
   // ─── Queries ─────────────────────────────────────────────────────────────────
 
   /**
-   * Construye una query base paginada con filtros opcionales de categoría y estado.
+   * Construye una query base paginada con filtros opcionales de categoría, estado y companyId.
    * Pasa `forceStatus` para forzar el filtro (ej. solo PUBLICADO en la web pública).
    */
   private buildPaginatedQuery(
     paginationDto: NewsPaginationDto,
+    companyId?: number,
     forceStatus?: NewsStatus,
   ): import('typeorm').SelectQueryBuilder<News> {
     const { page = 1, limit = 10, categoria, estado } = paginationDto;
@@ -77,6 +78,10 @@ export class NewsService {
       .orderBy('news.createdAt', 'DESC')
       .skip(skip)
       .take(limit);
+
+    if (companyId !== undefined) {
+      query.andWhere('news.companyId = :companyId', { companyId });
+    }
 
     if (categoria) {
       query.andWhere('news.categoria = :categoria', { categoria });
@@ -92,12 +97,20 @@ export class NewsService {
 
   // ─── CRUD público ─────────────────────────────────────────────────────────────
 
-  async create(dto: CreateNewsDto, autorId: string): Promise<News> {
+  async create(
+    dto: CreateNewsDto,
+    autorId: string,
+    companyId?: number,
+  ): Promise<News> {
     if (dto.estado === NewsStatus.PUBLICADO) {
       this.assertBilingualComplete(dto);
     }
 
-    const savedNews = await this.newsRepository.createNews(dto, autorId);
+    const savedNews = await this.newsRepository.createNews(
+      dto,
+      autorId,
+      companyId,
+    );
 
     if (savedNews.estado === NewsStatus.PUBLICADO) {
       this.publishEvent(savedNews);
@@ -109,7 +122,12 @@ export class NewsService {
   async findAll(
     paginationDto: NewsPaginationDto,
   ): Promise<PaginatedResponse<News>> {
-    const query = this.buildPaginatedQuery(paginationDto, NewsStatus.PUBLICADO);
+    // Public endpoint — no tenant filter (all published news are visible)
+    const query = this.buildPaginatedQuery(
+      paginationDto,
+      undefined,
+      NewsStatus.PUBLICADO,
+    );
     const [data, total] = await query.getManyAndCount();
     return buildPaginatedResponse(
       data,
@@ -121,8 +139,9 @@ export class NewsService {
 
   async findAllAdmin(
     paginationDto: NewsPaginationDto,
+    companyId?: number,
   ): Promise<PaginatedResponse<News>> {
-    const query = this.buildPaginatedQuery(paginationDto);
+    const query = this.buildPaginatedQuery(paginationDto, companyId);
     const [data, total] = await query.getManyAndCount();
     return buildPaginatedResponse(
       data,

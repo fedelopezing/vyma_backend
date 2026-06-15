@@ -8,12 +8,14 @@ import {
   Index,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { Profile } from '../../profiles/entities/profile.entity';
 import { Role } from '../../roles/entities/role.entity';
+import { UserCompany } from '../../companies/entities/user-company.entity';
 
 @Entity('users')
 export class User {
@@ -82,6 +84,16 @@ export class User {
 
   @OneToOne(() => Profile, (profile) => profile.user, { cascade: true })
   profile: Profile;
+
+  @Column('boolean', {
+    default: false,
+    comment:
+      'Indicates if the user has super admin privileges across all tenants',
+  })
+  isSuperAdmin: boolean;
+
+  @OneToMany(() => UserCompany, (userCompany) => userCompany.user)
+  memberships: UserCompany[];
 
   @BeforeInsert()
   checkFieldsBeforeInsert() {

@@ -18,27 +18,31 @@ describe('SchedulesService', () => {
   });
 
   it('should create a schedule', () => {
-    expect(service.create({} as never)).toBe('This action adds a new schedule');
+    expect(service.create({} as never, 1)).toBe(
+      'This action adds a new schedule',
+    );
   });
 
   it('should return all schedules', () => {
-    expect(service.findAll()).toBe('This action returns all schedules');
+    expect(service.findAll(1)).toBe('This action returns all schedules');
   });
 
   it('should return a schedule by id', () => {
     const id = faker.number.int();
-    expect(service.findOne(id)).toBe(`This action returns a #${id} schedule`);
+    expect(service.findOne(id, 1)).toBe(
+      `This action returns a #${id} schedule`,
+    );
   });
 
   it('should update a schedule', () => {
     const id = faker.number.int();
-    expect(service.update(id, {} as never)).toBe(
+    expect(service.update(id, {} as never, 1)).toBe(
       `This action updates a #${id} schedule`,
     );
   });
 
   it('should remove a schedule', () => {
     const id = faker.number.int();
-    expect(service.remove(id)).toBe(`This action removes a #${id} schedule`);
+    expect(service.remove(id, 1)).toBe(`This action removes a #${id} schedule`);
   });
 });

@@ -3,9 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { UsersService } from '../../users/users.service';
-
 import { JwtPayload } from '../interfaces/jwt-payload.interface';
-import { User } from '../../users/entities/user.entity';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -21,7 +19,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: JwtPayload): Promise<User> {
+  /**
+   * Validates the JWT and hydrates req.user with the full payload.
+   * The payload already contains companyId, companyUuid and isSuperAdmin
+   * (set at token-issue time by AuthService), so no extra DB lookup is needed
+   * for those fields. We do check that the user is still active.
+   */
+  async validate(payload: JwtPayload): Promise<JwtPayload> {
     const { sub } = payload;
 
     const user = await this.usersService.findOneById(sub);
@@ -31,6 +35,17 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (!user.isActive)
       throw new UnauthorizedException('User is inactive, talk with an admin');
 
-    return user;
+    // Return the payload directly — Passport sets this as req.user.
+    // All multi-tenant fields (companyId, companyUuid, isSuperAdmin) are
+    // already present in the signed payload.
+    return {
+      sub: payload.sub,
+      uuid: payload.uuid,
+      email: payload.email,
+      role: payload.role,
+      companyId: payload.companyId,
+      companyUuid: payload.companyUuid,
+      isSuperAdmin: payload.isSuperAdmin ?? false,
+    };
   }
 }

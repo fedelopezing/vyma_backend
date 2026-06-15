@@ -3,8 +3,8 @@
 ## Status Overview
 - [ ] Total Tasks: 38
 - [x] Layer 0: Refactor de Roles Globales & Seed Data
-- [ ] Layer 1: Database & Persistencia (Módulo `companies` + Entidades modificadas)
-- [ ] Layer 2: Domain & Business Logic — `CompaniesService` + `UserCompanyRepository` (inc. Unit Tests)
+- [x] Layer 1: Database & Persistencia (Módulo `companies` + Entidades modificadas)
+- [x] Layer 2: Domain & Business Logic — `CompaniesService` + `UserCompanyRepository` (inc. Unit Tests)
 - [ ] Layer 3: API & Controllers — `CompaniesController` (inc. Unit Tests)
 - [ ] Layer 4: Auth Refactor — Login Multi-Tenant + `SelectCompany` (inc. Unit Tests)
 - [ ] Layer 5: `TenantGuard` + Actualización Servicios de Negocio (inc. Unit Tests)
