@@ -1,4 +1,4 @@
-import { forwardRef, Module } from '@nestjs/common';
+import { forwardRef, Global, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Role } from './entities/role.entity';
 import { RolesService } from './roles.service';
@@ -8,6 +8,7 @@ import { CommonModule } from '../common/common.module';
 import { PermissionsModule } from '../permissions/permissions.module';
 import { RolesRepository } from './repositories/roles.repository';
 
+@Global()
 @Module({
   imports: [
     TypeOrmModule.forFeature([Role]),
