@@ -60,4 +60,28 @@ export class EmailService {
       );
     }
   }
+
+  async sendSystemAlert(
+    subject: string,
+    message: string,
+  ): Promise<{ message: string; email: unknown }> {
+    try {
+      const emailFrom = process.env.EMAIL_FROM || 'no-reply@vyma.com';
+      const adminEmail = process.env.ADMIN_EMAIL || 'admin@vyma.com';
+
+      const email = await this.resend.emails.send({
+        from: emailFrom,
+        to: [adminEmail],
+        subject,
+        html: `<p>${message}</p>`,
+      });
+
+      return { message: 'Alerta del sistema enviada', email };
+    } catch (error) {
+      console.error('Error al enviar la alerta del sistema', error);
+      throw new InternalServerErrorException(
+        'Error al enviar la alerta del sistema',
+      );
+    }
+  }
 }

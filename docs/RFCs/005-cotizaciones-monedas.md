@@ -195,51 +195,50 @@ Este plan servirá como checklist exclusivo y secuencial para la construcción c
 
 ### Phase 1: Database & Persistence
 
-- [ ] **Tarea 1.1: Crear la Entidad `ExchangeRate`**
-  - **Descripción:** Definir la clase de entidad `ExchangeRate` de TypeORM con su índice único en `currency`.
+- [x] **Tarea 1.1: Crear la Entidad `ExchangeRate`**
   - **Archivos a crear/modificar:** [ExchangeRate entity](file:///c:/Users/fedel/NestJs/vyma_backend/src/exchange-rates/entities/exchange-rate.entity.ts)
   - **Criterios de Aceptación:** Estructura de columnas idéntica a la Sección 2, sin usar `any`.
 
-- [ ] **Tarea 1.2: Generar y Ejecutar Migración**
+- [x] **Tarea 1.2: Generar y Ejecutar Migración**
   - **Descripción:** Generar la migración de base de datos y ejecutarla localmente para crear la tabla `exchange_rates`.
   - **Archivos a crear/modificar:** `src/database/migrations/*`
   - **Criterios de Aceptación:** Ejecución exitosa de `npm run typeorm:generate -- -n CreateExchangeRatesTable` y posterior aplicación con `npm run typeorm:run` sin errores de schema.
 
 ### Phase 2: Domain & Business Logic (Self-Tested)
 
-- [ ] **Tarea 2.1: Crear Interfaces de Repositorio**
+- [x] **Tarea 2.1: Crear Interfaces de Repositorio**
   - **Descripción:** Definir el contrato de abstracción del repositorio `IExchangeRatesRepository` y su token de inyección.
   - **Archivos a crear/modificar:** `src/exchange-rates/interfaces/exchange-rates-repository.interface.ts`
   - **Criterios de Aceptación:** Contiene los contratos de firma para `findAll`, `findByCurrency`, `save` y `upsert`.
 
-- [ ] **Tarea 2.2: Implementar Repositorio Personalizado**
+- [x] **Tarea 2.2: Implementar Repositorio Personalizado**
   - **Descripción:** Escribir la implementación concreta del repositorio que utiliza el `Repository<ExchangeRate>` inyectado por TypeORM.
   - **Archivos a crear/modificar:** `src/exchange-rates/repositories/exchange-rates.repository.ts`
   - **Criterios de Aceptación:** Cumple con la interfaz y realiza correctamente el `upsert` controlando la creación o modificación de los datos.
 
-- [ ] **Tarea 2.3: Actualizar Configuración y Variables de Entorno**
+- [x] **Tarea 2.3: Actualizar Configuración y Variables de Entorno**
   - **Descripción:** Agregar `ADMIN_EMAIL` en `.env.example` y validar su presencia en `env.validation.ts` como string de correo electrónico.
   - **Archivos a crear/modificar:** [env.validation.ts](file:///c:/Users/fedel/NestJs/vyma_backend/src/config/env.validation.ts), [.env.example](file:///c:/Users/fedel/NestJs/vyma_backend/.env.example)
   - **Criterios de Aceptación:** Validación estricta con `IsEmail()` y arranque exitoso del servidor.
 
-- [ ] **Tarea 2.4: Agregar Método de Alerta en `EmailService`**
+- [x] **Tarea 2.4: Agregar Método de Alerta en `EmailService`**
   - **Descripción:** Implementar el método `sendSystemAlert` en `EmailService` para el envío de notificaciones del sistema mediante Resend utilizando HTML limpio.
   - **Archivos a crear/modificar:** [email.service.ts](file:///c:/Users/fedel/NestJs/vyma_backend/src/email/email.service.ts)
   - **Criterios de Aceptación:** Compilación y funcionamiento correcto con Resend.
 
-- [ ] **Tarea 2.5: Implementar el Servicio `ExchangeRatesService`**
+- [x] **Tarea 2.5: Implementar el Servicio `ExchangeRatesService`**
   - **Descripción:** Implementar la lógica del servicio principal: `getLatestRates()` (con estrategia de Caché) y `scrapeRates()` (con integración HTTP Axios a Cambios Chaco, redondeo a enteros y manejo de fallback).
   - **Archivos a crear/modificar:** `src/exchange-rates/exchange-rates.service.ts`
   - **Criterios de Aceptación:** Cumple con las especificaciones. Lanza evento `rates.scraping_failed` en caso de error y maneja el fallback correctamente.
 
-- [ ] **Tarea 2.6: Escribir Pruebas Unitarias del Servicio**
+- [x] **Tarea 2.6: Escribir Pruebas Unitarias del Servicio**
   - **Descripción:** Escribir las pruebas unitarias para `ExchangeRatesService` mockeando el repositorio, `CacheService` y `EventEmitter2`.
   - **Archivos a crear/modificar:** `src/exchange-rates/exchange-rates.service.spec.ts`
   - **Criterios de Aceptación:** Cobertura de tests unitarios del servicio >= 80%. Cobertura del happy path y de los casos de fallo / contingencia.
 
 ### Phase 3: API & Controllers (Self-Tested)
 
-- [ ] **Tarea 3.1: Crear DTOs con Validación**
+- [x] **Tarea 3.1: Crear DTOs con Validación**
   - **Descripción:** Crear los DTOs de entrada y salida para estructurar las respuestas y documentarlas con Swagger.
   - **Archivos a crear/modificar:**
     - `src/exchange-rates/dto/rate.dto.ts`
@@ -248,41 +247,41 @@ Este plan servirá como checklist exclusivo y secuencial para la construcción c
     - `src/exchange-rates/dto/index.ts` (exportador)
   - **Criterios de Aceptación:** Validación de tipos estricta sin any, uso de `@ApiProperty`.
 
-- [ ] **Tarea 3.2: Implementar Decoradores de Swagger**
+- [x] **Tarea 3.2: Implementar Decoradores de Swagger**
   - **Descripción:** Agrupar decoradores Swagger del controlador para mantener el archivo limpio.
   - **Archivos a crear/modificar:** `src/exchange-rates/decorators/exchange-rates-swagger.decorators.ts`
   - **Criterios de Aceptación:** Decoradores separados para `ApiGetLatestRates` y `ApiTriggerScrape`.
 
-- [ ] **Tarea 3.3: Implementar Controlador `ExchangeRatesController`**
+- [x] **Tarea 3.3: Implementar Controlador `ExchangeRatesController`**
   - **Descripción:** Configurar los endpoints `GET /api/v1/rates/latest` (público) y `POST /api/v1/rates/scrape` (protegido por JWT y permiso `write:exchange-rates`).
   - **Archivos a crear/modificar:** `src/exchange-rates/exchange-rates.controller.ts`
   - **Criterios de Aceptación:** Ruteo correcto, respuestas tipadas semánticamente, control del flujo de guards.
 
-- [ ] **Tarea 3.4: Escribir Pruebas Unitarias del Controlador**
+- [x] **Tarea 3.4: Escribir Pruebas Unitarias del Controlador**
   - **Descripción:** Validar ruteos y respuestas simulando llamadas mediante unit tests mockeando el servicio.
   - **Archivos a crear/modificar:** `src/exchange-rates/exchange-rates.controller.spec.ts`
   - **Criterios de Aceptación:** Tests exitosos y cobertura de código >= 80%.
 
 ### Phase 4: Events, Cron & Integrations (Self-Tested)
 
-- [ ] **Tarea 4.1: Implementar Listener de Evento de Fallo**
+- [x] **Tarea 4.1: Implementar Listener de Evento de Fallo**
   - **Descripción:** Implementar `ExchangeRatesListener` para escuchar el evento `rates.scraping_failed` y disparar el correo de alerta a través del método `sendSystemAlert` de `EmailService`.
   - **Archivos a crear/modificar:** `src/exchange-rates/listeners/exchange-rates.listener.ts`
   - **Criterios de Aceptación:** Captura de excepciones robusta dentro del listener para evitar fallos del runtime general.
 
-- [ ] **Tarea 4.2: Implementar Tarea Programada (Cron Job)**
+- [x] **Tarea 4.2: Implementar Tarea Programada (Cron Job)**
   - **Descripción:** Crear `ExchangeRatesCron` para ejecutar diariamente a las 06:00 AM (Lunes a Viernes) la sincronización de cotizaciones.
   - **Archivos a crear/modificar:** `src/exchange-rates/cron/exchange-rates.cron.ts`
   - **Criterios de Aceptación:** Expresión cron `0 0 6 * * 1-5` y logueo adecuado.
 
-- [ ] **Tarea 4.3: Definir e Importar el Módulo `ExchangeRatesModule`**
+- [x] **Tarea 4.3: Definir e Importar el Módulo `ExchangeRatesModule`**
   - **Descripción:** Definir el módulo funcional de NestJS de cotizaciones e importarlo en el módulo raíz de la aplicación.
   - **Archivos a crear/modificar:**
     - `src/exchange-rates/exchange-rates.module.ts`
     - [app.module.ts](file:///c:/Users/fedel/NestJs/vyma_backend/src/app.module.ts)
   - **Criterios de Aceptación:** Importaciones limpias, inyección correcta de dependencias y arranque del servidor sin errores.
 
-- [ ] **Tarea 4.4: Escribir Pruebas Unitarias de Eventos y Cron**
+- [x] **Tarea 4.4: Escribir Pruebas Unitarias de Eventos y Cron**
   - **Descripción:** Escribir unit tests para asegurar el comportamiento correcto del Cron y del Listener.
   - **Archivos a crear/modificar:**
     - `src/exchange-rates/listeners/exchange-rates.listener.spec.ts`
@@ -290,7 +289,7 @@ Este plan servirá como checklist exclusivo y secuencial para la construcción c
 
 ### Phase 5: Verification E2E Final
 
-- [ ] **Tarea 5.1: Pruebas E2E manuales de Endpoints**
+- [x] **Tarea 5.1: Pruebas E2E manuales de Endpoints**
   - **Descripción:** Levantar el servidor localmente y consumir los endpoints utilizando Postman/cURL para verificar respuestas en vivo del backend.
   - **Archivos a crear/modificar:** Ninguno.
   - **Criterios de Aceptación:**
