@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 
@@ -10,6 +11,7 @@ import { NewsRepository } from './repositories/news.repository';
 import { CreateNewsDto } from './dto/create-news.dto';
 import { UpdateNewsDto } from './dto/update-news.dto';
 import { NewsPaginationDto } from './dto/news-pagination.dto';
+import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import {
   NewsPublishedEvent,
   NEWS_PUBLISHED_EVENT,
@@ -42,10 +44,15 @@ export class NewsService {
   /**
    * Lanza NotFoundException si la noticia no existe.
    */
-  private async findNewsOrFail(id: string): Promise<News> {
+  private async findNewsOrFail(id: string, user?: JwtPayload): Promise<News> {
     const news = await this.newsRepository.findOneById(id);
     if (!news) {
       throw new NotFoundException(`Noticia con id '${id}' no encontrada.`);
+    }
+    if (user && !user.isSuperAdmin && news.companyId !== user.companyId) {
+      throw new ForbiddenException(
+        'No tienes los permisos necesarios para realizar esta acción',
+      );
     }
     return news;
   }
@@ -122,10 +129,9 @@ export class NewsService {
   async findAll(
     paginationDto: NewsPaginationDto,
   ): Promise<PaginatedResponse<News>> {
-    // Public endpoint — no tenant filter (all published news are visible)
     const query = this.buildPaginatedQuery(
       paginationDto,
-      undefined,
+      paginationDto.companyId,
       NewsStatus.PUBLICADO,
     );
     const [data, total] = await query.getManyAndCount();
@@ -163,8 +169,12 @@ export class NewsService {
     return news;
   }
 
-  async update(id: string, dto: UpdateNewsDto): Promise<News> {
-    const news = await this.findNewsOrFail(id);
+  async update(
+    id: string,
+    dto: UpdateNewsDto,
+    user?: JwtPayload,
+  ): Promise<News> {
+    const news = await this.findNewsOrFail(id, user);
 
     const wasPublished = news.estado === NewsStatus.PUBLICADO;
     const isPublishingNow = dto.estado === NewsStatus.PUBLICADO;
@@ -183,8 +193,8 @@ export class NewsService {
     return savedNews;
   }
 
-  async remove(id: string): Promise<void> {
-    await this.findNewsOrFail(id);
+  async remove(id: string, user?: JwtPayload): Promise<void> {
+    await this.findNewsOrFail(id, user);
     await this.newsRepository.softDelete(id);
   }
 }

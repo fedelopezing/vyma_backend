@@ -54,7 +54,10 @@ export class NewsController {
     @Query() paginationDto: NewsPaginationDto,
     @Req() req: AuthenticatedRequest,
   ): Promise<PaginatedResponse<News>> {
-    return this.newsService.findAllAdmin(paginationDto, req.user.companyId);
+    const companyId = req.user.isSuperAdmin
+      ? paginationDto.companyId
+      : req.user.companyId;
+    return this.newsService.findAllAdmin(paginationDto, companyId);
   }
 
   @Post('admin')
@@ -79,8 +82,9 @@ export class NewsController {
   update(
     @Param('id') id: string,
     @Body() updateNewsDto: UpdateNewsDto,
+    @Req() req: AuthenticatedRequest,
   ): Promise<News> {
-    return this.newsService.update(id, updateNewsDto);
+    return this.newsService.update(id, updateNewsDto, req.user);
   }
 
   @Delete('admin/:id')
@@ -88,8 +92,11 @@ export class NewsController {
   @UseGuards(AuthGuard('jwt'), TenantGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiDeleteNews()
-  remove(@Param('id') id: string): Promise<void> {
-    return this.newsService.remove(id);
+  remove(
+    @Param('id') id: string,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<void> {
+    return this.newsService.remove(id, req.user);
   }
 
   // ─── Endpoints públicos (sin filtro de tenant) ─────────────────────────────

@@ -128,6 +128,36 @@ describe('NewsController', () => {
       expect(newsService.findAllAdmin).toHaveBeenCalledWith(paginationDto, 2);
       expect(result).toEqual(expected);
     });
+
+    it('debería llamar a newsService.findAllAdmin() con el companyId del DTO si el usuario es superAdmin', async () => {
+      const paginationDto: NewsPaginationDto = {
+        page: 1,
+        limit: 20,
+        companyId: 5,
+      };
+      const superAdminRequest = {
+        user: {
+          ...mockJwtPayload,
+          isSuperAdmin: true,
+          companyId: undefined,
+        },
+      };
+      newsService.findAllAdmin.mockResolvedValueOnce({
+        data: [],
+        meta: {
+          page: 1,
+          limit: 20,
+          total: 0,
+          totalPages: 0,
+          hasNextPage: false,
+          hasPrevPage: false,
+        },
+      });
+
+      await controller.findAllAdmin(paginationDto, superAdminRequest as never);
+
+      expect(newsService.findAllAdmin).toHaveBeenCalledWith(paginationDto, 5);
+    });
   });
 
   describe('create', () => {
@@ -152,7 +182,7 @@ describe('NewsController', () => {
   });
 
   describe('update', () => {
-    it('debería llamar a newsService.update() con el id y el DTO correctos', async () => {
+    it('debería llamar a newsService.update() con el id, el DTO y el user correctos', async () => {
       const dto: UpdateNewsDto = { tituloEs: 'Título actualizado' };
       const updatedNews = {
         ...mockNews,
@@ -160,20 +190,34 @@ describe('NewsController', () => {
       } as News;
       newsService.update.mockResolvedValueOnce(updatedNews);
 
-      const result = await controller.update('uuid-123', dto);
+      const result = await controller.update(
+        'uuid-123',
+        dto,
+        mockAuthenticatedRequest as never,
+      );
 
-      expect(newsService.update).toHaveBeenCalledWith('uuid-123', dto);
+      expect(newsService.update).toHaveBeenCalledWith(
+        'uuid-123',
+        dto,
+        mockJwtPayload,
+      );
       expect(result).toEqual(updatedNews);
     });
   });
 
   describe('remove', () => {
-    it('debería llamar a newsService.remove() con el id y no retornar body', async () => {
+    it('debería llamar a newsService.remove() con el id, el user y no retornar body', async () => {
       newsService.remove.mockResolvedValueOnce(undefined);
 
-      const result = await controller.remove('uuid-123');
+      const result = await controller.remove(
+        'uuid-123',
+        mockAuthenticatedRequest as never,
+      );
 
-      expect(newsService.remove).toHaveBeenCalledWith('uuid-123');
+      expect(newsService.remove).toHaveBeenCalledWith(
+        'uuid-123',
+        mockJwtPayload,
+      );
       expect(result).toBeUndefined();
     });
   });

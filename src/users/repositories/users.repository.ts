@@ -69,6 +69,7 @@ export class UsersRepository {
         role: {
           id: true,
           permissions: {
+            id: true, // Fix: Added id for proper array projection
             action: true,
           },
         },
