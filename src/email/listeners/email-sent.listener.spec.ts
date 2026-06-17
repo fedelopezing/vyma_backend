@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { EmailSentListener } from './email-sent.listener';
 import { WhatsappMessagingService } from '../../whatsapp/whatsapp-messaging.service';
+import { ConfigService } from '@nestjs/config';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { faker } from '@faker-js/faker';
 
@@ -15,6 +16,17 @@ describe('EmailSentListener', () => {
       providers: [
         EmailSentListener,
         { provide: WhatsappMessagingService, useValue: whatsappService },
+        {
+          provide: ConfigService,
+          useValue: createMock<ConfigService>({
+            get: jest.fn().mockImplementation((key: string) => {
+              if (key === 'WHATSAPP_TO') {
+                return '+595981789843';
+              }
+              return null;
+            }),
+          }),
+        },
       ],
     }).compile();
 

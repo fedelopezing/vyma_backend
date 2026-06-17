@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { EmailService } from './email.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { ConfigService } from '@nestjs/config';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { faker } from '@faker-js/faker';
 
@@ -23,12 +24,23 @@ describe('EmailService', () => {
   let mockResendInstance: any;
 
   beforeEach(async () => {
-    process.env.RESEND_API_KEY = 'test-api-key';
     mockEventEmitter = createMock<EventEmitter2>();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         EmailService,
+        {
+          provide: ConfigService,
+          useValue: createMock<ConfigService>({
+            get: jest.fn().mockImplementation((key: string) => {
+              if (key === 'RESEND_API_KEY') return 'test-api-key';
+              if (key === 'FRONTEND_URL') return 'http://localhost:3000';
+              if (key === 'EMAIL_FROM') return 'no-reply@vyma.com';
+              if (key === 'ADMIN_EMAIL') return 'admin@vyma.com';
+              return null;
+            }),
+          }),
+        },
         {
           provide: EventEmitter2,
           useValue: mockEventEmitter,
@@ -41,7 +53,6 @@ describe('EmailService', () => {
   });
 
   afterEach(() => {
-    delete process.env.RESEND_API_KEY;
     jest.clearAllMocks();
   });
 

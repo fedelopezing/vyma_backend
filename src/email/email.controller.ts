@@ -1,13 +1,17 @@
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
+import { ConfigService } from '@nestjs/config';
 import { EmailService } from './email.service';
 import { CreateEmailDto } from './dto/create-email.dto';
 
 @ApiTags('Email')
 @Controller('email')
 export class EmailController {
-  constructor(private readonly emailService: EmailService) {}
+  constructor(
+    private readonly emailService: EmailService,
+    private readonly configService: ConfigService,
+  ) {}
 
   /**
    * Endpoint público para el formulario de presupuesto de la web.
@@ -24,9 +28,10 @@ export class EmailController {
   })
   sendBudget(@Body() createEmailDto: CreateEmailDto) {
     const emailTo =
-      process.env.EMAIL_BIOLIMPIEZA_TO?.split(',').map((email) =>
-        email.trim(),
-      ) ?? [];
+      this.configService
+        .get<string>('EMAIL_BIOLIMPIEZA_TO')
+        ?.split(',')
+        .map((email) => email.trim()) ?? [];
     return this.emailService.sendEmail(
       createEmailDto,
       'Biolimpieza <no-reply@send.biolimpieza.com.py>',

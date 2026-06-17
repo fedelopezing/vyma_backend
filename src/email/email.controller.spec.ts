@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { EmailController } from './email.controller';
 import { EmailService } from './email.service';
+import { ConfigService } from '@nestjs/config';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { faker } from '@faker-js/faker';
 
@@ -10,7 +11,6 @@ describe('EmailController', () => {
 
   beforeEach(async () => {
     mockEmailService = createMock<EmailService>();
-    process.env.EMAIL_BIOLIMPIEZA_TO = 'test1@test.com,test2@test.com';
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [EmailController],
@@ -19,6 +19,17 @@ describe('EmailController', () => {
           provide: EmailService,
           useValue: mockEmailService,
         },
+        {
+          provide: ConfigService,
+          useValue: createMock<ConfigService>({
+            get: jest.fn().mockImplementation((key: string) => {
+              if (key === 'EMAIL_BIOLIMPIEZA_TO') {
+                return 'test1@test.com,test2@test.com';
+              }
+              return null;
+            }),
+          }),
+        },
       ],
     }).compile();
 
@@ -26,7 +37,7 @@ describe('EmailController', () => {
   });
 
   afterEach(() => {
-    delete process.env.EMAIL_BIOLIMPIEZA_TO;
+    jest.clearAllMocks();
   });
 
   it('should be defined', () => {

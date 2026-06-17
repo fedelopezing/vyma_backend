@@ -30,6 +30,9 @@ class EnvironmentVariables {
   JWT_AUDIENCE: string;
 
   @IsString()
+  RESEND_API_KEY: string;
+
+  @IsString()
   @IsOptional()
   ADMIN_EMAIL?: string;
 }
