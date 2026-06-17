@@ -18,8 +18,7 @@ import {
 import { ScheduleBreaksService } from './schedule-breaks.service';
 import { CreateScheduleBreakDto } from './dto/create-schedule-break.dto';
 import { UpdateScheduleBreakDto } from './dto/update-schedule-break.dto';
-import { Auth, AuthRoles } from '../auth/decorators';
-import { ValidRoles } from '../auth/interfaces/valid-roles';
+import { Auth, AuthPermissions } from '../auth/decorators';
 
 @ApiTags('Schedule Breaks')
 @Controller('schedule-breaks')
@@ -28,7 +27,7 @@ export class ScheduleBreaksController {
 
   @Post()
   @ApiCreateScheduleBreak()
-  @AuthRoles(ValidRoles.admin)
+  @AuthPermissions('write:schedule-breaks')
   create(@Body() createScheduleBreakDto: CreateScheduleBreakDto) {
     return this.scheduleBreaksService.create(createScheduleBreakDto);
   }
@@ -49,7 +48,7 @@ export class ScheduleBreaksController {
 
   @Patch(':id')
   @ApiUpdateScheduleBreak()
-  @AuthRoles(ValidRoles.admin)
+  @AuthPermissions('write:schedule-breaks')
   update(
     @Param('id') id: string,
     @Body() updateScheduleBreakDto: UpdateScheduleBreakDto,
@@ -59,7 +58,7 @@ export class ScheduleBreaksController {
 
   @Delete(':id')
   @ApiDeleteScheduleBreak()
-  @AuthRoles(ValidRoles.admin)
+  @AuthPermissions('write:schedule-breaks')
   remove(@Param('id') id: string) {
     return this.scheduleBreaksService.remove(+id);
   }

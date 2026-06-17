@@ -19,6 +19,7 @@ import { UsersModule } from './users/users.module';
 import { RolesModule } from './roles/roles.module';
 import { PermissionsModule } from './permissions/permissions.module';
 import { NewsModule } from './news/news.module';
+import { CompaniesModule } from './companies/companies.module';
 
 import { validateEnv } from './config/env.validation';
 
@@ -59,6 +60,7 @@ import { validateEnv } from './config/env.validation';
     WhatsappModule,
     UsersModule,
     NewsModule,
+    CompaniesModule,
   ],
   controllers: [],
   providers: [

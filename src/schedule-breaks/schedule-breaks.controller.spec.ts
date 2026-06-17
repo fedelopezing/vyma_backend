@@ -4,6 +4,8 @@ import { ScheduleBreaksService } from './schedule-breaks.service';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { faker } from '@faker-js/faker';
 
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
+
 describe('ScheduleBreaksController', () => {
   let controller: ScheduleBreaksController;
   let mockService: DeepMocked<ScheduleBreaksService>;
@@ -19,7 +21,10 @@ describe('ScheduleBreaksController', () => {
           useValue: mockService,
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(PermissionsGuard)
+      .useValue({ canActivate: jest.fn().mockReturnValue(true) })
+      .compile();
 
     controller = module.get<ScheduleBreaksController>(ScheduleBreaksController);
   });

@@ -45,6 +45,7 @@ export class UsersRepository {
         isActive: true,
         id: true,
         name: true,
+        isSuperAdmin: true,
         role: { id: true, name: true },
       },
       relations: ['profile', 'role'],
@@ -53,6 +54,10 @@ export class UsersRepository {
 
   async findOneById(id: number): Promise<User | null> {
     return this.repository.findOne({ where: { id }, relations: ['role'] });
+  }
+
+  async findOneByUuid(uuid: string): Promise<User | null> {
+    return this.repository.findOne({ where: { uuid } });
   }
 
   async findOneWithPermissions(id: number): Promise<User | null> {

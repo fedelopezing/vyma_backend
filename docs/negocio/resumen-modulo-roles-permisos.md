@@ -12,9 +12,11 @@ El sistema implementa un control de acceso basado en roles y permisos (RBAC - Ro
 
 ## 2. Relación de Entidades
 
-*   **Permiso (`Permission`):** Representa una acción unitaria permitida en el sistema (ej. `read:users`, `write:users`).
-*   **Rol (`Role`):** Es una agrupación de permisos que define un perfil (ej. `admin`, `client`). Posee una relación de muchos a muchos con la entidad `Permission`.
-*   **Usuario (`User`):** Cada usuario tiene asignado exactamente un `Role` (`ManyToOne`), lo que determina indirectamente todos sus permisos activos.
+*   **Permiso (`Permission`):** Representa una acción unitaria permitida en el sistema (ej. `read:users`, `write:users`). Los permisos se definen de forma global en la plataforma.
+*   **Rol (`Role`):** Agrupación de permisos que define un perfil (ej. `admin`, `manager`, `client`). Posee una relación de muchos a muchos con la entidad `Permission`. Los roles también se configuran de forma global. El catálogo fue refactorado para eliminar el rol rígido `ccps` (pasa a ser una empresa) e incorporar el rol `manager`.
+*   **Usuario (`User`) y Membresía (`UserCompany`):** En el esquema multi-tenant, los roles ya no están acoplados de forma rígida directamente al usuario. La relación se define a nivel de la membresía (`UserCompany`). Así, un usuario puede tener asignado un rol específico por cada empresa a la que pertenece (por ejemplo, `admin` en la Empresa A y `professional` en la Empresa B).
+    *   *Nota de Compatibilidad:* La relación directa `role` en la entidad `User` se mantiene temporalmente para asegurar la compatibilidad con el sistema de autorización heredado, pero el rol activo de la sesión del usuario se determina en tiempo de ejecución a partir de la membresía activa elegida al iniciar sesión.
+
 
 ---
 

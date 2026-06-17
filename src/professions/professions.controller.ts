@@ -18,8 +18,7 @@ import {
 
 import { ProfessionsService } from './professions.service';
 import { CreateProfessionDto, UpdateProfessionDto } from './dto';
-import { Auth, AuthRoles } from '../auth/decorators';
-import { ValidRoles } from '../auth/interfaces/valid-roles';
+import { Auth, AuthPermissions } from '../auth/decorators';
 
 @ApiTags('Professions')
 @Controller('professions')
@@ -28,7 +27,7 @@ export class ProfessionsController {
 
   @Post()
   @ApiCreateProfession()
-  @AuthRoles(ValidRoles.admin)
+  @AuthPermissions('write:professions')
   create(@Body() createProfessionDto: CreateProfessionDto) {
     return this.professionsService.create(createProfessionDto);
   }
@@ -49,7 +48,7 @@ export class ProfessionsController {
 
   @Patch(':id')
   @ApiUpdateProfession()
-  @AuthRoles(ValidRoles.admin)
+  @AuthPermissions('write:professions')
   update(
     @Param('id') id: string,
     @Body() updateProfessionDto: UpdateProfessionDto,
@@ -59,7 +58,7 @@ export class ProfessionsController {
 
   @Delete(':id')
   @ApiDeleteProfession()
-  @AuthRoles(ValidRoles.admin)
+  @AuthPermissions('write:professions')
   remove(@Param('id') id: string) {
     return this.professionsService.remove(+id);
   }

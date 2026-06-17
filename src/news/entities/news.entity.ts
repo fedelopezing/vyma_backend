@@ -10,6 +10,7 @@ import {
   Index,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
+import { Company } from '../../companies/entities/company.entity';
 
 export enum NewsCategory {
   NOTICIA = 'NOTICIA',
@@ -80,6 +81,14 @@ export class News {
   @ManyToOne(() => User, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'autor_id' })
   autor: User;
+
+  @Index()
+  @Column({ name: 'company_id', type: 'bigint' })
+  companyId: number;
+
+  @ManyToOne(() => Company, { nullable: false, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'company_id' })
+  company: Company;
 
   @CreateDateColumn({ type: 'timestamp' })
   createdAt: Date;

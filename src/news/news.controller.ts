@@ -9,9 +9,12 @@ import {
   Post,
   Put,
   Query,
-  Request,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { AuthGuard } from '@nestjs/passport';
+import { Request } from 'express';
 
 import {
   ApiFindAllAdminNews,
@@ -28,13 +31,12 @@ import { UpdateNewsDto } from './dto/update-news.dto';
 import { NewsPaginationDto } from './dto/news-pagination.dto';
 import { News } from './entities/news.entity';
 import { PaginatedResponse } from '../common/interfaces';
-import { AuthRoles } from '../auth/decorators';
-import { ValidRoles } from '../auth/interfaces/valid-roles';
-import { User } from '../users/entities/user.entity';
+import { AuthPermissions } from '../auth/decorators';
+import { TenantGuard } from '../common/guards/tenant.guard';
+import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 
-/** Tipo de request con usuario autenticado inyectado por Passport. */
 interface AuthenticatedRequest extends Request {
-  user: User;
+  user: JwtPayload;
 }
 
 @ApiTags('News')
@@ -42,29 +44,37 @@ interface AuthenticatedRequest extends Request {
 export class NewsController {
   constructor(private readonly newsService: NewsService) {}
 
-  // ─── Endpoints administrativos ─────────────────────────────────────────────
+  // ─── Endpoints administrativos (tenant-scoped) ─────────────────────────────
 
   @Get('admin')
-  @AuthRoles(ValidRoles.admin, ValidRoles.ccps)
+  @AuthPermissions('read:news')
+  @UseGuards(AuthGuard('jwt'), TenantGuard)
   @ApiFindAllAdminNews()
   findAllAdmin(
     @Query() paginationDto: NewsPaginationDto,
+    @Req() req: AuthenticatedRequest,
   ): Promise<PaginatedResponse<News>> {
-    return this.newsService.findAllAdmin(paginationDto);
+    return this.newsService.findAllAdmin(paginationDto, req.user.companyId);
   }
 
   @Post('admin')
-  @AuthRoles(ValidRoles.admin, ValidRoles.ccps)
+  @AuthPermissions('create:news')
+  @UseGuards(AuthGuard('jwt'), TenantGuard)
   @ApiCreateNews()
   create(
     @Body() createNewsDto: CreateNewsDto,
-    @Request() req: AuthenticatedRequest,
+    @Req() req: AuthenticatedRequest,
   ): Promise<News> {
-    return this.newsService.create(createNewsDto, String(req.user.id));
+    return this.newsService.create(
+      createNewsDto,
+      String(req.user.sub),
+      req.user.companyId,
+    );
   }
 
   @Put('admin/:id')
-  @AuthRoles(ValidRoles.admin, ValidRoles.ccps)
+  @AuthPermissions('update:news')
+  @UseGuards(AuthGuard('jwt'), TenantGuard)
   @ApiUpdateNews()
   update(
     @Param('id') id: string,
@@ -74,14 +84,15 @@ export class NewsController {
   }
 
   @Delete('admin/:id')
-  @AuthRoles(ValidRoles.admin, ValidRoles.ccps)
+  @AuthPermissions('delete:news')
+  @UseGuards(AuthGuard('jwt'), TenantGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiDeleteNews()
   remove(@Param('id') id: string): Promise<void> {
     return this.newsService.remove(id);
   }
 
-  // ─── Endpoints públicos ────────────────────────────────────────────────────
+  // ─── Endpoints públicos (sin filtro de tenant) ─────────────────────────────
 
   @Get()
   @ApiFindAllNews()

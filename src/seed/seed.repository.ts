@@ -5,6 +5,8 @@ import { Permission } from '../permissions/entities/permission.entity';
 import { Role } from '../roles/entities/role.entity';
 import { User } from '../users/entities/user.entity';
 import { News } from '../news/entities/news.entity';
+import { Company } from '../companies/entities/company.entity';
+import { UserCompany } from '../companies/entities/user-company.entity';
 import { ValidRoles } from '../auth/interfaces/valid-roles';
 import {
   SEED_TABLES_ORDER,
@@ -58,6 +60,37 @@ export class SeedRepository {
     return rolesMap;
   }
 
+  async createCompanies(qr: QueryRunner): Promise<Record<string, Company>> {
+    const ccps = qr.manager.create(Company, {
+      name: 'CCPS',
+      taxId: '111111111-1',
+      email: 'ccps@mail.com',
+      isActive: true,
+    });
+    const biolimpieza = qr.manager.create(Company, {
+      name: 'biolimpieza',
+      taxId: '222222222-2',
+      email: 'biolimpieza@mail.com',
+      isActive: true,
+    });
+    const natynails = qr.manager.create(Company, {
+      name: 'natynails',
+      taxId: '333333333-3',
+      email: 'natynails@mail.com',
+      isActive: true,
+    });
+
+    await qr.manager.save(ccps);
+    await qr.manager.save(biolimpieza);
+    await qr.manager.save(natynails);
+
+    return {
+      CCPS: ccps,
+      biolimpieza: biolimpieza,
+      natynails: natynails,
+    };
+  }
+
   async createAdminUser(
     qr: QueryRunner,
     rolesMap: Record<string, Role>,
@@ -70,16 +103,97 @@ export class SeedRepository {
       role: rolesMap[ValidRoles.admin],
       provider: 'local' as const,
       isActive: true,
+      isSuperAdmin: true,
     });
 
     return qr.manager.save(user);
   }
 
-  async createNews(qr: QueryRunner, author: User): Promise<void> {
+  async createAdditionalUsers(
+    qr: QueryRunner,
+    rolesMap: Record<string, Role>,
+    companiesMap: Record<string, Company>,
+  ): Promise<void> {
+    const passwordHash = await bcrypt.hash('Password123!', 10);
+
+    // 1. ccps@mail.com (Manager in CCPS)
+    const ccpsUser = qr.manager.create(User, {
+      email: 'ccps@mail.com',
+      name: 'CCPS Manager',
+      passwordHash,
+      role: rolesMap[ValidRoles.manager],
+      provider: 'local' as const,
+      isActive: true,
+    });
+    await qr.manager.save(ccpsUser);
+
+    const ccpsMembership = qr.manager.create(UserCompany, {
+      userId: ccpsUser.id,
+      companyId: companiesMap['CCPS'].id,
+      roleId: rolesMap[ValidRoles.manager].id,
+      isActive: true,
+    });
+    await qr.manager.save(ccpsMembership);
+
+    // 2. fede@mail.com (Manager in biolimpieza and natynails)
+    const fedeUser = qr.manager.create(User, {
+      email: 'fede@mail.com',
+      name: 'Fede Manager',
+      passwordHash,
+      role: rolesMap[ValidRoles.manager],
+      provider: 'local' as const,
+      isActive: true,
+    });
+    await qr.manager.save(fedeUser);
+
+    const bioMembership = qr.manager.create(UserCompany, {
+      userId: fedeUser.id,
+      companyId: companiesMap['biolimpieza'].id,
+      roleId: rolesMap[ValidRoles.manager].id,
+      isActive: true,
+    });
+    await qr.manager.save(bioMembership);
+
+    const natyMembership = qr.manager.create(UserCompany, {
+      userId: fedeUser.id,
+      companyId: companiesMap['natynails'].id,
+      roleId: rolesMap[ValidRoles.manager].id,
+      isActive: true,
+    });
+    await qr.manager.save(natyMembership);
+
+    // 3. user@mail.com (User in biolimpieza)
+    const regularUser = qr.manager.create(User, {
+      email: 'user@mail.com',
+      name: 'Regular User',
+      passwordHash,
+      role: rolesMap[ValidRoles.user],
+      provider: 'local' as const,
+      isActive: true,
+    });
+    await qr.manager.save(regularUser);
+
+    const regularMembership = qr.manager.create(UserCompany, {
+      userId: regularUser.id,
+      companyId: companiesMap['biolimpieza'].id,
+      roleId: rolesMap[ValidRoles.user].id,
+      isActive: true,
+    });
+    await qr.manager.save(regularMembership);
+  }
+
+  async createNews(
+    qr: QueryRunner,
+    author: User,
+    company: Company,
+  ): Promise<void> {
     const newsItems = buildNewsSeedData(author);
 
     for (const data of newsItems) {
-      const newsItem = qr.manager.create(News, data);
+      const newsItem = qr.manager.create(News, {
+        ...data,
+        company,
+      });
       await qr.manager.save(newsItem);
     }
   }

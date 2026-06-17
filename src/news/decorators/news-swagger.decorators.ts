@@ -5,7 +5,7 @@ export function ApiFindAllAdminNews() {
   return applyDecorators(
     ApiOperation({
       summary:
-        'Listar todas las noticias (borradores y publicadas) — admin o ccps',
+        'Listar todas las noticias (borradores y publicadas) — admin o manager',
     }),
     ApiResponse({ status: 200, description: 'Listado completo de noticias' }),
   );
@@ -13,7 +13,7 @@ export function ApiFindAllAdminNews() {
 
 export function ApiCreateNews() {
   return applyDecorators(
-    ApiOperation({ summary: 'Crear una nueva noticia — admin o ccps' }),
+    ApiOperation({ summary: 'Crear una nueva noticia — admin o manager' }),
     ApiResponse({ status: 201, description: 'Noticia creada exitosamente' }),
     ApiResponse({
       status: 400,
@@ -24,7 +24,7 @@ export function ApiCreateNews() {
 
 export function ApiUpdateNews() {
   return applyDecorators(
-    ApiOperation({ summary: 'Actualizar una noticia — admin o ccps' }),
+    ApiOperation({ summary: 'Actualizar una noticia — admin o manager' }),
     ApiParam({
       name: 'id',
       description: 'UUID de la noticia',
@@ -42,7 +42,7 @@ export function ApiUpdateNews() {
 export function ApiDeleteNews() {
   return applyDecorators(
     ApiOperation({
-      summary: 'Eliminar una noticia (soft-delete) — admin o ccps',
+      summary: 'Eliminar una noticia (soft-delete) — admin o manager',
     }),
     ApiParam({
       name: 'id',

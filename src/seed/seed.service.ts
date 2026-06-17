@@ -30,11 +30,21 @@ export class SeedService {
         permissionsMap,
       );
 
-      this.logger.log('4. Seeding root user...');
+      this.logger.log('4. Seeding companies...');
+      const companiesMap = await this.seedRepository.createCompanies(qr);
+
+      this.logger.log('5. Seeding root user...');
       const rootUser = await this.seedRepository.createAdminUser(qr, rolesMap);
 
-      this.logger.log('5. Seeding news...');
-      await this.seedRepository.createNews(qr, rootUser);
+      this.logger.log('6. Seeding additional users and memberships...');
+      await this.seedRepository.createAdditionalUsers(
+        qr,
+        rolesMap,
+        companiesMap,
+      );
+
+      this.logger.log('7. Seeding news...');
+      await this.seedRepository.createNews(qr, rootUser, companiesMap['CCPS']);
 
       await qr.commitTransaction();
       this.logger.log('Seed executed successfully!');

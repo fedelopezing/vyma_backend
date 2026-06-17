@@ -5,6 +5,8 @@ import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { faker } from '@faker-js/faker';
 import { Profession } from './entities/profession.entity';
 
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
+
 describe('ProfessionsController', () => {
   let controller: ProfessionsController;
   let mockService: DeepMocked<ProfessionsService>;
@@ -29,7 +31,10 @@ describe('ProfessionsController', () => {
           useValue: mockService,
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(PermissionsGuard)
+      .useValue({ canActivate: jest.fn().mockReturnValue(true) })
+      .compile();
 
     controller = module.get<ProfessionsController>(ProfessionsController);
   });

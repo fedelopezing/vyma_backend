@@ -1,19 +1,33 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
-import { LoginUserDto, ActivateAccountDto, ResendActivationDto } from './dto';
+import {
+  LoginUserDto,
+  ActivateAccountDto,
+  ResendActivationDto,
+  SelectCompanyDto,
+} from './dto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { JwtPayload, LoginResponse, MessageResponse } from './interfaces';
+import {
+  JwtPayload,
+  LoginResponse,
+  SelectionResponse,
+  MessageResponse,
+  CompanyPreview,
+} from './interfaces';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { ActivationTokensService } from '../users/activation-tokens.service';
 import { RefreshTokenRepository } from './repositories/refresh-token.repository';
+import { UserCompanyRepository } from '../companies/repositories/user-company.repository';
 import { randomUUID } from 'crypto';
 import { User } from '../users/entities/user.entity';
+import { UserCompany } from '../companies/entities/user-company.entity';
 
 @Injectable()
 export class AuthService {
@@ -24,6 +38,7 @@ export class AuthService {
     private readonly activationTokensService: ActivationTokensService,
     private readonly jwtService: JwtService,
     private readonly refreshTokenRepo: RefreshTokenRepository,
+    private readonly userCompanyRepository: UserCompanyRepository,
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
@@ -82,7 +97,7 @@ export class AuthService {
     loginUserDto: LoginUserDto,
     ipAddress?: string,
     userAgent?: string,
-  ): Promise<LoginResponse> {
+  ): Promise<LoginResponse | SelectionResponse> {
     const { password, email } = loginUserDto;
 
     const user = await this.usersService.findOneByEmailForLogin(email);
@@ -100,7 +115,71 @@ export class AuthService {
       throw new UnauthorizedException('Credentials are not valid');
     }
 
-    return this.generateTokens(user, ipAddress, userAgent);
+    // ── Multi-tenant: consult memberships ─────────────────────────────────
+    const memberships =
+      await this.userCompanyRepository.findMembershipsByUserId(user.id);
+
+    if (memberships.length === 0) {
+      if (user.isSuperAdmin) {
+        return this.generateTokens(user, undefined, ipAddress, userAgent);
+      }
+      throw new UnauthorizedException('User has no company memberships');
+    }
+
+    // ── Case A: single membership — emit full JWT ──────────────────────────
+    if (memberships.length === 1) {
+      return this.generateTokens(user, memberships[0], ipAddress, userAgent);
+    }
+
+    // ── Case B: multiple memberships — emit selection token ───────────────
+    return this.generateSelectionToken(user, memberships);
+  }
+
+  async selectCompany(
+    selectionToken: string,
+    dto: SelectCompanyDto,
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<LoginResponse> {
+    let payload: JwtPayload;
+
+    try {
+      payload = this.jwtService.verify<JwtPayload>(selectionToken);
+    } catch {
+      throw new UnauthorizedException('Selection token is invalid or expired');
+    }
+
+    // Find the requested company among all user memberships
+    const memberships =
+      await this.userCompanyRepository.findMembershipsByUserId(payload.sub);
+
+    const membership = memberships.find(
+      (m) => m.company?.uuid === dto.companyUuid,
+    );
+
+    if (!membership) {
+      throw new ForbiddenException(
+        'User is not a member of the selected company',
+      );
+    }
+
+    const isMember = await this.userCompanyRepository.isActiveMember(
+      payload.sub,
+      membership.companyId,
+    );
+
+    if (!isMember) {
+      throw new ForbiddenException(
+        'User is not a member of the selected company',
+      );
+    }
+
+    const user = await this.usersService.findOneById(payload.sub);
+    if (!user || !user.isActive) {
+      throw new UnauthorizedException('User not found or inactive');
+    }
+
+    return this.generateTokens(user, membership, ipAddress, userAgent);
   }
 
   async refreshTokens(
@@ -139,7 +218,18 @@ export class AuthService {
       throw new UnauthorizedException('User not found or inactive');
     }
 
-    return this.generateTokens(user, ipAddress, userAgent);
+    // Refresh tokens don't re-select company; keep the first active membership
+    const memberships =
+      await this.userCompanyRepository.findMembershipsByUserId(user.id);
+
+    if (memberships.length === 0) {
+      if (user.isSuperAdmin) {
+        return this.generateTokens(user, undefined, ipAddress, userAgent);
+      }
+      throw new UnauthorizedException('User has no company memberships');
+    }
+
+    return this.generateTokens(user, memberships[0], ipAddress, userAgent);
   }
 
   async logout(token: string): Promise<MessageResponse> {
@@ -154,8 +244,11 @@ export class AuthService {
     return { message: 'Logged out successfully' };
   }
 
+  // ─── Private helpers ──────────────────────────────────────────────────────
+
   private async generateTokens(
     user: User,
+    membership?: UserCompany,
     ipAddress?: string,
     userAgent?: string,
   ): Promise<LoginResponse> {
@@ -163,7 +256,10 @@ export class AuthService {
       sub: user.id,
       uuid: user.uuid,
       email: user.email,
-      role: user.role?.name || 'client',
+      role: user.role?.name || membership?.role?.name || 'client',
+      companyId: membership?.companyId,
+      companyUuid: membership?.company?.uuid,
+      isSuperAdmin: user.isSuperAdmin ?? false,
     };
 
     const accessToken = this.jwtService.sign(payload);
@@ -193,7 +289,46 @@ export class AuthService {
         name: user.name,
         email: user.email,
         role: user.role?.name,
+        company: membership?.company
+          ? {
+              id: membership.company.id,
+              uuid: membership.company.uuid,
+              name: membership.company.name,
+            }
+          : undefined,
       },
+    };
+  }
+
+  private generateSelectionToken(
+    user: User,
+    memberships: UserCompany[],
+  ): SelectionResponse {
+    // Short-lived JWT (5 min) without companyId — used to identify user in select-company endpoint
+    const selectionPayload: JwtPayload = {
+      sub: user.id,
+      uuid: user.uuid,
+      email: user.email,
+      role: user.role?.name || 'client',
+      isSuperAdmin: user.isSuperAdmin ?? false,
+    };
+
+    const selectionToken = this.jwtService.sign(selectionPayload, {
+      expiresIn: '5m',
+    });
+
+    const companies: CompanyPreview[] = memberships
+      .filter((m) => m.company != null)
+      .map((m) => ({
+        id: m.company.id,
+        uuid: m.company.uuid,
+        name: m.company.name,
+      }));
+
+    return {
+      requiresCompanySelection: true,
+      selectionToken,
+      companies,
     };
   }
 }

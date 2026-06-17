@@ -5,7 +5,9 @@ import { CreateNewsDto } from './dto/create-news.dto';
 import { UpdateNewsDto } from './dto/update-news.dto';
 import { NewsPaginationDto } from './dto/news-pagination.dto';
 import { News, NewsStatus } from './entities/news.entity';
-import { User } from '../users/entities/user.entity';
+import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { UserCompanyRepository } from '../companies/repositories/user-company.repository';
 
 describe('NewsController', () => {
   let controller: NewsController;
@@ -27,12 +29,18 @@ describe('NewsController', () => {
     estado: NewsStatus.PUBLICADO,
   };
 
-  const mockUser: Partial<User> = {
-    id: 1,
+  const mockJwtPayload: JwtPayload = {
+    sub: 1,
+    uuid: 'user-uuid-123',
+    email: 'test@example.com',
+    role: 'admin',
+    companyId: 2,
+    companyUuid: 'company-uuid-123',
+    isSuperAdmin: false,
   };
 
   const mockAuthenticatedRequest = {
-    user: mockUser as User,
+    user: mockJwtPayload,
   };
 
   beforeEach(async () => {
@@ -40,8 +48,17 @@ describe('NewsController', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [NewsController],
-      providers: [{ provide: NewsService, useValue: mockNewsService }],
-    }).compile();
+      providers: [
+        { provide: NewsService, useValue: mockNewsService },
+        {
+          provide: UserCompanyRepository,
+          useValue: { isActiveMember: jest.fn().mockResolvedValue(true) },
+        },
+      ],
+    })
+      .overrideGuard(PermissionsGuard)
+      .useValue({ canActivate: jest.fn().mockReturnValue(true) })
+      .compile();
 
     controller = module.get<NewsController>(NewsController);
     newsService = module.get(NewsService);
@@ -88,7 +105,7 @@ describe('NewsController', () => {
   });
 
   describe('findAllAdmin', () => {
-    it('debería llamar a newsService.findAllAdmin() con el DTO de paginación', async () => {
+    it('debería llamar a newsService.findAllAdmin() con el DTO de paginación y el companyId', async () => {
       const paginationDto: NewsPaginationDto = { page: 1, limit: 20 };
       const expected = {
         data: [mockNews as News],
@@ -103,15 +120,18 @@ describe('NewsController', () => {
       };
       newsService.findAllAdmin.mockResolvedValueOnce(expected);
 
-      const result = await controller.findAllAdmin(paginationDto);
+      const result = await controller.findAllAdmin(
+        paginationDto,
+        mockAuthenticatedRequest as never,
+      );
 
-      expect(newsService.findAllAdmin).toHaveBeenCalledWith(paginationDto);
+      expect(newsService.findAllAdmin).toHaveBeenCalledWith(paginationDto, 2);
       expect(result).toEqual(expected);
     });
   });
 
   describe('create', () => {
-    it('debería llamar a newsService.create() con el DTO y el autorId extraído del JWT', async () => {
+    it('debería llamar a newsService.create() con el DTO, el autorId y el companyId extraídos del JWT', async () => {
       const dto: CreateNewsDto = {
         tituloEs: 'Nueva noticia',
         resumenEs: 'Resumen',
@@ -126,7 +146,7 @@ describe('NewsController', () => {
         mockAuthenticatedRequest as never,
       );
 
-      expect(newsService.create).toHaveBeenCalledWith(dto, '1');
+      expect(newsService.create).toHaveBeenCalledWith(dto, '1', 2);
       expect(result).toEqual(mockNews);
     });
   });
