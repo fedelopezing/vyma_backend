@@ -710,7 +710,14 @@ ConfigModule.forRoot({
 
 > **Importante**: Nunca commitear el archivo `.env` al repositorio. Usar `.env.example` como plantilla con valores de placeholder.
 
+### Entorno de Despliegue y Limitaciones
+
+* **Infraestructura**: El backend de producción corre en una VPS de Linode de 2GB de RAM, gestionado con PM2.
+* **Consideraciones de Recursos**: Todo desarrollo (especialmente tareas en segundo plano, crons y consumo de memoria) debe optimizarse pensando en este entorno de recursos limitados.
+* **Programación de Cron Jobs**: Programar los crons (como la ejecución del scraping diario a las 06:00 AM) en horarios de baja demanda y evitar ejecuciones concurrentes intensivas que puedan saturar la CPU o la memoria de la VPS.
+
 ---
+
 
 ## 14. Testing
 

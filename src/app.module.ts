@@ -20,6 +20,7 @@ import { RolesModule } from './roles/roles.module';
 import { PermissionsModule } from './permissions/permissions.module';
 import { NewsModule } from './news/news.module';
 import { CompaniesModule } from './companies/companies.module';
+import { ExchangeRatesModule } from './exchange-rates/exchange-rates.module';
 
 import { validateEnv } from './config/env.validation';
 
@@ -61,6 +62,7 @@ import { validateEnv } from './config/env.validation';
     UsersModule,
     NewsModule,
     CompaniesModule,
+    ExchangeRatesModule,
   ],
   controllers: [],
   providers: [

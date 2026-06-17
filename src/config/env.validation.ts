@@ -1,5 +1,5 @@
 import { plainToInstance } from 'class-transformer';
-import { IsNumber, IsString, validateSync } from 'class-validator';
+import { IsNumber, IsString, IsOptional, validateSync } from 'class-validator';
 
 class EnvironmentVariables {
   @IsNumber()
@@ -28,6 +28,10 @@ class EnvironmentVariables {
 
   @IsString()
   JWT_AUDIENCE: string;
+
+  @IsString()
+  @IsOptional()
+  ADMIN_EMAIL?: string;
 }
 
 export function validateEnv(config: Record<string, unknown>) {

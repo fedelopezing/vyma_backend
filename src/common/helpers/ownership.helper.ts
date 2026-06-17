@@ -1,6 +1,7 @@
 import { ForbiddenException } from '@nestjs/common';
 import { User } from '../../users/entities/user.entity';
 import { ValidRoles } from '../../auth/interfaces/valid-roles';
+import { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
 
 /**
  * Verifica si el usuario actual es el propietario de un recurso o si tiene
@@ -11,12 +12,16 @@ import { ValidRoles } from '../../auth/interfaces/valid-roles';
  * @param resourceOwnerId El ID del usuario que es dueño del recurso.
  */
 export function checkOwnershipOrAdmin(
-  currentUser: User,
+  currentUser: User | JwtPayload,
   resourceOwnerId: number,
 ): void {
-  const isOwner = resourceOwnerId === currentUser.id;
+  const currentUserId = 'sub' in currentUser ? currentUser.sub : currentUser.id;
+  const roleName =
+    'sub' in currentUser ? currentUser.role : currentUser.role?.name;
+
+  const isOwner = resourceOwnerId === currentUserId;
   const hasAdminPrivileges = [ValidRoles.admin].includes(
-    currentUser.role?.name as ValidRoles,
+    roleName as ValidRoles,
   );
 
   if (!isOwner && !hasAdminPrivileges) {

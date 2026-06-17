@@ -1,6 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { NewsService } from './news.service';
 import { News, NewsStatus } from './entities/news.entity';
 import { CreateNewsDto } from './dto/create-news.dto';
@@ -192,6 +196,24 @@ describe('NewsService', () => {
         { estado: NewsStatus.PUBLICADO },
       );
     });
+
+    it('debería filtrar por companyId si se especifica en la consulta pública', async () => {
+      mockQueryBuilder.getManyAndCount.mockResolvedValueOnce([
+        [{ id: '1' }],
+        1,
+      ]);
+
+      await service.findAll({
+        page: 1,
+        limit: 10,
+        companyId: 3,
+      });
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'news.companyId = :companyId',
+        { companyId: 3 },
+      );
+    });
   });
 
   describe('findOneBySlug', () => {
@@ -368,6 +390,81 @@ describe('NewsService', () => {
         NotFoundException,
       );
     });
+
+    it(
+      'debería lanzar ForbiddenException si la noticia pertenece a otra ' +
+        'empresa y el usuario no es superAdmin',
+      async () => {
+        const existingNews = {
+          id: '1',
+          companyId: 3,
+          estado: NewsStatus.BORRADOR,
+        } as News;
+        mockNewsRepository.findOneById.mockResolvedValueOnce(existingNews);
+
+        const user = {
+          sub: 1,
+          isSuperAdmin: false,
+          companyId: 2,
+        };
+
+        await expect(
+          service.update('1', { tituloEs: 'Nuevo' }, user as never),
+        ).rejects.toThrow(ForbiddenException);
+      },
+    );
+
+    it(
+      'debería permitir actualizar si la noticia pertenece a otra empresa ' +
+        'pero el usuario es superAdmin',
+      async () => {
+        const existingNews = {
+          id: '1',
+          companyId: 3,
+          estado: NewsStatus.BORRADOR,
+        } as News;
+        mockNewsRepository.findOneById.mockResolvedValueOnce(existingNews);
+
+        const user = {
+          sub: 1,
+          isSuperAdmin: true,
+          companyId: undefined,
+        };
+
+        const updateDto = { tituloEs: 'Nuevo' };
+        const savedMock = { ...existingNews, ...updateDto } as News;
+        mockNewsRepository.updateNews.mockResolvedValueOnce(savedMock);
+
+        const result = await service.update('1', updateDto, user as never);
+        expect(result.tituloEs).toBe('Nuevo');
+      },
+    );
+
+    it(
+      'debería permitir actualizar si la noticia pertenece a la misma ' +
+        'empresa que el usuario',
+      async () => {
+        const existingNews = {
+          id: '1',
+          companyId: 2,
+          estado: NewsStatus.BORRADOR,
+        } as News;
+        mockNewsRepository.findOneById.mockResolvedValueOnce(existingNews);
+
+        const user = {
+          sub: 1,
+          isSuperAdmin: false,
+          companyId: 2,
+        };
+
+        const updateDto = { tituloEs: 'Nuevo' };
+        const savedMock = { ...existingNews, ...updateDto } as News;
+        mockNewsRepository.updateNews.mockResolvedValueOnce(savedMock);
+
+        const result = await service.update('1', updateDto, user as never);
+        expect(result.tituloEs).toBe('Nuevo');
+      },
+    );
   });
 
   describe('remove', () => {
@@ -385,5 +482,74 @@ describe('NewsService', () => {
       mockNewsRepository.findOneById.mockResolvedValueOnce(null);
       await expect(service.remove('999')).rejects.toThrow(NotFoundException);
     });
+
+    it(
+      'debería lanzar ForbiddenException si el id pertenece a otra empresa ' +
+        'y el usuario no es superAdmin',
+      async () => {
+        const existingNews = {
+          id: '1',
+          companyId: 3,
+          estado: NewsStatus.BORRADOR,
+        } as News;
+        mockNewsRepository.findOneById.mockResolvedValueOnce(existingNews);
+
+        const user = {
+          sub: 1,
+          isSuperAdmin: false,
+          companyId: 2,
+        };
+
+        await expect(service.remove('1', user as never)).rejects.toThrow(
+          ForbiddenException,
+        );
+      },
+    );
+
+    it(
+      'debería permitir borrar si el id pertenece a otra empresa ' +
+        'pero el usuario es superAdmin',
+      async () => {
+        const existingNews = {
+          id: '1',
+          companyId: 3,
+          estado: NewsStatus.BORRADOR,
+        } as News;
+        mockNewsRepository.findOneById.mockResolvedValueOnce(existingNews);
+        mockNewsRepository.softDelete.mockResolvedValueOnce(undefined);
+
+        const user = {
+          sub: 1,
+          isSuperAdmin: true,
+          companyId: undefined,
+        };
+
+        await service.remove('1', user as never);
+        expect(mockNewsRepository.softDelete).toHaveBeenCalledWith('1');
+      },
+    );
+
+    it(
+      'debería permitir borrar si el id pertenece a la misma empresa ' +
+        'que el usuario',
+      async () => {
+        const existingNews = {
+          id: '1',
+          companyId: 2,
+          estado: NewsStatus.BORRADOR,
+        } as News;
+        mockNewsRepository.findOneById.mockResolvedValueOnce(existingNews);
+        mockNewsRepository.softDelete.mockResolvedValueOnce(undefined);
+
+        const user = {
+          sub: 1,
+          isSuperAdmin: false,
+          companyId: 2,
+        };
+
+        await service.remove('1', user as never);
+        expect(mockNewsRepository.softDelete).toHaveBeenCalledWith('1');
+      },
+    );
   });
 });

@@ -8,7 +8,7 @@ import {
 import { Reflector } from '@nestjs/core';
 import { PERMISSIONS_KEY } from '../decorators/require-permissions.decorator';
 import { RolesService } from '../../roles/roles.service';
-import { User } from '../../users/entities/user.entity';
+import { JwtPayload } from '../interfaces/jwt-payload.interface';
 
 @Injectable()
 export class PermissionsGuard implements CanActivate {
@@ -27,15 +27,18 @@ export class PermissionsGuard implements CanActivate {
       return true; // No permissions required
     }
 
-    const { user } = context.switchToHttp().getRequest<{ user: User }>();
+    const { user } = context.switchToHttp().getRequest<{ user: JwtPayload }>();
 
     if (!user) {
       throw new UnauthorizedException('El usuario no está autenticado');
     }
 
-    const userPermissions = await this.rolesService.getUserPermissions(user.id);
+    const userId = user.sub;
+    const userPermissions = await this.rolesService.getUserPermissions(userId);
 
-    if (user.role?.name === 'admin') {
+    const roleName = user.role;
+
+    if (roleName === 'admin') {
       return true;
     }
 

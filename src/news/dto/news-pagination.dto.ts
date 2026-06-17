@@ -51,4 +51,14 @@ export class NewsPaginationDto {
   @ParseOptionalQuery()
   @IsEnum(NewsStatus)
   estado?: NewsStatus;
+
+  @ApiPropertyOptional({
+    description: 'Filtrar por ID de la empresa (portal)',
+    example: 1,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  companyId?: number;
 }
