@@ -36,6 +36,11 @@ async function bootstrap() {
   logger.log(
     `Swagger documentation available at http://localhost:${process.env.PORT}/api/v1/docs`,
   );
+
+  // Indica a PM2 que el proceso ya está escuchando peticiones (wait_ready: true)
+  if (process.send) {
+    process.send('ready');
+  }
 }
 
 bootstrap();
