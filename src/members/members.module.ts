@@ -8,9 +8,10 @@ import { AdminMembersService } from './admin-members.service';
 import { MembersRepository } from './repositories/members.repository';
 import { MEMBERS_REPOSITORY } from './interfaces/i-members-repository.interface';
 import { MemberNotificationsListener } from './listeners/member-notifications.listener';
+import { CompaniesModule } from '../companies/companies.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Member])],
+  imports: [TypeOrmModule.forFeature([Member]), CompaniesModule],
   controllers: [MembersController, AdminMembersController],
   providers: [
     MembersService,
