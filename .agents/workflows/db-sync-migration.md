@@ -1,54 +1,102 @@
 ---
-trigger: manual
-description: Database Synchronization and Migration Generation Workflow
+description: Diseña, genera y audita migraciones de base de datos TypeORM para el backend NestJS.
 ---
 
-# Workflow: DB Sync & Migration Generator
+# Workflow: `/db-sync-migration` — Sincronización de Base de Datos y Migraciones
 
-This workflow guides the **Database Administrator (DBA) Specialist** agent when a database entity is created or modified. It ensures database schema synchronization is done safely via TypeORM migrations, preventing schema corruption and ensuring performance indexes are present.
+Este workflow asiste al agente adoptando el rol de **Database Administrator (DBA) Specialist** para diseñar el esquema, crear índices, generar y auditar migraciones TypeORM.
 
----
-
-## 🔄 Workflow Steps
-
-### 1. Phase 1: Entity & Index Validation
-Before running any migration generator command:
-1. Identify the created or modified entity file(s) (e.g., `src/[module]/entities/[name].entity.ts`).
-2. Scan the entity class properties line-by-line.
-3. Identify columns that will be frequently used:
-   - In `WHERE` clauses (e.g., `email`, `uuid`, status fields, dates).
-   - In `JOIN` conditions or foreign key fields (e.g., `companyId`, `userId`).
-4. Verify that these columns have the `@Index()` decorator.
-5. If any critical lookup or foreign key columns are missing the `@Index()` decorator, modify the entity file to add it before generating the migration.
+- **Comando:** `/db-sync-migration`
+- **Prerequisito:** RFC aprobado con entidades diseñadas.
 
 ---
 
-### 2. Phase 2: Generate Migration via CLI
-1. Determine the descriptive name of the migration (e.g., `CreateInvoiceTable` or `AddCompanyIdToNews`). Use CamelCase for the migration class name.
-2. Build and propose the TypeORM migration generation command using the `package.json` scripts:
-   ```bash
-   npm run typeorm:generate -- src/database/migrations/MigrationName
-   ```
-3. Execute this command in the shell to generate the migration file inside `src/database/migrations/`.
+## 📋 Instrucciones para el Agente
+
+### Fase 1: Lectura del RFC
+
+1. Lee el RFC indicado, específicamente la sección de esquema de base de datos.
+2. Extrae:
+   - Nombre de tabla.
+   - Columnas y tipos PostgreSQL correctos.
+   - Relaciones (FK, ManyToOne, OneToMany).
+   - Índices requeridos.
+   - Constraints (unique, not null, default values).
 
 ---
 
-### 3. Phase 3: Migration Code Audit (Crucial Validation)
-Once the migration file is generated, **do not run it yet**. You must open and inspect the migration file:
-1. Locate the file: `src/database/migrations/[timestamp]-[MigrationName].ts`.
-2. Inspect the generated SQL code in the `up` and `down` methods line-by-line.
-3. Verify that:
-   - **PostgreSQL Column Types**: Check that fields map correctly to PostgreSQL-specific types (e.g., `uuid` instead of generic `varchar` if uuid is intended, `timestamp` handles timezones correctly).
-   - **Defaults & Constraints**: Verify default values and constraints (e.g., `DEFAULT uuid_generate_v4()`, `NOT NULL`, `UNIQUE` constraints).
-   - **Indices and Foreign Keys**: Verify index creation matches the entity definition, and foreign key relations have the correct `ON DELETE CASCADE` or `ON DELETE SET NULL` constraints.
-   - **Compatibility & Backfills**: If adding a `NOT NULL` column, verify that the migration handles backfilling existing database rows before altering the column to `NOT NULL`. If not, modify the migration file to include the backfill query.
+### Fase 2: Diseño de la Entidad
+
+Crea o actualiza `src/[feature]/entities/[feature].entity.ts` siguiendo las reglas del DBA:
+
+**Checklist antes de generar migración:**
+- [ ] `@PrimaryGeneratedColumn('uuid')` en el campo `id`.
+- [ ] Columnas de timestamp usan `timestamptz`: `@CreateDateColumn({ type: 'timestamptz' })`.
+- [ ] Foreign keys tienen `@Index()`.
+- [ ] Columnas de búsqueda frecuente tienen `@Index()`.
+- [ ] Valores money usan `decimal` con `precision: 10, scale: 2`.
+- [ ] Strings cortos usan `varchar` con `length: 255`.
+- [ ] Strings largos usan `text`.
+- [ ] Soft delete usa `@DeleteDateColumn`, no columna boolean `isDeleted`.
+- [ ] `onDelete` definido en todas las `@ManyToOne`.
 
 ---
 
-### 4. Phase 4: Run and Verify Schema
-1. Execute the migration application command:
-   ```bash
-   npm run typeorm:run
-   ```
-2. Confirm that the migration applied successfully. If there are any errors, revert using `npm run typeorm:revert`, correct the migration file, and re-apply.
-3. Verify the database state to ensure the tables, columns, indices, and constraints are fully synchronized.
+### Fase 3: Generación de Migración
+
+```bash
+npm run migration:generate -- --name=[DescriptiveName]
+# Ejemplo: npm run migration:generate -- --name=CreateNewsArticleTable
+```
+
+---
+
+### Fase 4: Auditoría SQL
+
+Abre el archivo generado en `src/database/migrations/` y verifica línea por línea:
+
+**Checklist de auditoría:**
+- [ ] Nombre de tabla en `snake_case` plural.
+- [ ] Columnas en `snake_case`.
+- [ ] PK es `UUID` no `serial` (integer).
+- [ ] Timestamps son `TIMESTAMP WITH TIME ZONE` no `TIMESTAMP` plain.
+- [ ] FKs tienen `ON DELETE CASCADE` o `ON DELETE SET NULL` según el diseño.
+- [ ] `CREATE INDEX` generado para cada `@Index()`.
+- [ ] `UNIQUE CONSTRAINT` o `UNIQUE INDEX` para columnas `{ unique: true }`.
+- [ ] No hay data migration mezclada (si se necesita backfill, crear migración separada).
+- [ ] El método `down()` revierte correctamente (`DROP TABLE`, `DROP COLUMN`, etc.).
+
+---
+
+### Fase 5: Ejecución
+
+Solo ejecutar si la auditoría fue aprobada:
+
+```bash
+# Verificar migraciones pendientes
+npm run typeorm:show
+
+# Ejecutar
+npm run typeorm:run
+
+# Verificar que la tabla fue creada correctamente
+# (consultar la DB o revisar el log de la migración)
+```
+
+---
+
+### Fase 6: Entrega
+
+```markdown
+### 🗄️ Migración Ejecutada: [MigrationName]
+
+**Tabla creada:** `[table_name]`
+**Migración:** `src/database/migrations/[timestamp]-[MigrationName].ts`
+
+**Índices creados:**
+- `IDX_[table]_[column]` — [razón del índice]
+
+**Checklist de auditoría:** ✅ Todos los puntos verificados
+
+**Próximo paso:** `/implement-feature` — Implementar repositorio y servicio.
+```

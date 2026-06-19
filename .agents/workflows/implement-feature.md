@@ -1,105 +1,166 @@
 ---
-trigger: manual
-description: Decoupled Feature Implementation and Refactoring Workflow
+description: Implementa una feature del backend NestJS capa por capa siguiendo el RFC aprobado.
 ---
 
-# Workflow: Decoupled Feature Implementation
+# Workflow: `/implement-feature` — Implementación de Feature por Capas (NestJS)
 
-This workflow guides the **Expert Backend Developer** agent through implementing or refactoring features. It enforces Clean Architecture by writing decoupled code across separate files, adhering strictly to naming conventions (kebab-case), and using Constructor Injection for all dependencies.
+Este workflow asiste al agente adoptando el rol de **Expert Backend Developer** para implementar una feature capa por capa, siguiendo estrictamente el RFC aprobado y la CONSTITUTION.md.
 
----
-
-## 🛠️ Phase-by-Phase Implementation Guide
-
-### Phase 1: Architectural Alignment & File Mapping
-Before writing any code:
-1. Read the approved Technical RFC in `docs/RFCs/`.
-2. Map out the files you need to create or modify. You must list these files in your response before writing code.
-3. Ensure every file is placed in its proper modular folder as defined in **Section 2 of the Constitution**:
-   - Entities: `src/[module]/entities/[name].entity.ts`
-   - Custom Repositories: `src/[module]/repositories/[name].repository.ts`
-   - Repository Interfaces: `src/[module]/interfaces/[name].repository.interface.ts`
-   - Services: `src/[module]/services/[name].service.ts`
-   - Controllers: `src/[module]/controllers/[name].controller.ts`
-   - DTOs: `src/[module]/dto/[action]-[entity].dto.ts`
-   - Listeners: `src/[module]/listeners/[name].listener.ts`
-   - Exceptions: `src/[module]/exceptions/[name].exception.ts`
-4. **File Naming Rule**: Filenames must be strictly in `kebab-case` and end with the correct suffix (e.g., `.controller.ts`, `.service.ts`, `.repository.ts`, `.dto.ts`, `.entity.ts`).
+- **Comando:** `/implement-feature`
+- **Prerequisito:** RFC aprobado + migración ejecutada (si aplica).
 
 ---
 
-### Phase 2: Persistence Layer & Data Access
-1. **Entities**: Define TypeORM entities using strict typing (no `any`), relationships, and indexes on lookup columns.
-2. **Repository Interfaces**: Define the repository abstraction (e.g. `IUsersRepository` in `interfaces/[name].repository.interface.ts`) and declare a matching string token constant:
-   ```typescript
-   export const USER_REPOSITORY = 'USER_REPOSITORY';
-   export interface IUsersRepository {
-     findById(id: number): Promise<User | null>;
-     save(user: Partial<User>): Promise<User>;
-   }
-   ```
-3. **Custom Repository Implementation**: Implement this interface in a separate repository class:
-   ```typescript
-   @Injectable()
-   export class UsersRepository implements IUsersRepository {
-     constructor(
-       @InjectRepository(User)
-       private readonly repo: Repository<User>,
-       private readonly dataSource: DataSource,
-     ) {}
-     // Implementation...
-   }
-   ```
-4. **Migrations**: Generate and run the database migration. Do not modify existing migrations.
+## 📋 Instrucciones para el Agente
+
+### Fase 0: Lectura del RFC
+
+1. Lee el RFC aprobado de `docs/RFCs/`.
+2. Lee la Sección 5 (Plan de Implementación) para obtener la lista de tareas.
+3. Informa al usuario las tareas que implementarás y en qué orden.
 
 ---
 
-### Phase 3: Domain Layer & Constructor Injection
-1. **Constructor Injection**: All services must strictly inject their dependencies via constructor parameters. Property injection (`@Inject` on class attributes) and the Service Locator pattern (`moduleRef.get()`) are strictly forbidden.
-   * **Correct DI Pattern**:
-     ```typescript
-     @Injectable()
-     export class UsersService {
-       constructor(
-         @Inject(USER_REPOSITORY)
-         private readonly usersRepository: IUsersRepository,
-         private readonly eventEmitter: EventEmitter2,
-       ) {}
-       // ...
-     }
-     ```
-2. **Decoupled Business Logic**: Services must only contain core business rules. They must not interact with database query builders directly (delegate to repositories) or HTTP parameters directly (delegate to controllers).
-3. **Domain Events**: Secondary actions (sending Resend emails, WhatsApp, logging) must be decoupled. Use `this.eventEmitter.emit('event.name', new Event())` at the end of the transaction.
-4. **Unit Tests**: Create a `.spec.ts` file next to the service. Mock all injected repositories and external dependencies using `@golevelup/ts-jest`'s `createMock<T>()`. Ensure coverage is `>=80%`.
+### Fase 1: Interfaces y Tokens
+
+Primer paso absoluto — las interfaces son el contrato que todo lo demás implementa:
+
+```typescript
+// src/[feature]/interfaces/i-[feature]-repository.interface.ts
+export const FEATURE_REPOSITORY = 'FEATURE_REPOSITORY';
+
+export interface IFeatureRepository {
+  // Define cada método que el servicio necesitará
+  findAll(page: number, limit: number): Promise<[Feature[], number]>;
+  findById(id: string): Promise<Feature | null>;
+  create(data: CreateFeatureDto): Promise<Feature>;
+  update(id: string, data: UpdateFeatureDto): Promise<Feature>;
+  remove(id: string): Promise<void>;
+}
+```
 
 ---
 
-### Phase 4: API Layer & Contracts
-1. **DTOs**:
-   - Define separate DTOs for input (`CreateUserDto`) and output responses (`UserResponseDto`).
-   - Every property in an input DTO must have validation decorators (`class-validator`) and Swagger properties (`@ApiProperty`).
-   - Create a clean `dto/index.ts` file exporting all DTOs for the module.
-2. **Controllers**:
-   - Set up REST endpoints. Controllers must only parse input payloads, apply guards, and call services. No business logic or database access is allowed in controllers.
-   - Swagger decorators (`@ApiOperation`, `@ApiResponse`) must be grouped and moved into a separate decorators file: `src/[module]/decorators/[feature]-swagger.decorators.ts`.
-3. **Preserve Decorators**: When refactoring or editing existing DTOs or Controllers, under no circumstances should existing Swagger or validation decorators be removed or altered unless requested by the RFC.
-4. **Unit Tests**: Create `.spec.ts` files mock-testing controller actions.
+### Fase 2: DTOs
+
+```typescript
+// Reglas obligatorias:
+// 1. Toda propiedad tiene @ApiProperty() con description y example
+// 2. Toda propiedad tiene al menos un @class-validator decorator
+// 3. Propiedades opcionales tienen @IsOptional() PRIMERO
+// 4. El barrel index.ts re-exporta todo
+```
 
 ---
 
-### Phase 5: Decoupled Listeners & Integrations
-1. **Listeners**: Create asynchronous listeners for events using `@OnEvent('event.name', { async: true })`.
-2. **Robust Error Handling**: Wrap listener logic in a global `try/catch` block to log exceptions and prevent silent failures.
-3. **Unit Tests**: Create spec files for listeners, mocking external API clients.
+### Fase 3: Excepciones
+
+```typescript
+// Una excepción por archivo
+// src/[feature]/exceptions/[feature]-not-found.exception.ts
+import { NotFoundException } from '@nestjs/common';
+
+export class FeatureNotFoundException extends NotFoundException {
+  constructor(id: string) {
+    super(`Feature with id "${id}" was not found`);
+  }
+}
+```
 
 ---
 
-## 🔍 Code Implementation Checklist (DoD)
+### Fase 4: Repositorio
 
-Before marking a task as complete, verify that:
-1. [ ] **Decoupled Files**: The controller, service, repository, entity, DTOs, and exceptions are all in separate files inside their respective modular folders.
-2. [ ] **Kebab-Case Naming**: All filenames use `kebab-case` and have correct suffixes.
-3. [ ] **Constructor Injection**: All dependencies are injected via constructor arguments. No property injection is used.
-4. [ ] **No `any`**: The code contains zero `any` types. Used `unknown` or explicit types instead.
-5. [ ] **Contract Integrity**: Output serialization excludes sensitive fields. All REST inputs are validated via DTOs.
-6. [ ] **Self-Tested**: Every service, repository, and controller has matching unit tests with `>=80%` test coverage.
+Implementa la interfaz. Usa `@InjectRepository(Entity)` SOLO aquí, nunca en el servicio:
+
+```typescript
+@Injectable()
+export class FeatureRepository implements IFeatureRepository {
+  constructor(
+    @InjectRepository(Feature)
+    private readonly repo: Repository<Feature>,
+    private readonly dataSource: DataSource,
+  ) {}
+
+  async findAll(page: number, limit: number): Promise<[Feature[], number]> {
+    return this.repo.findAndCount({
+      skip: (page - 1) * limit,
+      take: limit,
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async findById(id: string): Promise<Feature | null> {
+    return this.repo.findOne({ where: { id } });
+  }
+}
+```
+
+---
+
+### Fase 5: Servicio
+
+```typescript
+// Reglas:
+// 1. Constructor injection via interface token
+// 2. Logger instance per service class
+// 3. try/catch en todos los métodos async
+// 4. EventEmitter para side effects cross-module
+// 5. NUNCA inyectar Repository<Entity> directamente
+```
+
+---
+
+### Fase 6: Decoradores Swagger
+
+```typescript
+// src/[feature]/decorators/[feature]-swagger.decorators.ts
+// Agrupar con applyDecorators() — nunca inline en el controlador
+export const ApiGetFeatureList = () =>
+  applyDecorators(
+    ApiOperation({ summary: 'Get paginated feature list' }),
+    ApiOkResponse({ description: 'Returns paginated list', type: FeatureResponseDto, isArray: true }),
+    ApiQuery({ name: 'page', required: false, type: Number, example: 1 }),
+    ApiQuery({ name: 'limit', required: false, type: Number, example: 20 }),
+  );
+```
+
+---
+
+### Fase 7: Controlador
+
+```typescript
+// Reglas:
+// 1. @UseGuards en clase, @Roles en método
+// 2. @Public() explícito en endpoints públicos
+// 3. Solo usa decoradores Swagger importados del archivo de decoradores
+// 4. Sin lógica de negocio — solo delega al servicio
+```
+
+---
+
+### Fase 8: Módulo y Registro en AppModule
+
+```typescript
+@Module({
+  imports: [TypeOrmModule.forFeature([Feature])],
+  controllers: [FeatureController],
+  providers: [
+    FeatureService,
+    { provide: FEATURE_REPOSITORY, useClass: FeatureRepository },
+  ],
+  exports: [FeatureService],
+})
+export class FeatureModule {}
+```
+
+Registrar en `src/app.module.ts`.
+
+---
+
+### Fase 9: Verificación
+
+1. `npm run build` → cero errores TypeScript.
+2. `npm run start:dev` → cero errores de runtime en startup.
+3. Probar endpoints manualmente en Swagger (`/api-docs`).
+4. Informar lista de archivos creados y próximo paso: `/generate-tests`.

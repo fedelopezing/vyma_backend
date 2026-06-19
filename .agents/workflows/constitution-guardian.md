@@ -1,112 +1,135 @@
 ---
-trigger: manual
-description: Constitution Guardian Code Quality Audit Workflow
+description: Audita los archivos modificados contra la CONSTITUTION.md del backend y genera un reporte de cumplimiento con Action Plan.
 ---
 
-# Workflow: Constitution Guardian (Code Quality Audit)
+# Workflow: `/constitution-guardian` — Auditoría de Constitución (NestJS Backend)
 
-This workflow guides the **Principal Software Architect & Code Reviewer** agent to perform a rigorous, line-by-line audit of all modified files against the Pull Request Checklist defined in [CONSTITUTION.md](file:///c:/Users/fedel/NestJs/vyma_backend/CONSTITUTION.md). 
+Este workflow asiste al agente adoptando el rol de **Principal Software Architect & Tech Lead** para realizar una auditoría rigurosa de los archivos modificados contra la [CONSTITUTION.md](file:///c:/Users/fedel/NestJs/vyma_backend/CONSTITUTION.md).
 
-You must act as a strict inspector to ensure absolute compliance with the project's architectural, naming, and clean code guidelines before any code is approved for merging.
-
----
-
-## 🔍 Audit Execution Steps
-
-### 1. Phase 1: Input Analysis
-1. Retrieve the list of all created or modified files.
-2. Retrieve the results of the linter (`npm run lint`), TypeScript compiler, and unit tests (`npm run test:cov` or Jest outputs).
-3. Review the test coverage reports.
-
-### 2. Phase 2: Line-by-Line Checklist Verification
-For each modified file, inspect the code line-by-line and evaluate it against each of the following checklist categories:
-
-#### A. Structure & Naming
-- [ ] **Folder Structure (Section 2)**: Are the new files located in their correct modular folders (e.g. `entities/`, `services/`, `controllers/`, `dto/`, `repositories/`, `listeners/`, `exceptions/`)? No custom or flat folders.
-- [ ] **Naming Conventions (Section 3)**: Are filenames in strict `kebab-case` with the required suffixes (e.g., `.controller.ts`, `.service.ts`, `.repository.ts`, `.dto.ts`, `.entity.ts`)?
-- [ ] **Class and Interface Names**: Do class names use `PascalCase` and match their suffix (e.g., `CreateUserDto`, `UserNotFoundException`)? Do interface names for repositories start with `I` (e.g., `IUsersRepository`)?
-
-#### B. Architecture & Decoupling
-- [ ] **No Business Logic in Controllers**: Are controllers clean, only parsing input, routing, and calling services?
-- [ ] **No Direct Repository/DataSource Injections in Services**: Services must **never** inject `Repository<Entity>` or `DataSource` directly. They must use repository interfaces and injection tokens (e.g., `@Inject(USER_REPOSITORY) private readonly repo: IUsersRepository`).
-- [ ] **Flow Direction**: Is the dependency flow strictly `Controller -> Service -> Repository`?
-- [ ] **Circular Dependencies**: Are circular module references avoided? If modules need to interact, are secondary processes decoupled using Event-Driven Architecture (`EventEmitter2` and events)?
-
-#### C. Validation & DTOs
-- [ ] **Strict Typing**: All controllers must receive typed DTOs. Zero usage of `any` or raw unvalidated objects.
-- [ ] **Property Validation**: Does every property in an input DTO have at least one validation decorator from `class-validator`?
-- [ ] **Swagger Documentation**: Does every property in DTOs have `@ApiProperty()` with a clear description and example?
-
-#### D. Security
-- [ ] **Guards**: Are all sensitive endpoints protected with `@UseGuards(JwtAuthGuard)`?
-- [ ] **Explicit Public Route Decorator**: Are public endpoints marked with `@Public()` explicitly?
-- [ ] **Rate Limiting**: Are authentication and password-reset endpoints protected with strict throttler configurations (`@Throttle()`)?
-- [ ] **No Sensitive Data**: Ensure passwords, tokens, or personal identifiers are not exposed in logs or return payloads.
-
-#### E. Typing & Returns
-- [ ] **Zero `any`**: Is there an absolute absence of `any` in all production code files? If a type is dynamic, is `unknown` used instead?
-- [ ] **Explicit Returns**: Do all controller and service methods declare their return types explicitly (e.g., `Promise<UserResponseDto>`)?
-
-#### F. Error Handling
-- [ ] **Semantic HTTP Exceptions**: Are NestJS HTTP Exceptions thrown (e.g. `NotFoundException`, `ConflictException`)? The usage of raw `new Error()` is strictly forbidden.
-- [ ] **Database Error Mapping**: Are database constraints and query exceptions caught in the service/repository layer and mapped to descriptive HTTP exceptions?
-- [ ] **Async Try/Catch**: Do asynchronous operations (database, external integrations) have proper try/catch blocks?
-- [ ] **Custom Exceptions**: Are business exceptions defined in separate files inside the `exceptions/` directory?
-
-#### G. Performance & Database
-- [ ] **No N+1 Queries**: Are database queries optimized? Ensure relations are not fetched in a loop; use explicit joins (`relations` or `QueryBuilder`) instead.
-- [ ] **Indexed Fields**: Do lookup columns used in `WHERE`, `JOIN`, or `ORDER BY` have `@Index()` decorators?
-- [ ] **Pagination**: Do all listing endpoints enforce pagination limits (e.g., `take` and `skip` query inputs)?
-
-#### H. Testing & Coverage
-- [ ] **Spec Files**: Do matching `.spec.ts` files exist for all services, controllers, and repositories?
-- [ ] **Test Coverage**: Does the coverage report show `>=80%` coverage across statements, branches, functions, and lines?
-- [ ] **Error Path Testing**: Do unit tests cover both happy paths and error cases?
-
-#### I. Swagger Documentation & API Design
-- [ ] **Controller Decorators**: Are controllers annotated with `@ApiTags()`, `@ApiOperation()`, and `@ApiResponse()`?
-- [ ] **Response DTOs**: Are API response payloads typed with custom response DTOs to serialize outputs, excluding internal IDs or passwords?
+- **Comando:** `/constitution-guardian`
+- **Contexto requerido:** Archivos o directorio implementado.
 
 ---
 
-## 📄 Output: Guardian Audit Report
+## 📋 Instrucciones para el Agente
 
-Once the audit is complete, present the findings in this exact format:
+### Fase 1: Lectura de Archivos
+
+Lee todos los archivos del módulo indicado:
+- `[feature].controller.ts` + `.spec.ts`
+- `[feature].service.ts` + `.spec.ts`
+- `dto/*.ts`
+- `entities/*.ts`
+- `repositories/*.ts`
+- `interfaces/*.ts`
+- `exceptions/*.ts`
+- `decorators/*.ts`
+- `[feature].module.ts`
+
+---
+
+### Fase 2: Auditoría por Secciones de la Constitución
+
+Evalúa cada item con ✅ (cumple) o ❌ (viola) con evidencia:
+
+#### §2 Arquitectura (Estructura de Módulo)
+- [ ] Todos los archivos están dentro de `src/[feature]/` — módulo autónomo.
+- [ ] `dto/index.ts` existe y re-exporta todos los DTOs.
+- [ ] Cada excepción tiene su propio archivo en `exceptions/`.
+- [ ] Decoradores de Swagger en archivo separado `decorators/[feature]-swagger.decorators.ts`.
+
+#### §3 Nomenclatura
+- [ ] Archivos en `kebab-case`.
+- [ ] Clases en `PascalCase` con sufijo correcto (`.Controller`, `.Service`, `Dto`, `.Entity`, etc.).
+- [ ] Métodos comienzan con verbos: `find`, `create`, `update`, `remove`.
+- [ ] Interfaces prefijadas con `I` si son de repositorio.
+- [ ] Tokens de inyección en `UPPER_SNAKE_CASE`.
+
+#### §4 Inyección de Dependencias
+- [ ] Constructor injection únicamente — cero `@Inject` en propiedades.
+- [ ] Repositorios inyectados via interface + token, NO via `@InjectRepository(Entity)` en servicios.
+- [ ] No hay `ModuleRef.get()` en ningún archivo.
+
+#### §5 DTOs
+- [ ] Toda propiedad tiene `@ApiProperty()`.
+- [ ] Toda propiedad tiene al menos un `class-validator` decorator.
+- [ ] Propiedades opcionales tienen `@IsOptional()` antes del validador principal.
+- [ ] Cero `any` en los tipos de propiedades.
+
+#### §6 Errores
+- [ ] Cero `throw new Error('...')` genérico — solo excepciones HTTP de NestJS.
+- [ ] Errores de BD capturados en servicio y mapeados a excepciones HTTP.
+- [ ] `try/catch` en todos los métodos async del servicio.
+
+#### §7 Repositorios
+- [ ] `@InjectRepository(Entity)` solo en la clase Repository — nunca en Service.
+- [ ] `DataSource` solo en Repository — nunca en Service.
+- [ ] Paginación implementada en todos los `findAll` con `findAndCount`.
+
+#### §8 Eventos
+- [ ] Side effects cross-module usan `EventEmitter2.emit()` — no inyección directa de servicios externos.
+- [ ] Eventos nombrados como hechos del pasado: `feature.created`, `feature.updated`.
+
+#### §9 Seguridad
+- [ ] Todos los endpoints protegidos tienen `@UseGuards(JwtAuthGuard, RolesGuard)` en el controlador.
+- [ ] Endpoints públicos tienen `@Public()` explícito.
+- [ ] No se retorna la entidad cruda — se usa DTO de respuesta.
+
+#### §10 Performance
+- [ ] No hay consultas N+1.
+- [ ] `@Index()` en columnas de FK y filtros.
+- [ ] `select` selectivo en queries pesadas.
+
+#### §11 Tipado
+- [ ] Cero `any` en todo el módulo.
+- [ ] Retornos explícitos en todos los métodos públicos de controller y service.
+
+#### §12 Logging
+- [ ] `private readonly logger = new Logger(ClassName.name)` en service.
+- [ ] Cero `console.log` o `console.error`.
+- [ ] No se loguean datos sensibles.
+
+#### §14 Testing
+- [ ] `.spec.ts` existe para service y controller.
+- [ ] Todas las dependencias mockeadas.
+- [ ] Cobertura ≥ 80%.
+
+#### §15 Swagger
+- [ ] Cero decoradores Swagger inline en el controlador.
+- [ ] Todos los decoradores en `decorators/[feature]-swagger.decorators.ts`.
+
+---
+
+### Fase 3: Reporte de Cumplimiento
 
 ```markdown
-# Constitution Guardian Audit Report
+## 📋 Reporte de Constitución: [Feature]
 
-## 📊 Compliance Scorecard
-- **Estructura y Nomenclatura**: [PASS / FAIL / PARTIAL]
-- **Arquitectura y Acoplamiento**: [PASS / FAIL / PARTIAL]
-- **Validación y DTOs**: [PASS / FAIL / PARTIAL]
-- **Seguridad**: [PASS / FAIL / PARTIAL]
-- **Tipado y Retornos**: [PASS / FAIL / PARTIAL]
-- **Manejo de Errores**: [PASS / FAIL / PARTIAL]
-- **Rendimiento y Base de Datos**: [PASS / FAIL / PARTIAL]
-- **Testing y Cobertura**: [PASS / FAIL / PARTIAL]
-- **Documentación API**: [PASS / FAIL / PARTIAL]
+### Resumen
 
-**Overall Compliance Status**: [APPROVED / REJECTED]
+| Sección | Estado | Issues |
+|:---|:---|:---|
+| §2 Arquitectura | ✅ / ❌ | [N] |
+| §3 Nomenclatura | ✅ / ❌ | [N] |
+| §4 DI | ✅ / ❌ | [N] |
+| §5 DTOs | ✅ / ❌ | [N] |
+| §6 Errores | ✅ / ❌ | [N] |
+| §9 Seguridad | ✅ / ❌ | [N] |
+| §14 Testing | ✅ / ❌ | [N] |
+| §15 Swagger | ✅ / ❌ | [N] |
 
----
+### ❌ Violations Found
 
-## 🔍 Detailed Findings
+#### Violation #1: [Título]
+- **Sección:** §[N] [Nombre]
+- **Archivo:** `[filepath#LN]`
+- **Descripción:** [qué viola y por qué]
+- **Fix:** [qué debe cambiarse]
 
-### 🟢 Passed Checks
-- List specific checks that complied perfectly.
+### 📋 Action Plan
 
-### 🔴 Violations & Issues
-For each violation detected, list:
-1. **File**: [Link to file]
-2. **Issue**: Explain the violation (e.g., property injection instead of constructor injection).
-3. **Reference**: Point to the Constitution section violated.
-4. **Correction Snippet**: Provide a code diff showing how to fix it.
+- [ ] Fix #1 — [archivo] — [cambio requerido]
+- [ ] Fix #2 — [archivo] — [cambio requerido]
 
----
-
-## 📋 Action Plan (For the Developer)
-A checklist of tasks the developer must execute to bring the code to 100% compliance.
-- [ ] **Task 1**: Describe action (e.g. Add `@Index()` to `companyId` in `news.entity.ts`).
-- [ ] **Task 2**: Describe action (e.g. Create `news-response.dto.ts` to serialize controller output).
+### Veredicto: ✅ APROBADO / ❌ RECHAZADO — [N] fixes requeridos
 ```

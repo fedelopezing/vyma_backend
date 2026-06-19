@@ -1,135 +1,135 @@
 ---
-trigger: manual
-description: Unit Testing and Strict Coverage Workflow
+description: Genera tests unitarios exhaustivos para servicios y controladores NestJS, validando cobertura ≥ 80%.
 ---
 
-# Workflow: Unit Testing & Strict Coverage
+# Workflow: `/generate-tests` — Generación de Tests Unitarios (NestJS)
 
-This workflow guides the **SDET & Backend Testing Expert** agent when a backend class (Service, Repository, Listener, or Controller) is created or modified. It details the step-by-step process to generate its mirroring `.spec.ts` file, mock dependencies using advanced utilities, generate dynamic mock data, and guarantee the project's strict test coverage thresholds are met.
+Este workflow asiste al agente adoptando el rol de **SDET & Backend Testing Expert** para escribir tests unitarios completos siguiendo el patrón AAA (Arrange-Act-Assert).
 
----
-
-## 🔄 Workflow Steps
-
-### 1. Phase 1: File Analysis & Dependency Mapping
-1. Read the newly created or modified class file (e.g., `src/[module]/services/[name].service.ts`).
-2. Inspect the constructor definition.
-3. List all the injected dependencies (e.g. repository interfaces, event emitters, configuration managers, external API clients).
-4. Identify all the public methods of the class that must be tested.
+- **Comando:** `/generate-tests`
+- **Contexto requerido:** Archivos de servicio y controlador implementados.
 
 ---
 
-### 2. Phase 2: Compile Testing Module Setup
-Create the test mirror file (e.g., `src/[module]/services/[name].service.spec.ts`) alongside the file under test.
-1. **NestJS Testing Utilities**: Import `Test` and `TestingModule` from `@nestjs/testing`.
-2. **Abstractions and Injection Tokens**: Ensure dependencies are mocked based on their interfaces. If a dependency is injected using a custom token (e.g., `@Inject(USER_REPOSITORY)`), use that token in the testing module setup.
-3. **Advanced Mocking**: Import `createMock` from `@golevelup/ts-jest` to auto-mock dependencies. Do not write extensive manual mock objects.
-   * **Correct Setup Example**:
-     ```typescript
-     import { Test, TestingModule } from '@nestjs/testing';
-     import { createMock } from '@golevelup/ts-jest';
-     import { UsersService } from './users.service';
-     import { USER_REPOSITORY, IUsersRepository } from '../interfaces/user-repository.interface';
-     import { EventEmitter2 } from '@nestjs/event-emitter';
+## 📋 Instrucciones para el Agente
 
-     describe('UsersService', () => {
-       let service: UsersService;
-       let repositoryMock: jest.Mocked<IUsersRepository>;
-       let eventEmitterMock: jest.Mocked<EventEmitter2>;
+### Fase 1: Lectura de los Archivos a Testear
 
-       beforeEach(async () => {
-         const module: TestingModule = await Test.createTestingModule({
-           providers: [
-             UsersService,
-             {
-               provide: USER_REPOSITORY,
-               useValue: createMock<IUsersRepository>(),
-             },
-             {
-               provide: EventEmitter2,
-               useValue: createMock<EventEmitter2>(),
-             },
-           ],
-         }).compile();
-
-         service = module.get<UsersService>(UsersService);
-         repositoryMock = module.get(USER_REPOSITORY);
-         eventEmitterMock = module.get(EventEmitter2);
-       });
-
-       it('should be defined', () => {
-         expect(service).toBeDefined();
-       });
-     });
-     ```
+1. Lee `src/[feature]/[feature].service.ts` completamente.
+2. Lee `src/[feature]/[feature].controller.ts` completamente.
+3. Lee las interfaces de repositorio y las excepciones del módulo.
+4. Identifica todos los métodos públicos → cada uno necesita al menos:
+   - Un test de happy path.
+   - Un test por cada rama de error/excepción.
 
 ---
 
-### 3. Phase 3: Dynamic Data Generation
-1. Use `@faker-js/faker` to generate mock data. Avoid hardcoding test inputs like fixed IDs, emails, names, or addresses.
-2. Initialize mock data dynamically inside each test case or within a local helper function:
-   ```typescript
-   import { faker } from '@faker-js/faker';
-
-   const createMockUser = () => ({
-     id: faker.number.int(),
-     uuid: faker.string.uuid(),
-     email: faker.internet.email(),
-     name: faker.person.fullName(),
-     isActive: true,
-   });
-   ```
-
----
-
-### 4. Phase 4: Test Cases Implementation
-Organize tests using nested `describe` blocks for each method under test:
+### Fase 2: Setup del Test Module
 
 ```typescript
-describe('methodName', () => {
-  // Test cases go here
+// Patrón estándar con createMock<T>() de @golevelup/ts-jest
+const module: TestingModule = await Test.createTestingModule({
+  providers: [
+    FeatureService,
+    { provide: FEATURE_REPOSITORY, useValue: createMock<IFeatureRepository>() },
+    { provide: EventEmitter2, useValue: createMock<EventEmitter2>() },
+  ],
+}).compile();
+```
+
+---
+
+### Fase 3: Mock Data con Faker
+
+```typescript
+const mockFeature = (): Feature => ({
+  id: faker.string.uuid(),
+  slug: faker.helpers.slugify(faker.lorem.words(3)),
+  title: faker.lorem.sentence(),
+  content: faker.lorem.paragraphs(2),
+  createdAt: faker.date.past(),
+  updatedAt: faker.date.recent(),
+} as Feature);
+```
+
+**Regla**: Nunca hardcodear UUIDs, nombres o IDs. Siempre `faker`.
+
+---
+
+### Fase 4: Casos de Test por Método
+
+Para cada método del servicio, cubrir:
+
+| Método | Happy Path | Error Paths |
+|:---|:---|:---|
+| `findAll` | Retorna `[items, count]` | — |
+| `findOne` | Retorna el item | `NotFoundException` si no existe |
+| `create` | Crea y retorna + emite evento | Error de repositorio propagado |
+| `update` | Actualiza y retorna | `NotFoundException` si no existe |
+| `remove` | Elimina sin error | `NotFoundException` si no existe |
+
+---
+
+### Fase 5: Cobertura de Ramas (Branches)
+
+Las ramas más comunes a cubrir explícitamente:
+
+```typescript
+// Rama: objeto no encontrado → excepción
+it('should throw NotFoundException when item does not exist', async () => {
+  repository.findById.mockResolvedValue(null); // null → branch coverage
+  await expect(service.findOne('non-existent-id')).rejects.toThrow(NotFoundException);
+});
+
+// Rama: conflicto → excepción de conflicto
+it('should throw ConflictException when slug already exists', async () => {
+  repository.findBySlug.mockResolvedValue(existingItem); // found → conflict branch
+  await expect(service.create(dto)).rejects.toThrow(ConflictException);
+});
+
+// Rama: error de DB → error interno
+it('should propagate DB errors', async () => {
+  repository.create.mockRejectedValue(new Error('DB connection lost'));
+  await expect(service.create(dto)).rejects.toThrow();
 });
 ```
 
-For each method, implement tests covering:
-- **Happy Path**:
-  - Mock resolving dependencies successfully.
-  - Call the method and assert the returned value matches the expected output.
-  - Verify that dependencies were called with correct parameters (e.g. `expect(repositoryMock.save).toHaveBeenCalledWith(dto)`).
-- **Error Mapping (Exception Handling)**:
-  - Mock dependencies throwing errors or returning empty values.
-  - Assert that the service maps these errors to correct NestJS HTTP exceptions.
-  - Example: Assert that a database unique violation (PostgreSQL code `23505`) translates to a `ConflictException`:
-    ```typescript
-    it('should throw ConflictException if email is already taken', async () => {
-      const dbError = new Error('Unique constraint violation');
-      (dbError as any).code = '23505';
-      repositoryMock.save.mockRejectedValue(dbError);
+---
 
-      await expect(service.createUser(dto)).rejects.toThrow(ConflictException);
-    });
-    ```
-- **Domain Event Verification**:
-  - Assert that secondary side-effects trigger event emissions:
-    ```typescript
-    expect(eventEmitterMock.emit).toHaveBeenCalledWith('user.created', expect.any(UserCreatedEvent));
-    ```
+### Fase 6: Ejecución y Validación de Cobertura
+
+```bash
+# Ejecutar tests del módulo
+npm run test -- --testPathPattern=src/[feature]/
+
+# Ver cobertura del módulo
+npm run test:cov -- --testPathPattern=src/[feature]/
+```
+
+Verificar que el reporte muestra:
+- Statements: ≥ 80%
+- Branches: ≥ 78%
+- Functions: ≥ 80%
+- Lines: ≥ 80%
 
 ---
 
-### 5. Phase 5: Local Test Execution & Coverage Audit
-1. Run the test file locally using:
-   ```bash
-   npm run test -- src/[module]/services/[name].service.spec.ts
-   ```
-2. Verify that the test compiles and runs successfully.
-3. Check the test coverage using:
-   ```bash
-   npm run test:cov
-   ```
-4. Confirm that the test suite satisfies the project's strict coverage thresholds:
-   - **Branches**: >= 78%
-   - **Lines**: >= 80%
-   - **Functions**: >= 80%
-   - **Statements**: >= 80%
-5. If coverage is below targets, identify the uncovered branches or lines, add missing test cases to cover them, and repeat the verification process.
+### Fase 7: Entrega
+
+```markdown
+### 🧪 Tests Generados: [Feature]
+
+**Archivos:**
+- `src/[feature]/[feature].service.spec.ts` — [N] test cases
+- `src/[feature]/[feature].controller.spec.ts` — [N] test cases
+
+**Cobertura:**
+| Métrica | Resultado | Umbral |
+|:---|:---|:---|
+| Statements | X% | ≥ 80% |
+| Branches | X% | ≥ 78% |
+| Functions | X% | ≥ 80% |
+| Lines | X% | ≥ 80% |
+
+**Estado:** ✅ Listo para `/constitution-guardian`
+```
