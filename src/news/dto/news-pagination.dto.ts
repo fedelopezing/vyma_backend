@@ -1,4 +1,4 @@
-import { IsEnum, IsInt, IsOptional, Max, Min } from 'class-validator';
+import { IsEnum, IsInt, IsOptional, Max, Min, IsString } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
@@ -61,4 +61,12 @@ export class NewsPaginationDto {
   @IsInt()
   @Min(1)
   companyId?: number;
+
+  @ApiPropertyOptional({
+    description: 'Término de búsqueda (busca en título y resumen)',
+    example: 'NestJS',
+  })
+  @IsOptional()
+  @IsString()
+  q?: string;
 }

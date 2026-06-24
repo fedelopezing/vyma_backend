@@ -8,9 +8,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 
 import { News, NewsStatus } from './entities/news.entity';
 import { NewsRepository } from './repositories/news.repository';
-import { CreateNewsDto } from './dto/create-news.dto';
-import { UpdateNewsDto } from './dto/update-news.dto';
-import { NewsPaginationDto } from './dto/news-pagination.dto';
+import { CreateNewsDto, UpdateNewsDto, NewsPaginationDto } from './dto';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import {
   NewsPublishedEvent,
@@ -66,43 +64,7 @@ export class NewsService {
     );
   }
 
-  // ─── Queries ─────────────────────────────────────────────────────────────────
-
-  /**
-   * Construye una query base paginada con filtros opcionales de categoría, estado y companyId.
-   * Pasa `forceStatus` para forzar el filtro (ej. solo PUBLICADO en la web pública).
-   */
-  private buildPaginatedQuery(
-    paginationDto: NewsPaginationDto,
-    companyId?: number,
-    forceStatus?: NewsStatus,
-  ): import('typeorm').SelectQueryBuilder<News> {
-    const { page = 1, limit = 10, categoria, estado } = paginationDto;
-    const skip = (page - 1) * limit;
-
-    const query = this.newsRepository
-      .createQueryBuilder('news')
-      .orderBy('news.createdAt', 'DESC')
-      .skip(skip)
-      .take(limit);
-
-    if (companyId !== undefined) {
-      query.andWhere('news.companyId = :companyId', { companyId });
-    }
-
-    if (categoria) {
-      query.andWhere('news.categoria = :categoria', { categoria });
-    }
-
-    const targetStatus = forceStatus ?? estado;
-    if (targetStatus) {
-      query.andWhere('news.estado = :estado', { estado: targetStatus });
-    }
-
-    return query;
-  }
-
-  // ─── CRUD público ─────────────────────────────────────────────────────────────
+  // ─── CRUD Admin ─────────────────────────────────────────────────────────────
 
   async create(
     dto: CreateNewsDto,
@@ -126,47 +88,20 @@ export class NewsService {
     return savedNews;
   }
 
-  async findAll(
-    paginationDto: NewsPaginationDto,
-  ): Promise<PaginatedResponse<News>> {
-    const query = this.buildPaginatedQuery(
-      paginationDto,
-      paginationDto.companyId,
-      NewsStatus.PUBLICADO,
-    );
-    const [data, total] = await query.getManyAndCount();
-    return buildPaginatedResponse(
-      data,
-      total,
-      paginationDto.page,
-      paginationDto.limit,
-    );
-  }
-
   async findAllAdmin(
     paginationDto: NewsPaginationDto,
     companyId?: number,
   ): Promise<PaginatedResponse<News>> {
-    const query = this.buildPaginatedQuery(paginationDto, companyId);
-    const [data, total] = await query.getManyAndCount();
+    const [data, total] = await this.newsRepository.findPaginated(
+      paginationDto,
+      companyId,
+    );
     return buildPaginatedResponse(
       data,
       total,
       paginationDto.page,
       paginationDto.limit,
     );
-  }
-
-  async findOneBySlug(slug: string): Promise<News> {
-    const news = await this.newsRepository.findOneBySlug(slug);
-
-    if (!news) {
-      throw new NotFoundException(
-        `Noticia con slug '${slug}' no encontrada o no está publicada.`,
-      );
-    }
-
-    return news;
   }
 
   async update(
@@ -196,5 +131,35 @@ export class NewsService {
   async remove(id: string, user?: JwtPayload): Promise<void> {
     await this.findNewsOrFail(id, user);
     await this.newsRepository.softDelete(id);
+  }
+
+  // ─── CRUD público ─────────────────────────────────────────────────────────────
+
+  async findAll(
+    paginationDto: NewsPaginationDto,
+  ): Promise<PaginatedResponse<News>> {
+    const [data, total] = await this.newsRepository.findPaginated(
+      paginationDto,
+      paginationDto.companyId,
+      NewsStatus.PUBLICADO,
+    );
+    return buildPaginatedResponse(
+      data,
+      total,
+      paginationDto.page,
+      paginationDto.limit,
+    );
+  }
+
+  async findOneBySlug(slug: string): Promise<News> {
+    const news = await this.newsRepository.findOneBySlug(slug);
+
+    if (!news) {
+      throw new NotFoundException(
+        `Noticia con slug '${slug}' no encontrada o no está publicada.`,
+      );
+    }
+
+    return news;
   }
 }

@@ -15,6 +15,8 @@ import {
   SeedPermission,
 } from './data/roles.seed-data';
 import { buildNewsSeedData } from './data/news.seed-data';
+import { Member } from '../members/entities/member.entity';
+import { buildMembersSeedData } from './data/members.seed-data';
 
 @Injectable()
 export class SeedRepository {
@@ -195,6 +197,18 @@ export class SeedRepository {
         company,
       });
       await qr.manager.save(newsItem);
+    }
+  }
+
+  async createMembers(
+    qr: QueryRunner,
+    companiesMap: Record<string, Company>,
+  ): Promise<void> {
+    const membersData = buildMembersSeedData(companiesMap);
+
+    for (const data of membersData) {
+      const member = qr.manager.create(Member, data);
+      await qr.manager.save(member);
     }
   }
 }

@@ -28,18 +28,27 @@ export interface SeedRoleConfig {
 }
 
 export const SEED_TABLES_ORDER = [
-  'activation_tokens',
-  'refresh_tokens',
+  // Nivel 5 — depende de schedules
   'schedule_breaks',
+  // Nivel 4 — depende de profiles
   'schedules',
-  'services',
-  'professions',
+  // Nivel 3 — depende de users, companies, professions
+  'members',
   'news',
+  'refresh_tokens',
+  'activation_tokens',
   'profiles',
   'user_companies',
+  // Nivel 2 — depende de roles, companies
+  'services',
+  'professions',
   'users',
-  'companies',
+  // Nivel 1
+  'role_permissions',
   'roles',
+  // Nivel 0 — sin dependencias
+  'exchange_rates',
+  'companies',
   'permissions',
 ] as const;
 
