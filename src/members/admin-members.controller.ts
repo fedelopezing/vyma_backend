@@ -13,7 +13,7 @@ import {
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { AdminMembersService } from './admin-members.service';
-import { MemberQueryDto, UpdateMemberDto } from './dto';
+import { MemberQueryDto, UpdateMemberDto, MemberResponseDto } from './dto';
 import { TenantGuard } from '../common/guards/tenant.guard';
 import { AuthPermissions } from '../auth/decorators';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
@@ -26,7 +26,7 @@ import {
 } from './decorators/members-swagger.decorators';
 import { Request } from 'express';
 
-interface AuthenticatedRequest extends Request {
+export interface AuthenticatedRequest extends Request {
   user: JwtPayload;
 }
 
@@ -44,7 +44,14 @@ export class AdminMembersController {
     @Query() query: MemberQueryDto,
     @Req() req: AuthenticatedRequest,
   ) {
-    return this.adminMembersService.findAll(query, req.user.companyId);
+    const paginated = await this.adminMembersService.findAll(
+      query,
+      req.user.companyId,
+    );
+    return {
+      data: paginated.data.map((m) => MemberResponseDto.fromEntity(m)),
+      meta: paginated.meta,
+    };
   }
 
   @Patch(':id/status')
@@ -56,12 +63,13 @@ export class AdminMembersController {
     @Body('version') version: number | undefined,
     @Req() req: AuthenticatedRequest,
   ) {
-    return this.adminMembersService.updateStatus(
+    const member = await this.adminMembersService.updateStatus(
       id,
       status,
       version,
       req.user.companyId,
     );
+    return MemberResponseDto.fromEntity(member);
   }
 
   @Patch(':id/featured')
@@ -73,12 +81,13 @@ export class AdminMembersController {
     @Body('version') version: number | undefined,
     @Req() req: AuthenticatedRequest,
   ) {
-    return this.adminMembersService.updateFeatured(
+    const member = await this.adminMembersService.updateFeatured(
       id,
       isFeatured,
       version,
       req.user.companyId,
     );
+    return MemberResponseDto.fromEntity(member);
   }
 
   @Put(':id')
@@ -89,10 +98,11 @@ export class AdminMembersController {
     @Body() updateMemberDto: UpdateMemberDto,
     @Req() req: AuthenticatedRequest,
   ) {
-    return this.adminMembersService.update(
+    const member = await this.adminMembersService.update(
       id,
       updateMemberDto,
       req.user.companyId,
     );
+    return MemberResponseDto.fromEntity(member);
   }
 }

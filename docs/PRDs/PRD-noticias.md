@@ -18,18 +18,21 @@
 
 El alcance de este módulo está estructurado en torno a los tres componentes del ecosistema:
 
-### A. Portal Web Público (Astro + React Islands) - *Este Proyecto*
-- [ ] **Página de Listado de Noticias (`/noticias`):**
-  - **Sección Hero:** Tarjeta destacada de la noticia más reciente con imagen de portada a gran escala, metadatos (fecha, autor, categoría) y título con tipografía editorial masiva (*Inter*, tracking-tight).
-  - **Grid Asimétrico de Novedades:** Tarjetas de noticias secundarias ordenadas cronológicamente utilizando el sistema "No-Line" (delimitación mediante sutiles contrastes de fondo, sin bordes oscuros).
-  - **Filtro de Categorías:** Widget interactivo (isla React hydrated con `client:visible`) para filtrar los artículos instantáneamente en el cliente por tipo.
-- [ ] **Página de Detalle de Noticia (`/noticias/[slug]`):**
+### A. Portal Web Público (Astro + React Islands) - _Este Proyecto_
+
+- [ ] **Página de Listado de Noticias (`/[lang]/news`):**
+  - **Sección Hero:** Tarjeta destacada de la noticia más reciente con imagen de portada a gran escala, metadatos (fecha, autor, categoría) y título con tipografía editorial masiva (_Inter_, tracking-tight).
+  - **Buscador y Filtro de Categorías:** Widget interactivo (isla React hydrated con `client:load`) que contiene un input de búsqueda de texto y un selector de categoría (`NOTICIA`, `COMUNICADO`, `EVENTO_SOCIO`).
+  - **Grid Asimétrico de Novedades:** Tarjetas de noticias ordenadas cronológicamente utilizando el sistema "No-Line" (delimitación mediante sutiles contrastes de fondo, sin bordes oscuros).
+  - **Botón "Cargar Más":** Botón de paginación que realiza peticiones asíncronas adicionales al backend de NestJS para traer los siguientes registros sin recargar la página.
+- [ ] **Página de Detalle de Noticia (`/[lang]/news/[slug]`):**
   - **Encabezado Editorial:** Título, categoría, fecha, autor e imagen de portada optimizada mediante el componente `<Image />` de Astro.
   - **Rich Text Content Render:** Renderizado estilizado y seguro de las etiquetas HTML del cuerpo (`<strong>`, `<em>`, `<blockquote>`, `<ul>`, `<ol>`, `<img />`).
   - **Compartir Noticia:** Isla React interactiva con animaciones sutiles para copiar el enlace al portapapeles y compartir en LinkedIn o WhatsApp.
-- [ ] **Internacionalización (i18n):** Enrutamiento simétrico para acceder al detalle en ambos idiomas (`/noticias/slug-es` y `/en/news/slug-en`).
+- [ ] **Internacionalización (i18n):** Enrutamiento simétrico para acceder al detalle en ambos idiomas (`/es/news/slug-es` y `/en/news/slug-en`).
 
-### B. Aplicación Web Admin (Next.js) - *Proyecto Admin*
+### B. Aplicación Web Admin (Next.js) - _Proyecto Admin_
+
 - [ ] **Portal de Inicio de Sesión (Login):** Pantalla limpia de autenticación por credenciales (email/password) que consume el token JWT del backend.
 - [ ] **Dashboard / Listado de Gestión:**
   - Tabla interactiva que lista todas las noticias almacenadas en la base de datos (tanto borradores como publicadas).
@@ -40,7 +43,8 @@ El alcance de este módulo está estructurado en torno a los tres componentes de
   - **Campos en Español (ES):** Título, Subtítulo/Resumen, Slug (autogenerado a partir del título en español), y **Editor de Texto Enriquecido (WYSIWYG)** que genera código HTML estructurado y limpio.
   - **Campos en Inglés (EN):** Título, Subtítulo/Resumen, Slug y **Editor de Texto Enriquecido** independiente para la traducción al inglés.
 
-### C. Servicio Backend & Base de Datos (NestJS + PostgreSQL) - *Proyecto Backend*
+### C. Servicio Backend & Base de Datos (NestJS + PostgreSQL) - _Proyecto Backend_
+
 - [ ] **Modelo de Datos de Noticias (PostgreSQL Schema):**
   - `id`: UUID (Primary Key).
   - `slug_es` / `slug_en`: VARCHAR, únicos y autogenerados.
@@ -68,13 +72,16 @@ El alcance de este módulo está estructurado en torno a los tres componentes de
 
 - **Regla 1 (Control de Visibilidad en el Portal Público):** Bajo ninguna circunstancia una noticia en estado `BORRADOR` (Draft) debe ser devuelta por los endpoints públicos de NestJS ni renderizada en el portal público de Astro.
 - **Regla 2 (Sincronización Obligatoria de i18n):** Para evitar inconsistencias visuales en el portal de CCPS, el formulario en Next.js exigirá la carga obligatoria del contenido en español (ES) e inglés (EN) antes de permitir el cambio de estado a `PUBLICADO`.
-- **Regla 3 (Sanitización y Prevención XSS):** 
+- **Regla 3 (Sanitización y Prevención XSS):**
   - El backend de NestJS debe pasar un filtro de sanitización (e.g. usando `dompurify` o `sanitize-html` en DTOs o interceptores) para remover cualquier etiqueta `<script>`, `onload`, o código javascript inyectado maliciosamente antes de guardar el HTML en Postgres.
   - El portal público de Astro utilizará un renderizado directo seguro tras verificar el origen de confianza de la API.
 - **Regla 4 (Clasificación Estricta):** Cada artículo debe pertenecer obligatoriamente a una de estas tres categorías:
   - `NOTICIA`: Artículos institucionales o de economía bilateral.
   - `COMUNICADO`: Notas oficiales del directorio de la CCPS.
   - `EVENTO_SOCIO`: Promociones y eventos de networking de empresas asociadas.
+- **Regla 5 (Consumo Dinámico de API con Fallback):** La lista de noticias debe cargarse inicialmente desde la API de NestJS (`GET /api/v1/news?page=1&limit=6`). Si la API no responde, se debe mostrar un estado de error amigable.
+- **Regla 6 (Filtros y Búsqueda Debounced):** La búsqueda por texto libre y el cambio de categoría deben resetear la paginación a la página 1 y reiniciar el listado acumulado. La búsqueda de texto en el input debe ser "debounced" (300ms) para evitar llamadas excesivas al backend.
+- **Regla 7 (Estrategia del Botón Cargar Más):** El botón "Cargar Más" debe ocultarse automáticamente cuando `meta.hasNextPage` de la respuesta del API sea `false`. Durante la carga de nuevos elementos, se debe mostrar un Skeleton loader para evitar parpadeos visuales.
 
 ---
 
@@ -94,16 +101,23 @@ El alcance de este módulo está estructurado en torno a los tres componentes de
 ## 5. Criterios de Aceptación (User Stories)
 
 ### Historia 1: Crear y Publicar Noticia Completa
+
 - **Dado que** un Administrador de la cámara ha iniciado sesión en la Web Admin de Next.js,
 - **Cuando** completa el formulario de creación escribiendo el título en español e inglés, inserta un párrafo con negritas y una cita en los editores de texto enriquecido, define la categoría como `Noticia`, sube la imagen de portada y hace clic en `Publicar`,
 - **Entonces** la app Next.js debe enviar el payload sanitizado al backend de NestJS, el cual valida los datos mediante DTOs, los almacena en PostgreSQL con estado `PUBLICADO` y devuelve una respuesta HTTP 201 exitosa.
 
-### Historia 2: Visualización en el Portal Público
-- **Dado que** existe una noticia guardada en PostgreSQL con estado `PUBLICADO`,
-- **Cuando** un usuario visitante ingresa a `/noticias` en el portal de Astro,
-- **Entonces** el sistema debe consultar la API de NestJS, renderizar la noticia en el grid asimétrico respetando el estilo "No-Line", y al hacer clic en ella, abrir el detalle `/noticias/[slug]` mostrando el HTML enriquecido (negritas, citas) formateado con total fidelidad visual y de manera segura.
+### Historia 2: Visualización y Filtros en la Página de Listado
+- **Dado que** un usuario visitante ingresa a `/[lang]/news` en el portal de Astro,
+- **Cuando** escribe un término en el buscador o selecciona la categoría "Comunicado",
+- **Entonces** el sistema realiza una llamada filtrada a la API de NestJS, reinicia la lista y renderiza únicamente las noticias publicadas correspondientes a la búsqueda, ordenadas por fecha en forma descendente.
 
-### Historia 3: Ocultar Borradores al Público
+### Historia 3: Paginación Interactiva mediante Cargar Más
+- **Dado que** hay más de 6 noticias publicadas registradas en el sistema,
+- **Cuando** el usuario se desplaza al final del listado en `/[lang]/news` y hace clic en `Cargar Más`,
+- **Entonces** el sistema consulta la página siguiente (`page=2`) del backend, concatena los nuevos resultados al grid existente manteniendo el estado anterior, y oculta el botón si ya no hay más páginas disponibles.
+
+### Historia 4: Ocultar Borradores al Público
+
 - **Dado que** un administrador crea una publicación en Next.js y decide guardarla como `BORRADOR`,
 - **Cuando** un usuario común navega por el portal público de Astro o intenta adivinar el slug del borrador,
 - **Entonces** el endpoint público de NestJS no debe retornar la información (devolviendo HTTP 404 en el detalle) y el artículo no aparecerá listado bajo ninguna circunstancia en la web pública.

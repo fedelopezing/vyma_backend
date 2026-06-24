@@ -11,6 +11,7 @@ import {
   Query,
   Req,
   UseGuards,
+  BadRequestException,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
@@ -26,9 +27,7 @@ import {
 } from './decorators/news-swagger.decorators';
 
 import { NewsService } from './news.service';
-import { CreateNewsDto } from './dto/create-news.dto';
-import { UpdateNewsDto } from './dto/update-news.dto';
-import { NewsPaginationDto } from './dto/news-pagination.dto';
+import { CreateNewsDto, UpdateNewsDto, NewsPaginationDto } from './dto';
 import { News } from './entities/news.entity';
 import { PaginatedResponse } from '../common/interfaces';
 import { AuthPermissions } from '../auth/decorators';
@@ -106,6 +105,11 @@ export class NewsController {
   findAll(
     @Query() paginationDto: NewsPaginationDto,
   ): Promise<PaginatedResponse<News>> {
+    if (!paginationDto.companyId) {
+      throw new BadRequestException(
+        'El parámetro companyId es obligatorio para la búsqueda de noticias públicas',
+      );
+    }
     return this.newsService.findAll(paginationDto);
   }
 

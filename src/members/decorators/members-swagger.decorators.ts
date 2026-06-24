@@ -1,5 +1,5 @@
 import { applyDecorators } from '@nestjs/common';
-import { ApiOperation, ApiParam, ApiQuery, ApiResponse } from '@nestjs/swagger';
+import { ApiOperation, ApiParam, ApiResponse } from '@nestjs/swagger';
 import { MemberResponseDto } from '../dto/member-response.dto';
 import { PaginatedMembersResponseDto } from '../dto/paginated-members-response.dto';
 

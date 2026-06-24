@@ -9,7 +9,6 @@ import { NewsService } from './news.service';
 import { News, NewsStatus } from './entities/news.entity';
 import { CreateNewsDto } from './dto/create-news.dto';
 import { NewsRepository } from './repositories/news.repository';
-import { SelectQueryBuilder } from 'typeorm';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 
 describe('NewsService', () => {
@@ -17,30 +16,11 @@ describe('NewsService', () => {
   let mockNewsRepository: DeepMocked<NewsRepository>;
   let mockEventEmitter: DeepMocked<EventEmitter2>;
 
-  const mockQueryBuilder = {
-    where: jest.fn().mockReturnThis(),
-    andWhere: jest.fn().mockReturnThis(),
-    orderBy: jest.fn().mockReturnThis(),
-    skip: jest.fn().mockReturnThis(),
-    take: jest.fn().mockReturnThis(),
-    withDeleted: jest.fn().mockReturnThis(),
-    getMany: jest.fn(),
-    getOne: jest.fn(),
-    getManyAndCount: jest.fn(),
-  };
-
   beforeEach(async () => {
     jest.clearAllMocks();
-    mockQueryBuilder.getMany.mockResolvedValue([]);
-    mockQueryBuilder.getOne.mockResolvedValue(null);
-    mockQueryBuilder.getManyAndCount.mockResolvedValue([[], 0]);
 
     mockNewsRepository = createMock<NewsRepository>();
     mockEventEmitter = createMock<EventEmitter2>();
-
-    mockNewsRepository.createQueryBuilder.mockReturnValue(
-      mockQueryBuilder as unknown as SelectQueryBuilder<News>,
-    );
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -155,10 +135,8 @@ describe('NewsService', () => {
 
   describe('findAll', () => {
     it('debería retornar noticias publicadas y paginadas', async () => {
-      mockQueryBuilder.getManyAndCount.mockResolvedValueOnce([
-        [{ id: '1' }],
-        1,
-      ]);
+      const mockNews = [{ id: '1' }] as News[];
+      mockNewsRepository.findPaginated.mockResolvedValueOnce([mockNews, 1]);
 
       const result = await service.findAll({ page: 1, limit: 10 });
 
@@ -173,17 +151,15 @@ describe('NewsService', () => {
           hasPrevPage: false,
         },
       });
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-        'news.estado = :estado',
-        { estado: NewsStatus.PUBLICADO },
+      expect(mockNewsRepository.findPaginated).toHaveBeenCalledWith(
+        { page: 1, limit: 10 },
+        undefined,
+        NewsStatus.PUBLICADO,
       );
     });
 
     it('debería forzar el estado PUBLICADO incluso si se pasa otro estado o undefined en la consulta pública', async () => {
-      mockQueryBuilder.getManyAndCount.mockResolvedValueOnce([
-        [{ id: '1' }],
-        1,
-      ]);
+      mockNewsRepository.findPaginated.mockResolvedValueOnce([[], 0]);
 
       await service.findAll({
         page: 1,
@@ -191,17 +167,15 @@ describe('NewsService', () => {
         estado: NewsStatus.BORRADOR,
       });
 
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-        'news.estado = :estado',
-        { estado: NewsStatus.PUBLICADO },
+      expect(mockNewsRepository.findPaginated).toHaveBeenCalledWith(
+        { page: 1, limit: 10, estado: NewsStatus.BORRADOR },
+        undefined,
+        NewsStatus.PUBLICADO,
       );
     });
 
     it('debería filtrar por companyId si se especifica en la consulta pública', async () => {
-      mockQueryBuilder.getManyAndCount.mockResolvedValueOnce([
-        [{ id: '1' }],
-        1,
-      ]);
+      mockNewsRepository.findPaginated.mockResolvedValueOnce([[], 0]);
 
       await service.findAll({
         page: 1,
@@ -209,9 +183,26 @@ describe('NewsService', () => {
         companyId: 3,
       });
 
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-        'news.companyId = :companyId',
-        { companyId: 3 },
+      expect(mockNewsRepository.findPaginated).toHaveBeenCalledWith(
+        { page: 1, limit: 10, companyId: 3 },
+        3,
+        NewsStatus.PUBLICADO,
+      );
+    });
+
+    it('debería pasar el término de búsqueda q al repositorio', async () => {
+      mockNewsRepository.findPaginated.mockResolvedValueOnce([[], 0]);
+
+      await service.findAll({
+        page: 1,
+        limit: 10,
+        q: 'término',
+      });
+
+      expect(mockNewsRepository.findPaginated).toHaveBeenCalledWith(
+        { page: 1, limit: 10, q: 'término' },
+        undefined,
+        NewsStatus.PUBLICADO,
       );
     });
   });
@@ -238,10 +229,8 @@ describe('NewsService', () => {
 
   describe('findAllAdmin', () => {
     it('debería retornar todas las noticias filtradas por estado', async () => {
-      mockQueryBuilder.getManyAndCount.mockResolvedValueOnce([
-        [{ id: '1' }],
-        1,
-      ]);
+      const mockNews = [{ id: '1' }] as News[];
+      mockNewsRepository.findPaginated.mockResolvedValueOnce([mockNews, 1]);
 
       const result = await service.findAllAdmin({
         page: 1,
@@ -260,56 +249,21 @@ describe('NewsService', () => {
           hasPrevPage: false,
         },
       });
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-        'news.estado = :estado',
-        { estado: NewsStatus.BORRADOR },
+      expect(mockNewsRepository.findPaginated).toHaveBeenCalledWith(
+        { page: 1, limit: 10, estado: NewsStatus.BORRADOR },
+        undefined,
       );
-    });
-
-    it('debería omitir filtros de categoría y estado si no se proveen (o son undefined)', async () => {
-      mockQueryBuilder.getManyAndCount.mockResolvedValueOnce([
-        [{ id: '1' }],
-        1,
-      ]);
-
-      await service.findAllAdmin({
-        page: 1,
-        limit: 10,
-        categoria: undefined,
-        estado: undefined,
-      });
-
-      expect(mockQueryBuilder.andWhere).not.toHaveBeenCalled();
     });
 
     it('debería filtrar por companyId cuando se provee', async () => {
-      mockQueryBuilder.getManyAndCount.mockResolvedValueOnce([
-        [{ id: '1' }],
-        1,
-      ]);
+      mockNewsRepository.findPaginated.mockResolvedValueOnce([[], 0]);
 
       await service.findAllAdmin({ page: 1, limit: 10 }, 7);
 
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-        'news.companyId = :companyId',
-        { companyId: 7 },
+      expect(mockNewsRepository.findPaginated).toHaveBeenCalledWith(
+        { page: 1, limit: 10 },
+        7,
       );
-    });
-
-    it('no debería filtrar por companyId si no se provee', async () => {
-      mockQueryBuilder.getManyAndCount.mockResolvedValueOnce([
-        [{ id: '1' }],
-        1,
-      ]);
-
-      await service.findAllAdmin({ page: 1, limit: 10 }, undefined);
-
-      const calls: [string, unknown][] = mockQueryBuilder.andWhere.mock
-        .calls as [string, unknown][];
-      const companyIdCall = calls.find(([query]) =>
-        query.includes('companyId'),
-      );
-      expect(companyIdCall).toBeUndefined();
     });
   });
 

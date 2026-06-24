@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { MembersService } from './members.service';
-import { ApplyMemberDto, MemberQueryDto } from './dto';
+import { ApplyMemberDto, MemberQueryDto, MemberResponseDto } from './dto';
 import {
   ApiApplyMember,
   ApiGetApprovedMembers,
@@ -27,18 +27,24 @@ export class MembersController {
     @Param('companyId', ParseIntPipe) companyId: number,
     @Query() query: MemberQueryDto,
   ) {
-    return this.membersService.findApproved(query, companyId);
+    const paginated = await this.membersService.findApproved(query, companyId);
+    return {
+      data: paginated.data.map((m) => MemberResponseDto.fromEntity(m)),
+      meta: paginated.meta,
+    };
   }
 
   @Get(':companyId/featured')
   @ApiGetFeaturedMembers()
   async findFeatured(@Param('companyId', ParseIntPipe) companyId: number) {
-    return this.membersService.findFeatured(companyId);
+    const members = await this.membersService.findFeatured(companyId);
+    return members.map((m) => MemberResponseDto.fromEntity(m));
   }
 
   @Post('apply')
   @ApiApplyMember()
   async apply(@Body() applyMemberDto: ApplyMemberDto) {
-    return this.membersService.apply(applyMemberDto);
+    const member = await this.membersService.apply(applyMemberDto);
+    return MemberResponseDto.fromEntity(member);
   }
 }

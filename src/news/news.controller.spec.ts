@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { BadRequestException } from '@nestjs/common';
 import { NewsController } from './news.controller';
 import { NewsService } from './news.service';
 import { CreateNewsDto } from './dto/create-news.dto';
@@ -69,8 +70,19 @@ describe('NewsController', () => {
   });
 
   describe('findAll', () => {
-    it('debería llamar a newsService.findAll() con el DTO y retornar el resultado', async () => {
+    it('debería lanzar BadRequestException si no se provee companyId', () => {
       const paginationDto: NewsPaginationDto = { page: 1, limit: 10 };
+      expect(() => controller.findAll(paginationDto)).toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('debería llamar a newsService.findAll() con el DTO y retornar el resultado', async () => {
+      const paginationDto: NewsPaginationDto = {
+        page: 1,
+        limit: 10,
+        companyId: 1,
+      };
       const expected = {
         data: [mockNews as News],
         meta: {

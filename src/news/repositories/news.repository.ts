@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository, SelectQueryBuilder } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { News, NewsStatus } from '../entities/news.entity';
 import {
   resolveNewsSlugs,
@@ -9,8 +9,7 @@ import {
 } from '../../common/helpers';
 import { slugify } from '../../common/helpers/slugify.helper';
 import { User } from '../../users/entities/user.entity';
-import { CreateNewsDto } from '../dto/create-news.dto';
-import { UpdateNewsDto } from '../dto/update-news.dto';
+import { CreateNewsDto, UpdateNewsDto, NewsPaginationDto } from '../dto';
 
 @Injectable()
 export class NewsRepository {
@@ -20,8 +19,44 @@ export class NewsRepository {
     private readonly dataSource: DataSource,
   ) {}
 
-  createQueryBuilder(alias: string): SelectQueryBuilder<News> {
-    return this.repository.createQueryBuilder(alias);
+  async findPaginated(
+    paginationDto: NewsPaginationDto,
+    companyId?: number,
+    forceStatus?: NewsStatus,
+  ): Promise<[News[], number]> {
+    const { page = 1, limit = 10, categoria, estado } = paginationDto;
+    const skip = (page - 1) * limit;
+
+    const query = this.repository
+      .createQueryBuilder('news')
+      .orderBy('news.createdAt', 'DESC')
+      .skip(skip)
+      .take(limit);
+
+    if (companyId !== undefined) {
+      query.andWhere('news.companyId = :companyId', { companyId });
+    }
+
+    if (categoria) {
+      query.andWhere('news.categoria = :categoria', { categoria });
+    }
+
+    const targetStatus = forceStatus ?? estado;
+    if (targetStatus) {
+      query.andWhere('news.estado = :estado', { estado: targetStatus });
+    }
+
+    if (paginationDto.q) {
+      query.andWhere(
+        '(unaccent(news.tituloEs) ILIKE unaccent(:q) OR ' +
+          'unaccent(news.tituloEn) ILIKE unaccent(:q) OR ' +
+          'unaccent(news.resumenEs) ILIKE unaccent(:q) OR ' +
+          'unaccent(news.resumenEn) ILIKE unaccent(:q))',
+        { q: `%${paginationDto.q}%` },
+      );
+    }
+
+    return query.getManyAndCount();
   }
 
   async findOneById(id: string): Promise<News | null> {

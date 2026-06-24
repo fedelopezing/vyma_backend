@@ -1,5 +1,5 @@
 import { ApiPropertyOptional, PartialType, OmitType } from '@nestjs/swagger';
-import { IsOptional, IsBoolean, IsNumber } from 'class-validator';
+import { IsOptional, IsNumber } from 'class-validator';
 import { ApplyMemberDto } from './apply-member.dto';
 
 export class UpdateMemberDto extends PartialType(

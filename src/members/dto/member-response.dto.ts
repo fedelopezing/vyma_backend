@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { FeeType, MemberStatus } from '../entities/member.entity';
+import { FeeType, Member, MemberStatus } from '../entities/member.entity';
 
 class MarketingContactResponseDto {
   @ApiProperty()
@@ -110,4 +110,36 @@ export class MemberResponseDto {
 
   @ApiProperty({ description: 'Creation date' })
   createdAt: Date;
+
+  static fromEntity(member: Member): MemberResponseDto {
+    const dto = new MemberResponseDto();
+    dto.id = member.id;
+    dto.companyId = Number(member.companyId);
+    dto.email = member.email;
+    dto.feeType = member.feeType;
+    dto.companyName = member.companyName;
+    dto.taxId = member.taxId;
+    dto.address = member.address;
+    dto.city = member.city;
+    dto.country = member.country;
+    dto.phone = member.phone;
+    dto.category = member.category;
+    dto.representativeName = member.representativeName;
+    dto.representativeEmail = member.representativeEmail;
+    dto.representativePhone = member.representativePhone;
+    dto.socialLinks = member.socialLinks;
+    if (member.marketingContact) {
+      dto.marketingContact = {
+        name: member.marketingContact.name,
+        email: member.marketingContact.email,
+        phone: member.marketingContact.phone,
+      };
+    }
+    dto.logoUrl = member.logoUrl;
+    dto.isFeatured = member.isFeatured;
+    dto.status = member.status;
+    dto.version = member.version;
+    dto.createdAt = member.createdAt;
+    return dto;
+  }
 }
