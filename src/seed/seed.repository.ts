@@ -5,6 +5,7 @@ import { Permission } from '../permissions/entities/permission.entity';
 import { Role } from '../roles/entities/role.entity';
 import { User } from '../users/entities/user.entity';
 import { News } from '../news/entities/news.entity';
+import { Event } from '../events/entities/event.entity';
 import { Company } from '../companies/entities/company.entity';
 import { UserCompany } from '../companies/entities/user-company.entity';
 import { ValidRoles } from '../auth/interfaces/valid-roles';
@@ -15,6 +16,7 @@ import {
   SeedPermission,
 } from './data/roles.seed-data';
 import { buildNewsSeedData } from './data/news.seed-data';
+import { buildEventsSeedData } from './data/events.seed-data';
 import { Member } from '../members/entities/member.entity';
 import { buildMembersSeedData } from './data/members.seed-data';
 
@@ -197,6 +199,22 @@ export class SeedRepository {
         company,
       });
       await qr.manager.save(newsItem);
+    }
+  }
+
+  async createEvents(
+    qr: QueryRunner,
+    author: User,
+    company: Company,
+  ): Promise<void> {
+    const eventItems = buildEventsSeedData(author);
+
+    for (const data of eventItems) {
+      const eventItem = qr.manager.create(Event, {
+        ...data,
+        company,
+      });
+      await qr.manager.save(eventItem);
     }
   }
 

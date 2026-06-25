@@ -134,7 +134,7 @@ describe('NewsController', () => {
 
       const result = await controller.findAllAdmin(
         paginationDto,
-        mockAuthenticatedRequest as never,
+        2, // companyId 2 from mockAuthenticatedRequest
       );
 
       expect(newsService.findAllAdmin).toHaveBeenCalledWith(paginationDto, 2);
@@ -146,13 +146,6 @@ describe('NewsController', () => {
         page: 1,
         limit: 20,
         companyId: 5,
-      };
-      const superAdminRequest = {
-        user: {
-          ...mockJwtPayload,
-          isSuperAdmin: true,
-          companyId: undefined,
-        },
       };
       newsService.findAllAdmin.mockResolvedValueOnce({
         data: [],
@@ -166,7 +159,7 @@ describe('NewsController', () => {
         },
       });
 
-      await controller.findAllAdmin(paginationDto, superAdminRequest as never);
+      await controller.findAllAdmin(paginationDto, 5);
 
       expect(newsService.findAllAdmin).toHaveBeenCalledWith(paginationDto, 5);
     });
