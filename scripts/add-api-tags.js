@@ -5,7 +5,10 @@ const srcDir = path.join(__dirname, '../src');
 
 function capitalize(str) {
   if (!str) return '';
-  return str.split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
+  return str
+    .split('-')
+    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
+    .join(' ');
 }
 
 function processDirectory(dir) {
@@ -35,13 +38,19 @@ function processDirectory(dir) {
       if (!content.includes(`from '@nestjs/swagger'`)) {
         content = `import { ApiTags } from '@nestjs/swagger';\n` + content;
       } else if (!content.includes('ApiTags')) {
-        content = content.replace(/import\s+{([^}]+)}\s+from\s+'@nestjs\/swagger'/, (full, imports) => {
-          return `import { ${imports.trim()}, ApiTags } from '@nestjs/swagger'`;
-        });
+        content = content.replace(
+          /import\s+{([^}]+)}\s+from\s+'@nestjs\/swagger'/,
+          (full, imports) => {
+            return `import { ${imports.trim()}, ApiTags } from '@nestjs/swagger'`;
+          },
+        );
       }
 
       // Add decorator before @Controller
-      content = content.replace(/@Controller\(/, `@ApiTags('${tagName}')\n@Controller(`);
+      content = content.replace(
+        /@Controller\(/,
+        `@ApiTags('${tagName}')\n@Controller(`,
+      );
 
       fs.writeFileSync(fullPath, content, 'utf8');
       console.log(`Updated ${fullPath} with tag ${tagName}`);

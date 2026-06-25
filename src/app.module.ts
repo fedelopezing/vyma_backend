@@ -22,6 +22,7 @@ import { NewsModule } from './news/news.module';
 import { CompaniesModule } from './companies/companies.module';
 import { ExchangeRatesModule } from './exchange-rates/exchange-rates.module';
 import { MembersModule } from './members/members.module';
+import { EventsModule } from './events/events.module';
 
 import { validateEnv } from './config/env.validation';
 
@@ -65,6 +66,7 @@ import { validateEnv } from './config/env.validation';
     CompaniesModule,
     ExchangeRatesModule,
     MembersModule,
+    EventsModule,
   ],
   controllers: [],
   providers: [

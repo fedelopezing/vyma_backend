@@ -12,6 +12,11 @@ export const SEED_PERMISSIONS = [
   'create:news',
   'update:news',
   'delete:news',
+  'read:events',
+  'write:events',
+  'create:events',
+  'update:events',
+  'delete:events',
   'read:users',
   'write:users',
   'read:companies',
@@ -35,6 +40,7 @@ export const SEED_TABLES_ORDER = [
   // Nivel 3 — depende de users, companies, professions
   'members',
   'news',
+  'events',
   'refresh_tokens',
   'activation_tokens',
   'profiles',
@@ -67,9 +73,18 @@ const NEWS_PERMS: SeedPermission[] = [
   'delete:news',
 ];
 
+const EVENTS_PERMS: SeedPermission[] = [
+  'read:events',
+  'write:events',
+  'create:events',
+  'update:events',
+  'delete:events',
+];
+
 const ALL_PERMS = [
   ...BASIC_PERMS,
   ...NEWS_PERMS,
+  ...EVENTS_PERMS,
   'read:users',
   'write:users',
   'write:professions',
@@ -90,6 +105,6 @@ export const SEED_ROLES_CONFIG: SeedRoleConfig[] = [
   { name: ValidRoles.user, permissions: BASIC_PERMS },
   {
     name: ValidRoles.manager,
-    permissions: [...BASIC_PERMS, ...NEWS_PERMS],
+    permissions: [...BASIC_PERMS, ...NEWS_PERMS, ...EVENTS_PERMS],
   },
 ];

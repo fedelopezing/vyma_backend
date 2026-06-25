@@ -33,6 +33,7 @@ import { PaginatedResponse } from '../common/interfaces';
 import { AuthPermissions } from '../auth/decorators';
 import { TenantGuard } from '../common/guards/tenant.guard';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
+import { ActiveCompanyId } from '../common/decorators';
 
 interface AuthenticatedRequest extends Request {
   user: JwtPayload;
@@ -51,11 +52,8 @@ export class NewsController {
   @ApiFindAllAdminNews()
   findAllAdmin(
     @Query() paginationDto: NewsPaginationDto,
-    @Req() req: AuthenticatedRequest,
+    @ActiveCompanyId() companyId: number,
   ): Promise<PaginatedResponse<News>> {
-    const companyId = req.user.isSuperAdmin
-      ? paginationDto.companyId
-      : req.user.companyId;
     return this.newsService.findAllAdmin(paginationDto, companyId);
   }
 

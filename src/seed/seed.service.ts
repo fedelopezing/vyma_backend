@@ -46,7 +46,14 @@ export class SeedService {
       this.logger.log('7. Seeding news...');
       await this.seedRepository.createNews(qr, rootUser, companiesMap['CCPS']);
 
-      this.logger.log('8. Seeding members...');
+      this.logger.log('8. Seeding events...');
+      await this.seedRepository.createEvents(
+        qr,
+        rootUser,
+        companiesMap['CCPS'],
+      );
+
+      this.logger.log('9. Seeding members...');
       await this.seedRepository.createMembers(qr, companiesMap);
 
       await qr.commitTransaction();
