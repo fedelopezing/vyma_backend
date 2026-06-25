@@ -1,4 +1,7 @@
-import { EventOrganizer, EventStatus } from '../../events/entities/event.entity';
+import {
+  EventOrganizer,
+  EventStatus,
+} from '../../events/entities/event.entity';
 import { User } from '../../users/entities/user.entity';
 
 const PORTADA_URL = 'https://res.cloudinary.com/demo/image/upload/sample.jpg';
@@ -50,8 +53,10 @@ export const buildEventsSeedData = (author: User): EventSeedItem[] => [
     tituloEn: 'Tech Innovation Conference',
     resumenEs: 'Las tendencias tecnológicas que definirán el futuro.',
     resumenEn: 'The technology trends that will define the future.',
-    contenidoEs: '<p>Charlas sobre Inteligencia Artificial, Cloud, y más...</p>',
-    contenidoEn: '<p>Talks about Artificial Intelligence, Cloud, and more...</p>',
+    contenidoEs:
+      '<p>Charlas sobre Inteligencia Artificial, Cloud, y más...</p>',
+    contenidoEn:
+      '<p>Talks about Artificial Intelligence, Cloud, and more...</p>',
     imagenPortada: PORTADA_URL,
     fechaEvento: new Date('2026-11-20T09:00:00Z'),
     ubicacionEs: 'Centro de Convenciones CONMEBOL, Luque',
