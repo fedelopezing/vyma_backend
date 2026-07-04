@@ -19,6 +19,8 @@ import { buildNewsSeedData } from './data/news.seed-data';
 import { buildEventsSeedData } from './data/events.seed-data';
 import { Member } from '../members/entities/member.entity';
 import { buildMembersSeedData } from './data/members.seed-data';
+import { Ad } from '../ads/entities/ad.entity';
+import { buildAdsSeedData } from './data/ads.seed-data';
 
 @Injectable()
 export class SeedRepository {
@@ -227,6 +229,23 @@ export class SeedRepository {
     for (const data of membersData) {
       const member = qr.manager.create(Member, data);
       await qr.manager.save(member);
+    }
+  }
+
+  async createAds(
+    qr: QueryRunner,
+    companiesMap: Record<string, Company>,
+  ): Promise<void> {
+    const adsData = buildAdsSeedData();
+
+    for (const data of adsData) {
+      const { companyKey, ...adDetails } = data;
+      const company = companiesMap[companyKey];
+      const ad = qr.manager.create(Ad, {
+        ...adDetails,
+        company,
+      });
+      await qr.manager.save(ad);
     }
   }
 }

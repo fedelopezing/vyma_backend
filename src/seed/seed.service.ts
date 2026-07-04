@@ -56,6 +56,9 @@ export class SeedService {
       this.logger.log('9. Seeding members...');
       await this.seedRepository.createMembers(qr, companiesMap);
 
+      this.logger.log('10. Seeding ads...');
+      await this.seedRepository.createAds(qr, companiesMap);
+
       await qr.commitTransaction();
       this.logger.log('Seed executed successfully!');
       return { message: 'Seed executed successfully' };
