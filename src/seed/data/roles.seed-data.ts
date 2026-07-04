@@ -23,6 +23,11 @@ export const SEED_PERMISSIONS = [
   'write:companies',
   'read:schedule-breaks',
   'write:schedule-breaks',
+  'read:ads',
+  'write:ads',
+  'create:ads',
+  'update:ads',
+  'delete:ads',
 ] as const;
 
 export type SeedPermission = (typeof SEED_PERMISSIONS)[number];
@@ -41,6 +46,7 @@ export const SEED_TABLES_ORDER = [
   'members',
   'news',
   'events',
+  'ads',
   'refresh_tokens',
   'activation_tokens',
   'profiles',
@@ -81,10 +87,19 @@ const EVENTS_PERMS: SeedPermission[] = [
   'delete:events',
 ];
 
+const ADS_PERMS: SeedPermission[] = [
+  'read:ads',
+  'write:ads',
+  'create:ads',
+  'update:ads',
+  'delete:ads',
+];
+
 const ALL_PERMS = [
   ...BASIC_PERMS,
   ...NEWS_PERMS,
   ...EVENTS_PERMS,
+  ...ADS_PERMS,
   'read:users',
   'write:users',
   'write:professions',
@@ -105,6 +120,6 @@ export const SEED_ROLES_CONFIG: SeedRoleConfig[] = [
   { name: ValidRoles.user, permissions: BASIC_PERMS },
   {
     name: ValidRoles.manager,
-    permissions: [...BASIC_PERMS, ...NEWS_PERMS, ...EVENTS_PERMS],
+    permissions: [...BASIC_PERMS, ...NEWS_PERMS, ...EVENTS_PERMS, ...ADS_PERMS],
   },
 ];

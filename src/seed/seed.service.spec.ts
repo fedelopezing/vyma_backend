@@ -38,6 +38,7 @@ describe('SeedService', () => {
     seedRepository.createAdditionalUsers.mockResolvedValue();
     seedRepository.createNews.mockResolvedValue();
     seedRepository.createEvents.mockResolvedValue();
+    seedRepository.createAds.mockResolvedValue();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -92,6 +93,10 @@ describe('SeedService', () => {
         mockQueryRunner,
         mockUser,
         mockCompaniesMap['CCPS'],
+      );
+      expect(seedRepository.createAds).toHaveBeenCalledWith(
+        mockQueryRunner,
+        mockCompaniesMap,
       );
       expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
       expect(mockQueryRunner.release).toHaveBeenCalled();
