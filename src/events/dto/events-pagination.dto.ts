@@ -53,13 +53,13 @@ export class EventsPaginationDto {
   estado?: EventStatus;
 
   @ApiPropertyOptional({
-    description: 'Filtrar por ID de la empresa',
-    example: 1,
+    description: 'Filtrar por UUID de la empresa',
+    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
   })
   @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
+  @IsString()
+  companyUuid?: string;
+
   companyId?: number;
 
   @ApiPropertyOptional({

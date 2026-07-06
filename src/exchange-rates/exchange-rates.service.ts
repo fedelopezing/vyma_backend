@@ -10,6 +10,7 @@ import {
 import { ExchangeRate } from './entities/exchange-rate.entity';
 import { InvalidScrapingResponseException } from './exceptions/invalid-scraping-response.exception';
 import { CambiosChacoItem, extractRelevantRates } from './exchange-rates.utils';
+import { CompaniesRepository } from '../companies/repositories/companies.repository';
 
 interface CambiosChacoResponse {
   items: CambiosChacoItem[];
@@ -25,36 +26,60 @@ export class ExchangeRatesService {
   constructor(
     @Inject(EXCHANGE_RATES_REPOSITORY_TOKEN)
     private readonly exchangeRatesRepository: IExchangeRatesRepository,
-    @Inject(CACHE_MANAGER)
-    private readonly cacheManager: Cache,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
     private readonly eventEmitter: EventEmitter2,
+    private readonly companiesRepository: CompaniesRepository,
   ) {}
 
-  async getLatestRates(): Promise<ExchangeRate[]> {
-    const cachedRates = await this.cacheManager.get<ExchangeRate[]>(
-      this.CACHE_KEY,
-    );
+  async getLatestRates(companyId: number): Promise<ExchangeRate[]> {
+    const cacheKey = `${this.CACHE_KEY}_${companyId}`;
+    const cachedRates = await this.cacheManager.get<ExchangeRate[]>(cacheKey);
     if (cachedRates) {
       return cachedRates;
     }
 
-    const rates = await this.exchangeRatesRepository.findAll();
+    const rates = await this.exchangeRatesRepository.findAll(companyId);
     if (rates.length > 0) {
-      await this.cacheManager.set(this.CACHE_KEY, rates, 24 * 60 * 60 * 1000);
+      await this.cacheManager.set(cacheKey, rates, 24 * 60 * 60 * 1000);
     }
 
     return rates;
   }
 
-  async scrapeAndSaveRates(): Promise<void> {
-    this.logger.log('Starting exchange rates scraping...');
+  async scrapeAndSaveRates(companyId: number): Promise<void> {
+    this.logger.log(
+      `Starting exchange rates scraping for company ${companyId}...`,
+    );
     try {
       const items = await this.fetchChacoRates();
-      await this.saveRates(items);
-      await this.cacheManager.del(this.CACHE_KEY);
-      this.logger.log('Successfully scraped and saved exchange rates');
+      await this.saveRates(items, companyId);
+      await this.cacheManager.del(`${this.CACHE_KEY}_${companyId}`);
+      this.logger.log(
+        `Successfully scraped and saved exchange rates for company ${companyId}`,
+      );
     } catch (error: unknown) {
-      await this.handleScrapingFailure(error);
+      await this.handleScrapingFailure(error, companyId);
+    }
+  }
+
+  async scrapeAndSaveRatesForAllCompanies(): Promise<void> {
+    this.logger.log(
+      'Starting exchange rates scraping for all active companies...',
+    );
+    const companies = await this.companiesRepository.findAll();
+    const targetCompanies = companies.filter((c) =>
+      c.activeModules?.includes('EXCHANGE_RATES'),
+    );
+
+    for (const company of targetCompanies) {
+      try {
+        await this.scrapeAndSaveRates(company.id);
+      } catch (err) {
+        this.logger.error(
+          `Failed scheduled scrape for company ${company.id}`,
+          err,
+        );
+      }
     }
   }
 
@@ -73,7 +98,10 @@ export class ExchangeRatesService {
     return items;
   }
 
-  private async saveRates(items: CambiosChacoItem[]): Promise<void> {
+  private async saveRates(
+    items: CambiosChacoItem[],
+    companyId: number,
+  ): Promise<void> {
     const rates = extractRelevantRates(items);
 
     for (const rate of rates) {
@@ -81,38 +109,45 @@ export class ExchangeRatesService {
         rate.currency,
         rate.purchase,
         rate.sale,
+        companyId,
         false,
       );
     }
   }
 
-  private async handleScrapingFailure(error: unknown): Promise<void> {
+  private async handleScrapingFailure(
+    error: unknown,
+    companyId: number,
+  ): Promise<void> {
     this.logger.error(
-      'Failed to scrape exchange rates',
+      `Failed to scrape exchange rates for company ${companyId}`,
       error instanceof Error ? error.stack : 'Unknown error',
     );
 
     try {
-      const existingRates = await this.exchangeRatesRepository.findAll();
+      const existingRates =
+        await this.exchangeRatesRepository.findAll(companyId);
       for (const rate of existingRates) {
         await this.exchangeRatesRepository.createOrUpdate(
           rate.currency,
           rate.purchasePrice,
           rate.salePrice,
+          companyId,
           true,
         );
       }
     } catch (dbError) {
       this.logger.error(
-        'Error attempting to load/update existing rates for fallback',
+        `Error attempting to load/update existing rates for fallback for company ${companyId}`,
         dbError,
       );
     }
 
-    await this.cacheManager.del(this.CACHE_KEY);
+    await this.cacheManager.del(`${this.CACHE_KEY}_${companyId}`);
 
     this.eventEmitter.emit('rates.scraping_failed', {
       error: error instanceof Error ? error.message : 'Unknown error',
+      companyId,
       timestamp: new Date(),
     });
   }

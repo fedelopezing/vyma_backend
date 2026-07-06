@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, EntityManager, DataSource } from 'typeorm';
 import { UserCompany } from '../entities/user-company.entity';
 import { runInTransaction } from '../../common/helpers/transaction.helper';
+import { CacheService } from '../../common/services/cache.service';
 
 @Injectable()
 export class UserCompanyRepository {
@@ -10,6 +11,7 @@ export class UserCompanyRepository {
     @InjectRepository(UserCompany)
     private readonly repository: Repository<UserCompany>,
     private readonly dataSource: DataSource,
+    private readonly cacheService: CacheService,
   ) {}
 
   async runTransaction<T>(
@@ -27,6 +29,12 @@ export class UserCompanyRepository {
   }
 
   async isActiveMember(userId: number, companyId: number): Promise<boolean> {
+    const cacheKey = `company:membership:${userId}:${companyId}`;
+    const cached = this.cacheService.get<boolean>(cacheKey);
+    if (cached !== null) {
+      return cached;
+    }
+
     const count = await this.repository.count({
       where: {
         userId,
@@ -34,7 +42,9 @@ export class UserCompanyRepository {
         isActive: true,
       },
     });
-    return count > 0;
+    const isActive = count > 0;
+    this.cacheService.set(cacheKey, isActive, 300);
+    return isActive;
   }
 
   async addMember(
@@ -51,7 +61,9 @@ export class UserCompanyRepository {
       isActive: true,
     });
 
-    return repo.save(membership);
+    const saved = await repo.save(membership);
+    this.cacheService.delete(`company:membership:${userId}:${companyId}`);
+    return saved;
   }
 
   async removeMember(
@@ -61,5 +73,6 @@ export class UserCompanyRepository {
   ): Promise<void> {
     const repo = manager ? manager.getRepository(UserCompany) : this.repository;
     await repo.delete({ userId, companyId });
+    this.cacheService.delete(`company:membership:${userId}:${companyId}`);
   }
 }

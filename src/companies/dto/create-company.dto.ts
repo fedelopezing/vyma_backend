@@ -4,6 +4,7 @@ import {
   MaxLength,
   IsEmail,
   IsOptional,
+  IsArray,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -46,4 +47,25 @@ export class CreateCompanyDto {
   @IsString()
   @MaxLength(20)
   phone?: string;
+
+  @ApiProperty({
+    description: 'Módulos activos contratados por la empresa',
+    example: ['NEWS', 'ADS'],
+    required: false,
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  activeModules?: string[];
+
+  @ApiProperty({
+    description: 'Dominio personalizado de la empresa',
+    example: 'ccps.com',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  domain?: string;
 }

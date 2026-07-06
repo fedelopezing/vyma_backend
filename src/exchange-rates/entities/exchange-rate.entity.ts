@@ -5,7 +5,10 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   Index,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
+import { Company } from '../../companies/entities/company.entity';
 
 @Entity('exchange_rates')
 export class ExchangeRate {
@@ -24,6 +27,14 @@ export class ExchangeRate {
 
   @Column({ type: 'boolean', default: false })
   isFallback: boolean; // Indica si se está sirviendo como contingencia
+
+  @Index()
+  @Column({ name: 'company_id', type: 'bigint' })
+  companyId: number;
+
+  @ManyToOne(() => Company, { nullable: false, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'company_id' })
+  company: Company;
 
   @CreateDateColumn({ type: 'timestamp' })
   createdAt: Date;

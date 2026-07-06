@@ -15,6 +15,9 @@ import { AuthGuard } from '@nestjs/passport';
 import { AdminMembersService } from './admin-members.service';
 import { MemberQueryDto, UpdateMemberDto, MemberResponseDto } from './dto';
 import { TenantGuard } from '../common/guards/tenant.guard';
+import { ModuleAccessGuard } from '../common/guards/module-access.guard';
+import { RequireModule } from '../common/decorators/require-module.decorator';
+import { CompanyModule } from '../common/constants/modules.enum';
 import { AuthPermissions } from '../auth/decorators';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { MemberStatus } from './entities/member.entity';
@@ -28,11 +31,13 @@ import { Request } from 'express';
 
 export interface AuthenticatedRequest extends Request {
   user: JwtPayload;
+  companyId?: number;
 }
 
 @ApiTags('Admin Members')
 @ApiBearerAuth()
-@UseGuards(AuthGuard('jwt'), TenantGuard)
+@UseGuards(AuthGuard('jwt'), TenantGuard, ModuleAccessGuard)
+@RequireModule(CompanyModule.MEMBERS)
 @Controller('admin/members')
 export class AdminMembersController {
   constructor(private readonly adminMembersService: AdminMembersService) {}
@@ -46,7 +51,7 @@ export class AdminMembersController {
   ) {
     const paginated = await this.adminMembersService.findAll(
       query,
-      req.user.companyId,
+      req.companyId,
     );
     return {
       data: paginated.data.map((m) => MemberResponseDto.fromEntity(m)),
@@ -67,7 +72,7 @@ export class AdminMembersController {
       id,
       status,
       version,
-      req.user.companyId,
+      req.companyId,
     );
     return MemberResponseDto.fromEntity(member);
   }
@@ -85,7 +90,7 @@ export class AdminMembersController {
       id,
       isFeatured,
       version,
-      req.user.companyId,
+      req.companyId,
     );
     return MemberResponseDto.fromEntity(member);
   }
@@ -101,7 +106,7 @@ export class AdminMembersController {
     const member = await this.adminMembersService.update(
       id,
       updateMemberDto,
-      req.user.companyId,
+      req.companyId,
     );
     return MemberResponseDto.fromEntity(member);
   }

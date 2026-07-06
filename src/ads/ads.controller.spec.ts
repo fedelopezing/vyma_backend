@@ -6,6 +6,9 @@ import { Ad } from './entities/ad.entity';
 import { CreateAdDto, UpdateAdDto, AdsPaginationDto } from './dto';
 import { UserCompanyRepository } from '../companies/repositories/user-company.repository';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { TenantGuard } from '../common/guards/tenant.guard';
+import { ModuleAccessGuard } from '../common/guards/module-access.guard';
+import { CompaniesRepository } from '../companies/repositories/companies.repository';
 
 describe('AdsController', () => {
   let controller: AdsController;
@@ -31,6 +34,10 @@ describe('AdsController', () => {
     isActiveMember: jest.fn().mockResolvedValue(true),
   };
 
+  const mockCompaniesRepository = {
+    findByUuid: jest.fn().mockResolvedValue({ id: 10, isActive: true }),
+  };
+
   beforeEach(async () => {
     jest.clearAllMocks();
 
@@ -39,9 +46,14 @@ describe('AdsController', () => {
       providers: [
         { provide: AdsService, useValue: mockAdsService },
         { provide: UserCompanyRepository, useValue: mockUserCompanyRepository },
+        { provide: CompaniesRepository, useValue: mockCompaniesRepository },
       ],
     })
       .overrideGuard(PermissionsGuard)
+      .useValue({ canActivate: jest.fn().mockReturnValue(true) })
+      .overrideGuard(TenantGuard)
+      .useValue({ canActivate: jest.fn().mockReturnValue(true) })
+      .overrideGuard(ModuleAccessGuard)
       .useValue({ canActivate: jest.fn().mockReturnValue(true) })
       .compile();
 
@@ -54,10 +66,12 @@ describe('AdsController', () => {
   });
 
   describe('findActive', () => {
-    it('debería retornar banners activos si companyId es un número válido', async () => {
+    it('debería retornar banners activos si companyUuid es un UUID válido', async () => {
       service.findActive.mockResolvedValue([mockAd]);
 
-      const result = await controller.findActive(10);
+      const result = await controller.findActive(
+        'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+      );
 
       expect(result).toEqual([mockAd]);
       expect(service.findActive).toHaveBeenCalledWith(10);
@@ -106,10 +120,14 @@ describe('AdsController', () => {
       const dto: UpdateAdDto = { order: 5 };
       service.update.mockResolvedValue({ ...mockAd, order: 5 } as Ad);
 
-      const result = await controller.update(mockAd.id, dto);
+      const result = await controller.update(mockAd.id, dto, mockAd.companyId);
 
       expect(result.order).toBe(5);
-      expect(service.update).toHaveBeenCalledWith(mockAd.id, dto);
+      expect(service.update).toHaveBeenCalledWith(
+        mockAd.id,
+        dto,
+        mockAd.companyId,
+      );
     });
   });
 
@@ -117,9 +135,9 @@ describe('AdsController', () => {
     it('debería llamar a service.remove con el ID', async () => {
       service.remove.mockResolvedValue(undefined);
 
-      await controller.remove(mockAd.id);
+      await controller.remove(mockAd.id, mockAd.companyId);
 
-      expect(service.remove).toHaveBeenCalledWith(mockAd.id);
+      expect(service.remove).toHaveBeenCalledWith(mockAd.id, mockAd.companyId);
     });
   });
 });

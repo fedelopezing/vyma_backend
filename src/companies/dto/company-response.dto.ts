@@ -41,6 +41,19 @@ export class CompanyResponseDto {
   isActive: boolean;
 
   @ApiProperty({
+    description: 'Módulos activos contratados por la empresa',
+    example: ['NEWS', 'ADS'],
+  })
+  activeModules: string[];
+
+  @ApiProperty({
+    description: 'Dominio personalizado de la empresa',
+    example: 'ccps.com',
+    nullable: true,
+  })
+  domain: string | null;
+
+  @ApiProperty({
     description: 'Fecha de creación de la empresa',
     example: '2026-06-15T18:00:00Z',
   })

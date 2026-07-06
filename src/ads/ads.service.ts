@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, ForbiddenException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 
 import { Ad } from './entities/ad.entity';
@@ -21,10 +21,13 @@ export class AdsService {
 
   // ─── Helpers privados ────────────────────────────────────────────────────────
 
-  private async findAdOrFail(id: string): Promise<Ad> {
+  private async findAdOrFail(id: string, companyId?: number): Promise<Ad> {
     const ad = await this.adRepository.findOneById(id);
     if (!ad) {
       throw new AdNotFoundException(id);
+    }
+    if (companyId !== undefined && Number(ad.companyId) !== Number(companyId)) {
+      throw new ForbiddenException('Access to this resource is not allowed');
     }
     return ad;
   }
@@ -69,8 +72,8 @@ export class AdsService {
     return ad;
   }
 
-  async update(id: string, dto: UpdateAdDto): Promise<Ad> {
-    const ad = await this.findAdOrFail(id);
+  async update(id: string, dto: UpdateAdDto, companyId: number): Promise<Ad> {
+    const ad = await this.findAdOrFail(id, companyId);
     const updated = await this.adRepository.update(ad, dto);
 
     this.eventEmitter.emit('ad.updated', {
@@ -81,8 +84,8 @@ export class AdsService {
     return updated;
   }
 
-  async remove(id: string): Promise<void> {
-    const ad = await this.findAdOrFail(id);
+  async remove(id: string, companyId: number): Promise<void> {
+    const ad = await this.findAdOrFail(id, companyId);
     await this.adRepository.softDelete(id);
 
     this.eventEmitter.emit('ad.deleted', {

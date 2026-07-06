@@ -21,7 +21,8 @@
 13. [Configuración de Entorno](#13-configuración-de-entorno)
 14. [Testing](#14-testing)
 15. [Documentación de API](#15-documentación-de-api)
-16. [Directivas para Agentes de IA](#16-directivas-para-agentes-de-ia)
+16. [Arquitectura Multi-tenant y Feature Flags](#16-arquitectura-multi-tenant-y-feature-flags)
+17. [Directivas para Agentes de IA](#17-directivas-para-agentes-de-ia)
 
 ---
 
@@ -856,7 +857,34 @@ export class UserResponseDto {
 
 ---
 
-## 16. Directivas para Agentes de IA
+## 16. Arquitectura Multi-tenant y Feature Flags
+
+En Vyma Backend, la aplicación se ejecuta como un Monolito Multi-tenant (multi-inquilino). Esto significa que múltiples organizaciones (inquilinos) comparten la misma infraestructura de base de datos y aplicación, pero sus datos deben permanecer estrictamente aislados y sus características de negocio deben estar limitadas según las características que tengan activadas (Feature Flags).
+
+### Reglas de Aislamiento de Datos (Tenant Isolation)
+
+1. **Columna `companyId` Obligatoria**: Toda entidad de base de datos que contenga información específica de negocio (ej. `News`, `Schedules`, `Payments`, `Members`, etc.) debe tener una relación obligatoria `ManyToOne` con la entidad `Company` a través del campo `companyId`.
+2. **Uso de Cabecera `X-Company-Id`**: El Frontend debe enviar el identificador de la empresa activa en el header HTTP `X-Company-Id` para las peticiones privadas (autenticadas).
+3. **Intercepción y Validación**:
+   - Se debe implementar un middleware/guard o interceptor que verifique si el usuario autenticado tiene relación activa con la empresa provista en `X-Company-Id` (a través de la tabla `UserCompany`).
+   - Si el usuario no pertenece a la empresa, se debe retornar inmediatamente `403 Forbidden`.
+   - Si no se provee el header `X-Company-Id` en una petición a un recurso privado multi-tenant, se debe retornar `400 Bad Request`.
+4. **Filtrado Obligatorio**: Todos los métodos de consulta de los repositorios y servicios deben filtrar explícitamente por el `companyId` activo del contexto de la petición. Nunca consultar datos sin esta restricción.
+
+### Control de Características (Feature Flags)
+
+1. **Banderas por Empresa**: La entidad `Company` almacena en el campo `activeModules` la lista de módulos que la empresa tiene contratados (ej. `['NEWS', 'ADS']`).
+2. **Decorador `@RequireModule`**: Para restringir el acceso a un controlador o endpoint en base a las banderas de la empresa, se debe utilizar el decorador `@RequireModule(ModuleEnum)` en la clase o método del controlador.
+3. **Guard de Características (`ModuleAccessGuard`)**: El Guard verificará que el `companyId` activo del request tenga el módulo correspondiente en su lista de `activeModules`. Si no está presente, retornará `403 Forbidden`.
+
+### Endpoints Públicos
+
+1. **Rutas Públicas Separadas**: Las rutas destinadas a ser consumidas por las webs públicas sin autenticación (ej. portal de noticias de CCPS, lista de precios/reservas de NatyNails) se colocarán en controladores separados con el prefijo `Public` (ej. `PublicNewsController`).
+2. **Identificación por URL o Header**: Como no hay token de autenticación en estas peticiones, el controlador público deberá recibir un identificador de la empresa (ej. el `slug`, `uuid` o `domain`) como parámetro de ruta (ej. `/public/:companySlug/news`) o mediante el header `X-Company-Id`.
+
+---
+
+## 17. Directivas para Agentes de IA
 
 Este apartado contiene las directrices de acción de **obligatorio cumplimiento** para todo agente de IA que opere en este repositorio.
 

@@ -10,11 +10,11 @@ export function ApiGetActiveAds() {
         'Este endpoint es consumido por el carrusel del portal Astro.',
     }),
     ApiQuery({
-      name: 'companyId',
+      name: 'companyUuid',
       required: true,
-      type: Number,
-      description: 'ID de la empresa/tenant cuyos banners se desean obtener',
-      example: 1,
+      type: String,
+      description: 'UUID de la empresa/tenant cuyos banners se desean obtener',
+      example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
     }),
     ApiResponse({
       status: 200,
@@ -22,7 +22,7 @@ export function ApiGetActiveAds() {
     }),
     ApiResponse({
       status: 400,
-      description: 'Parámetro companyId no proporcionado o inválido',
+      description: 'Parámetro companyUuid no proporcionado o inválido',
     }),
   );
 }

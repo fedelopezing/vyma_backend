@@ -9,8 +9,12 @@ export interface IExchangeRatesRepository {
     currency: string,
     purchasePrice: number,
     salePrice: number,
+    companyId: number,
     isFallback?: boolean,
   ): Promise<ExchangeRate>;
-  findAll(): Promise<ExchangeRate[]>;
-  findByCurrency(currency: string): Promise<ExchangeRate | null>;
+  findAll(companyId?: number): Promise<ExchangeRate[]>;
+  findByCurrency(
+    currency: string,
+    companyId: number,
+  ): Promise<ExchangeRate | null>;
 }

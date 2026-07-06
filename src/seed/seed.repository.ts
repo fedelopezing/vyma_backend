@@ -72,18 +72,27 @@ export class SeedRepository {
       taxId: '111111111-1',
       email: 'ccps@mail.com',
       isActive: true,
+      uuid: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+      domain: 'ccps.org.py',
+      activeModules: ['NEWS', 'EVENTS', 'MEMBERS', 'ADS', 'EXCHANGE_RATES'],
     });
     const biolimpieza = qr.manager.create(Company, {
       name: 'biolimpieza',
       taxId: '222222222-2',
       email: 'biolimpieza@mail.com',
       isActive: true,
+      uuid: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22',
+      domain: 'biolimpieza.com',
+      activeModules: ['SERVICES', 'SCHEDULES', 'SCHEDULE_BREAKS', 'MEMBERS'],
     });
     const natynails = qr.manager.create(Company, {
       name: 'natynails',
       taxId: '333333333-3',
       email: 'natynails@mail.com',
       isActive: true,
+      uuid: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a33',
+      domain: 'natynails.com',
+      activeModules: ['SERVICES', 'SCHEDULES', 'SCHEDULE_BREAKS'],
     });
 
     await qr.manager.save(ccps);

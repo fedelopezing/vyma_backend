@@ -6,7 +6,6 @@ import {
   EVENT_REPOSITORY,
 } from './interfaces/i-event-repository.interface';
 import { CreateEventDto, UpdateEventDto, EventsPaginationDto } from './dto';
-import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { buildPaginatedResponse } from '../common/helpers';
 import { PaginatedResponse } from '../common/interfaces';
 import { EventNotFoundException } from './exceptions/event-not-found.exception';
@@ -90,7 +89,7 @@ export class EventsService {
   async update(
     id: string,
     dto: UpdateEventDto,
-    user?: JwtPayload,
+    user?: { companyId?: number; isSuperAdmin?: boolean },
   ): Promise<Event> {
     try {
       const event = await findEventOrFail(id, this.eventRepository, user);
@@ -126,7 +125,10 @@ export class EventsService {
     }
   }
 
-  async remove(id: string, user?: JwtPayload): Promise<void> {
+  async remove(
+    id: string,
+    user?: { companyId?: number; isSuperAdmin?: boolean },
+  ): Promise<void> {
     try {
       await findEventOrFail(id, this.eventRepository, user);
       this.logger.log('Soft deleting event', { id });

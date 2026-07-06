@@ -9,9 +9,9 @@ export function ApiGetApprovedMembers() {
       summary: 'Get paginated list of approved members for a company',
     }),
     ApiParam({
-      name: 'companyId',
-      description: 'ID of the company (tenant)',
-      example: 1,
+      name: 'companyUuid',
+      description: 'UUID of the company (tenant)',
+      example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
     }),
     ApiResponse({
       status: 200,
@@ -25,9 +25,9 @@ export function ApiGetFeaturedMembers() {
   return applyDecorators(
     ApiOperation({ summary: 'Get list of featured members for a company' }),
     ApiParam({
-      name: 'companyId',
-      description: 'ID of the company (tenant)',
-      example: 1,
+      name: 'companyUuid',
+      description: 'UUID of the company (tenant)',
+      example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
     }),
     ApiResponse({
       status: 200,

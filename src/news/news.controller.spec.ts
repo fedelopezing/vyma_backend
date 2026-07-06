@@ -8,7 +8,10 @@ import { NewsPaginationDto } from './dto/news-pagination.dto';
 import { News, NewsStatus } from './entities/news.entity';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { TenantGuard } from '../common/guards/tenant.guard';
+import { ModuleAccessGuard } from '../common/guards/module-access.guard';
 import { UserCompanyRepository } from '../companies/repositories/user-company.repository';
+import { CompaniesRepository } from '../companies/repositories/companies.repository';
 
 describe('NewsController', () => {
   let controller: NewsController;
@@ -41,6 +44,7 @@ describe('NewsController', () => {
   };
 
   const mockAuthenticatedRequest = {
+    companyId: 2,
     user: mockJwtPayload,
   };
 
@@ -55,9 +59,19 @@ describe('NewsController', () => {
           provide: UserCompanyRepository,
           useValue: { isActiveMember: jest.fn().mockResolvedValue(true) },
         },
+        {
+          provide: CompaniesRepository,
+          useValue: {
+            findByUuid: jest.fn().mockResolvedValue({ id: 2, isActive: true }),
+          },
+        },
       ],
     })
       .overrideGuard(PermissionsGuard)
+      .useValue({ canActivate: jest.fn().mockReturnValue(true) })
+      .overrideGuard(TenantGuard)
+      .useValue({ canActivate: jest.fn().mockReturnValue(true) })
+      .overrideGuard(ModuleAccessGuard)
       .useValue({ canActivate: jest.fn().mockReturnValue(true) })
       .compile();
 
@@ -70,9 +84,9 @@ describe('NewsController', () => {
   });
 
   describe('findAll', () => {
-    it('debería lanzar BadRequestException si no se provee companyId', () => {
+    it('debería lanzar BadRequestException si no se provee companyUuid', async () => {
       const paginationDto: NewsPaginationDto = { page: 1, limit: 10 };
-      expect(() => controller.findAll(paginationDto)).toThrow(
+      await expect(controller.findAll(paginationDto)).rejects.toThrow(
         BadRequestException,
       );
     });
@@ -81,7 +95,7 @@ describe('NewsController', () => {
       const paginationDto: NewsPaginationDto = {
         page: 1,
         limit: 10,
-        companyId: 1,
+        companyUuid: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
       };
       const expected = {
         data: [mockNews as News],
@@ -98,7 +112,10 @@ describe('NewsController', () => {
 
       const result = await controller.findAll(paginationDto);
 
-      expect(newsService.findAll).toHaveBeenCalledWith(paginationDto);
+      expect(newsService.findAll).toHaveBeenCalledWith({
+        ...paginationDto,
+        companyId: 2,
+      });
       expect(result).toEqual(expected);
     });
   });
@@ -201,11 +218,10 @@ describe('NewsController', () => {
         mockAuthenticatedRequest as never,
       );
 
-      expect(newsService.update).toHaveBeenCalledWith(
-        'uuid-123',
-        dto,
-        mockJwtPayload,
-      );
+      expect(newsService.update).toHaveBeenCalledWith('uuid-123', dto, {
+        companyId: 2,
+        isSuperAdmin: false,
+      });
       expect(result).toEqual(updatedNews);
     });
   });
@@ -219,10 +235,10 @@ describe('NewsController', () => {
         mockAuthenticatedRequest as never,
       );
 
-      expect(newsService.remove).toHaveBeenCalledWith(
-        'uuid-123',
-        mockJwtPayload,
-      );
+      expect(newsService.remove).toHaveBeenCalledWith('uuid-123', {
+        companyId: 2,
+        isSuperAdmin: false,
+      });
       expect(result).toBeUndefined();
     });
   });

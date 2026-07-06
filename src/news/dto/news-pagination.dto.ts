@@ -53,13 +53,13 @@ export class NewsPaginationDto {
   estado?: NewsStatus;
 
   @ApiPropertyOptional({
-    description: 'Filtrar por ID de la empresa (portal)',
-    example: 1,
+    description: 'Filtrar por UUID de la empresa (portal)',
+    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
   })
   @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
+  @IsString()
+  companyUuid?: string;
+
   companyId?: number;
 
   @ApiPropertyOptional({

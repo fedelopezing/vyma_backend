@@ -10,6 +10,12 @@ import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 export const ActiveCompanyId = createParamDecorator(
   (data: unknown, ctx: ExecutionContext): number | null => {
     const request = ctx.switchToHttp().getRequest();
+
+    // If TenantGuard has resolved and attached companyId to the request, use it.
+    if (request.companyId !== undefined && request.companyId !== null) {
+      return request.companyId;
+    }
+
     const user = request.user;
 
     if (!user) {

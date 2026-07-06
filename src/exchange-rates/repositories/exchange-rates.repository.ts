@@ -15,27 +15,35 @@ export class ExchangeRatesRepository implements IExchangeRatesRepository {
     currency: string,
     purchasePrice: number,
     salePrice: number,
+    companyId: number,
     isFallback: boolean = false,
   ): Promise<ExchangeRate> {
-    let exchangeRate = await this.repository.findOne({ where: { currency } });
+    let exchangeRate = await this.repository.findOne({
+      where: { currency, companyId },
+    });
 
     if (!exchangeRate) {
-      exchangeRate = this.repository.create({ currency });
+      exchangeRate = this.repository.create({ currency, companyId });
     }
 
     exchangeRate.purchasePrice = purchasePrice;
     exchangeRate.salePrice = salePrice;
     exchangeRate.isFallback = isFallback;
-    // TypeORM @UpdateDateColumn updates it automatically, but we can be explicit or rely on TypeORM
 
     return this.repository.save(exchangeRate);
   }
 
-  async findAll(): Promise<ExchangeRate[]> {
+  async findAll(companyId?: number): Promise<ExchangeRate[]> {
+    if (companyId) {
+      return this.repository.find({ where: { companyId } });
+    }
     return this.repository.find();
   }
 
-  async findByCurrency(currency: string): Promise<ExchangeRate | null> {
-    return this.repository.findOne({ where: { currency } });
+  async findByCurrency(
+    currency: string,
+    companyId: number,
+  ): Promise<ExchangeRate | null> {
+    return this.repository.findOne({ where: { currency, companyId } });
   }
 }
