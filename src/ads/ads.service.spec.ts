@@ -98,7 +98,7 @@ describe('AdsService', () => {
       mockAdRepository.findOneById.mockResolvedValue(mockAd);
       mockAdRepository.update.mockResolvedValue({ ...mockAd, order: 2 } as Ad);
 
-      const result = await service.update(mockAd.id, dto);
+      const result = await service.update(mockAd.id, dto, mockAd.companyId);
 
       expect(result.order).toBe(2);
       expect(mockAdRepository.findOneById).toHaveBeenCalledWith(mockAd.id);
@@ -112,7 +112,7 @@ describe('AdsService', () => {
     it('debería lanzar AdNotFoundException si el anuncio no existe', async () => {
       mockAdRepository.findOneById.mockResolvedValue(null);
 
-      await expect(service.update('fake-id', {})).rejects.toThrow(
+      await expect(service.update('fake-id', {}, 10)).rejects.toThrow(
         AdNotFoundException,
       );
     });
@@ -123,7 +123,7 @@ describe('AdsService', () => {
       mockAdRepository.findOneById.mockResolvedValue(mockAd);
       mockAdRepository.softDelete.mockResolvedValue(undefined);
 
-      await service.remove(mockAd.id);
+      await service.remove(mockAd.id, mockAd.companyId);
 
       expect(mockAdRepository.findOneById).toHaveBeenCalledWith(mockAd.id);
       expect(mockAdRepository.softDelete).toHaveBeenCalledWith(mockAd.id);
@@ -136,7 +136,7 @@ describe('AdsService', () => {
     it('debería lanzar AdNotFoundException si el anuncio a eliminar no existe', async () => {
       mockAdRepository.findOneById.mockResolvedValue(null);
 
-      await expect(service.remove('fake-id')).rejects.toThrow(
+      await expect(service.remove('fake-id', 10)).rejects.toThrow(
         AdNotFoundException,
       );
     });

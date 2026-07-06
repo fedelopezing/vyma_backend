@@ -9,7 +9,6 @@ import {
   Post,
   Put,
   Query,
-  ParseIntPipe,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
@@ -27,14 +26,22 @@ import { Ad } from './entities/ad.entity';
 import { PaginatedResponse } from '../common/interfaces';
 import { AuthPermissions } from '../auth/decorators';
 import { TenantGuard } from '../common/guards/tenant.guard';
+import { ModuleAccessGuard } from '../common/guards/module-access.guard';
+import { RequireModule } from '../common/decorators/require-module.decorator';
+import { CompanyModule } from '../common/constants/modules.enum';
 import { ActiveCompanyId } from '../common/decorators';
 import { UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { CompaniesRepository } from '../companies/repositories/companies.repository';
+import { resolveActiveCompany } from '../common/helpers/company-resolver.helper';
 
 @ApiTags('Ads')
 @Controller('ads')
 export class AdsController {
-  constructor(private readonly adsService: AdsService) {}
+  constructor(
+    private readonly adsService: AdsService,
+    private readonly companiesRepository: CompaniesRepository,
+  ) {}
 
   // ─── Endpoint público ─────────────────────────────────────────────────────
 
@@ -44,10 +51,12 @@ export class AdsController {
    */
   @Get('active')
   @ApiGetActiveAds()
-  async findActive(
-    @Query('companyId', ParseIntPipe) companyId: number,
-  ): Promise<Ad[]> {
-    return this.adsService.findActive(companyId);
+  async findActive(@Query('companyUuid') companyUuid: string): Promise<Ad[]> {
+    const company = await resolveActiveCompany(
+      companyUuid,
+      this.companiesRepository,
+    );
+    return this.adsService.findActive(company.id);
   }
 
   // ─── Endpoints administrativos (tenant-scoped) ────────────────────────────
@@ -58,7 +67,8 @@ export class AdsController {
    */
   @Get('admin')
   @AuthPermissions('read:ads')
-  @UseGuards(AuthGuard('jwt'), TenantGuard)
+  @UseGuards(AuthGuard('jwt'), TenantGuard, ModuleAccessGuard)
+  @RequireModule(CompanyModule.ADS)
   @ApiGetAdminAds()
   findAllAdmin(
     @Query() paginationDto: AdsPaginationDto,
@@ -73,7 +83,8 @@ export class AdsController {
    */
   @Post('admin')
   @AuthPermissions('create:ads')
-  @UseGuards(AuthGuard('jwt'), TenantGuard)
+  @UseGuards(AuthGuard('jwt'), TenantGuard, ModuleAccessGuard)
+  @RequireModule(CompanyModule.ADS)
   @ApiCreateAd()
   create(
     @Body() createAdDto: CreateAdDto,
@@ -88,13 +99,15 @@ export class AdsController {
    */
   @Put('admin/:id')
   @AuthPermissions('update:ads')
-  @UseGuards(AuthGuard('jwt'), TenantGuard)
+  @UseGuards(AuthGuard('jwt'), TenantGuard, ModuleAccessGuard)
+  @RequireModule(CompanyModule.ADS)
   @ApiUpdateAd()
   update(
     @Param('id') id: string,
     @Body() updateAdDto: UpdateAdDto,
+    @ActiveCompanyId() companyId: number,
   ): Promise<Ad> {
-    return this.adsService.update(id, updateAdDto);
+    return this.adsService.update(id, updateAdDto, companyId);
   }
 
   /**
@@ -103,10 +116,14 @@ export class AdsController {
    */
   @Delete('admin/:id')
   @AuthPermissions('delete:ads')
-  @UseGuards(AuthGuard('jwt'), TenantGuard)
+  @UseGuards(AuthGuard('jwt'), TenantGuard, ModuleAccessGuard)
+  @RequireModule(CompanyModule.ADS)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiDeleteAd()
-  remove(@Param('id') id: string): Promise<void> {
-    return this.adsService.remove(id);
+  remove(
+    @Param('id') id: string,
+    @ActiveCompanyId() companyId: number,
+  ): Promise<void> {
+    return this.adsService.remove(id, companyId);
   }
 }

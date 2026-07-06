@@ -1,11 +1,15 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { BadRequestException } from '@nestjs/common';
 import { EventsController } from './events.controller';
 import { EventsService } from './events.service';
 import { CreateEventDto, UpdateEventDto, EventsPaginationDto } from './dto';
 import { Event, EventOrganizer, EventStatus } from './entities/event.entity';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { TenantGuard } from '../common/guards/tenant.guard';
+import { ModuleAccessGuard } from '../common/guards/module-access.guard';
 import { UserCompanyRepository } from '../companies/repositories/user-company.repository';
+import { CompaniesRepository } from '../companies/repositories/companies.repository';
 
 describe('EventsController', () => {
   let controller: EventsController;
@@ -50,6 +54,7 @@ describe('EventsController', () => {
   };
 
   const mockAuthenticatedRequest = {
+    companyId: 2,
     user: mockJwtPayload,
   };
 
@@ -64,9 +69,19 @@ describe('EventsController', () => {
           provide: UserCompanyRepository,
           useValue: { isActiveMember: jest.fn().mockResolvedValue(true) },
         },
+        {
+          provide: CompaniesRepository,
+          useValue: {
+            findByUuid: jest.fn().mockResolvedValue({ id: 2, isActive: true }),
+          },
+        },
       ],
     })
       .overrideGuard(PermissionsGuard)
+      .useValue({ canActivate: jest.fn().mockReturnValue(true) })
+      .overrideGuard(TenantGuard)
+      .useValue({ canActivate: jest.fn().mockReturnValue(true) })
+      .overrideGuard(ModuleAccessGuard)
       .useValue({ canActivate: jest.fn().mockReturnValue(true) })
       .compile();
 
@@ -177,11 +192,10 @@ describe('EventsController', () => {
       );
 
       expect(result.tituloEs).toBe('Nuevo titulo');
-      expect(eventsService.update).toHaveBeenCalledWith(
-        'uuid-123',
-        updateDto,
-        mockJwtPayload,
-      );
+      expect(eventsService.update).toHaveBeenCalledWith('uuid-123', updateDto, {
+        companyId: 2,
+        isSuperAdmin: false,
+      });
     });
   });
 
@@ -191,16 +205,27 @@ describe('EventsController', () => {
 
       await controller.remove('uuid-123', mockAuthenticatedRequest as never);
 
-      expect(eventsService.remove).toHaveBeenCalledWith(
-        'uuid-123',
-        mockJwtPayload,
-      );
+      expect(eventsService.remove).toHaveBeenCalledWith('uuid-123', {
+        companyId: 2,
+        isSuperAdmin: false,
+      });
     });
   });
 
   describe('findAll', () => {
-    it('debería retornar listado público mapeado a EventResponseDto', async () => {
+    it('debería lanzar BadRequestException si no se provee companyUuid', async () => {
       const paginationDto: EventsPaginationDto = { page: 1, limit: 10 };
+      await expect(controller.findAll(paginationDto)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('debería retornar listado público mapeado a EventResponseDto', async () => {
+      const paginationDto: EventsPaginationDto = {
+        page: 1,
+        limit: 10,
+        companyUuid: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+      };
       const serviceResponse = {
         data: [mockEvent as Event],
         meta: {
@@ -218,7 +243,10 @@ describe('EventsController', () => {
       const result = await controller.findAll(paginationDto);
 
       expect(result.data[0].id).toBe(mockEvent.id);
-      expect(eventsService.findAll).toHaveBeenCalledWith(paginationDto);
+      expect(eventsService.findAll).toHaveBeenCalledWith({
+        ...paginationDto,
+        companyId: 2,
+      });
     });
   });
 

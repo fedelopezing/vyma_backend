@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ExchangeRatesService } from './exchange-rates.service';
+import { CompaniesRepository } from '../companies/repositories/companies.repository';
 import { EXCHANGE_RATES_REPOSITORY_TOKEN } from './interfaces/exchange-rates-repository.interface';
 import axios from 'axios';
 
@@ -13,6 +14,7 @@ describe('ExchangeRatesService', () => {
   let repositoryMock: Record<string, jest.Mock>;
   let cacheManagerMock: Record<string, jest.Mock>;
   let eventEmitterMock: Record<string, jest.Mock>;
+  let companiesRepositoryMock: Record<string, jest.Mock>;
 
   beforeEach(async () => {
     repositoryMock = {
@@ -30,6 +32,10 @@ describe('ExchangeRatesService', () => {
       emit: jest.fn(),
     };
 
+    companiesRepositoryMock = {
+      findAllActiveWithModule: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ExchangeRatesService,
@@ -44,6 +50,10 @@ describe('ExchangeRatesService', () => {
         {
           provide: EventEmitter2,
           useValue: eventEmitterMock,
+        },
+        {
+          provide: CompaniesRepository,
+          useValue: companiesRepositoryMock,
         },
       ],
     }).compile();
@@ -66,7 +76,7 @@ describe('ExchangeRatesService', () => {
       ];
       cacheManagerMock.get.mockResolvedValue(cachedData);
 
-      const result = await service.getLatestRates();
+      const result = await service.getLatestRates(10);
       expect(result).toEqual(cachedData);
       expect(repositoryMock.findAll).not.toHaveBeenCalled();
     });
@@ -78,11 +88,11 @@ describe('ExchangeRatesService', () => {
       ];
       repositoryMock.findAll.mockResolvedValue(dbData);
 
-      const result = await service.getLatestRates();
+      const result = await service.getLatestRates(10);
       expect(result).toEqual(dbData);
-      expect(repositoryMock.findAll).toHaveBeenCalled();
+      expect(repositoryMock.findAll).toHaveBeenCalledWith(10);
       expect(cacheManagerMock.set).toHaveBeenCalledWith(
-        'latest_exchange_rates',
+        'latest_exchange_rates_10',
         dbData,
         expect.any(Number),
       );
@@ -102,28 +112,31 @@ describe('ExchangeRatesService', () => {
       };
       mockedAxios.get.mockResolvedValue(apiResponse);
 
-      await service.scrapeAndSaveRates();
+      await service.scrapeAndSaveRates(10);
 
       expect(repositoryMock.createOrUpdate).toHaveBeenCalledWith(
         'USD',
         7000,
         7100,
+        10,
         false,
       );
       expect(repositoryMock.createOrUpdate).toHaveBeenCalledWith(
         'BRL',
         1400,
         1450,
+        10,
         false,
       );
       expect(repositoryMock.createOrUpdate).not.toHaveBeenCalledWith(
         'XXX',
         expect.any(Number),
         expect.any(Number),
+        10,
         false,
       );
       expect(cacheManagerMock.del).toHaveBeenCalledWith(
-        'latest_exchange_rates',
+        'latest_exchange_rates_10',
       );
       expect(eventEmitterMock.emit).not.toHaveBeenCalled();
     });
@@ -141,13 +154,14 @@ describe('ExchangeRatesService', () => {
       ];
       repositoryMock.findAll.mockResolvedValue(existingRates);
 
-      await service.scrapeAndSaveRates();
+      await service.scrapeAndSaveRates(10);
 
-      expect(repositoryMock.findAll).toHaveBeenCalled();
+      expect(repositoryMock.findAll).toHaveBeenCalledWith(10);
       expect(repositoryMock.createOrUpdate).toHaveBeenCalledWith(
         'USD',
         7000,
         7100,
+        10,
         true,
       );
       expect(eventEmitterMock.emit).toHaveBeenCalledWith(
@@ -158,7 +172,7 @@ describe('ExchangeRatesService', () => {
         }),
       );
       expect(cacheManagerMock.del).toHaveBeenCalledWith(
-        'latest_exchange_rates',
+        'latest_exchange_rates_10',
       );
     });
 
@@ -180,13 +194,14 @@ describe('ExchangeRatesService', () => {
       ];
       repositoryMock.findAll.mockResolvedValue(existingRates);
 
-      await service.scrapeAndSaveRates();
+      await service.scrapeAndSaveRates(10);
 
-      expect(repositoryMock.findAll).toHaveBeenCalled();
+      expect(repositoryMock.findAll).toHaveBeenCalledWith(10);
       expect(repositoryMock.createOrUpdate).toHaveBeenCalledWith(
         'USD',
         7000,
         7100,
+        10,
         true,
       );
       expect(eventEmitterMock.emit).toHaveBeenCalledWith(
@@ -199,7 +214,7 @@ describe('ExchangeRatesService', () => {
         }),
       );
       expect(cacheManagerMock.del).toHaveBeenCalledWith(
-        'latest_exchange_rates',
+        'latest_exchange_rates_10',
       );
     });
   });

@@ -9,6 +9,7 @@ import { faker } from '@faker-js/faker';
 import { Member, MemberStatus, FeeType } from './entities/member.entity';
 import { MemberResponseDto, UpdateMemberDto } from './dto';
 import { TenantGuard } from '../common/guards/tenant.guard';
+import { ModuleAccessGuard } from '../common/guards/module-access.guard';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 
@@ -41,6 +42,7 @@ describe('AdminMembersController', () => {
   };
 
   const mockRequest = {
+    companyId: 1,
     user: {
       sub: 1,
       companyId: 1,
@@ -64,6 +66,8 @@ describe('AdminMembersController', () => {
       ],
     })
       .overrideGuard(TenantGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(ModuleAccessGuard)
       .useValue({ canActivate: () => true })
       .overrideGuard(PermissionsGuard)
       .useValue({ canActivate: () => true })

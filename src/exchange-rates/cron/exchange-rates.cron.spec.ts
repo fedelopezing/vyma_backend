@@ -28,19 +28,23 @@ describe('ExchangeRatesCron', () => {
   });
 
   describe('handleDailyScrape', () => {
-    it('should call exchangeRatesService.scrapeAndSaveRates', async () => {
+    it('should call exchangeRatesService.scrapeAndSaveRatesForAllCompanies', async () => {
       await cron.handleDailyScrape();
 
-      expect(mockExchangeRatesService.scrapeAndSaveRates).toHaveBeenCalled();
+      expect(
+        mockExchangeRatesService.scrapeAndSaveRatesForAllCompanies,
+      ).toHaveBeenCalled();
     });
 
     it('should catch errors from service and not rethrow', async () => {
-      mockExchangeRatesService.scrapeAndSaveRates.mockRejectedValue(
-        new Error('Scraping service failed'),
-      );
+      const serviceMock =
+        mockExchangeRatesService.scrapeAndSaveRatesForAllCompanies;
+      serviceMock.mockRejectedValue(new Error('Scraping service failed'));
 
       await expect(cron.handleDailyScrape()).resolves.toBeUndefined();
-      expect(mockExchangeRatesService.scrapeAndSaveRates).toHaveBeenCalled();
+      expect(
+        mockExchangeRatesService.scrapeAndSaveRatesForAllCompanies,
+      ).toHaveBeenCalled();
     });
   });
 });

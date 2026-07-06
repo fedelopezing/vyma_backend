@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { CacheModule } from '@nestjs/cache-manager';
 import { EmailModule } from '../email/email.module';
 import { ExchangeRate } from './entities/exchange-rate.entity';
+import { CompaniesModule } from '../companies/companies.module';
 import { ExchangeRatesController } from './exchange-rates.controller';
 import { ExchangeRatesService } from './exchange-rates.service';
 import { ExchangeRatesRepository } from './repositories/exchange-rates.repository';
@@ -15,6 +16,7 @@ import { ExchangeRatesListener } from './listeners/exchange-rates.listener';
     TypeOrmModule.forFeature([ExchangeRate]),
     CacheModule.register(),
     EmailModule,
+    CompaniesModule,
   ],
   controllers: [ExchangeRatesController],
   providers: [

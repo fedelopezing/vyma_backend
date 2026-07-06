@@ -6,12 +6,15 @@ import { faker } from '@faker-js/faker';
 import { UserCompanyRepository } from '../companies/repositories/user-company.repository';
 
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { TenantGuard } from '../common/guards/tenant.guard';
+import { ModuleAccessGuard } from '../common/guards/module-access.guard';
 
 describe('SchedulesController', () => {
   let controller: SchedulesController;
   let mockService: DeepMocked<SchedulesService>;
 
   const mockReq = {
+    companyId: 2,
     user: {
       companyId: 2,
     },
@@ -34,6 +37,10 @@ describe('SchedulesController', () => {
       ],
     })
       .overrideGuard(PermissionsGuard)
+      .useValue({ canActivate: jest.fn().mockReturnValue(true) })
+      .overrideGuard(TenantGuard)
+      .useValue({ canActivate: jest.fn().mockReturnValue(true) })
+      .overrideGuard(ModuleAccessGuard)
       .useValue({ canActivate: jest.fn().mockReturnValue(true) })
       .compile();
 

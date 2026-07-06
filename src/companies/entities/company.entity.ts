@@ -35,6 +35,13 @@ export class Company {
   @Column({ type: 'boolean', default: true })
   isActive: boolean;
 
+  @Column({ type: 'simple-array', default: '' })
+  activeModules: string[];
+
+  @Index({ unique: true })
+  @Column({ type: 'varchar', length: 255, nullable: true, unique: true })
+  domain: string | null;
+
   @OneToMany(() => UserCompany, (userCompany) => userCompany.company)
   memberships: UserCompany[];
 

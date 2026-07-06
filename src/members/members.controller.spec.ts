@@ -6,6 +6,8 @@ import { faker } from '@faker-js/faker';
 import { Member, MemberStatus, FeeType } from './entities/member.entity';
 import { MemberResponseDto, ApplyMemberDto } from './dto';
 
+import { CompaniesRepository } from '../companies/repositories/companies.repository';
+
 describe('MembersController', () => {
   let controller: MembersController;
   let mockService: DeepMocked<MembersService>;
@@ -44,6 +46,12 @@ describe('MembersController', () => {
           provide: MembersService,
           useValue: mockService,
         },
+        {
+          provide: CompaniesRepository,
+          useValue: {
+            findByUuid: jest.fn().mockResolvedValue({ id: 1, isActive: true }),
+          },
+        },
       ],
     }).compile();
 
@@ -56,6 +64,7 @@ describe('MembersController', () => {
 
   describe('findAllApproved', () => {
     it('should return mapped approved members response', async () => {
+      const companyUuid = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
       const companyId = 1;
       const fakeMembers = [createFakeMember(), createFakeMember()];
       const serviceResult = {
@@ -72,7 +81,7 @@ describe('MembersController', () => {
 
       mockService.findApproved.mockResolvedValue(serviceResult);
 
-      const result = await controller.findAllApproved(companyId, {
+      const result = await controller.findAllApproved(companyUuid, {
         page: 1,
         limit: 12,
       });
@@ -91,11 +100,12 @@ describe('MembersController', () => {
 
   describe('findFeatured', () => {
     it('should return mapped featured members', async () => {
+      const companyUuid = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
       const companyId = 1;
       const fakeFeatured = [createFakeMember()];
       mockService.findFeatured.mockResolvedValue(fakeFeatured);
 
-      const result = await controller.findFeatured(companyId);
+      const result = await controller.findFeatured(companyUuid);
 
       expect(result).toHaveLength(1);
       expect(result[0]).toEqual(MemberResponseDto.fromEntity(fakeFeatured[0]));

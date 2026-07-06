@@ -9,7 +9,6 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { News, NewsStatus } from './entities/news.entity';
 import { NewsRepository } from './repositories/news.repository';
 import { CreateNewsDto, UpdateNewsDto, NewsPaginationDto } from './dto';
-import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import {
   NewsPublishedEvent,
   NEWS_PUBLISHED_EVENT,
@@ -42,7 +41,10 @@ export class NewsService {
   /**
    * Lanza NotFoundException si la noticia no existe.
    */
-  private async findNewsOrFail(id: string, user?: JwtPayload): Promise<News> {
+  private async findNewsOrFail(
+    id: string,
+    user?: { companyId?: number; isSuperAdmin?: boolean },
+  ): Promise<News> {
     const news = await this.newsRepository.findOneById(id);
     if (!news) {
       throw new NotFoundException(`Noticia con id '${id}' no encontrada.`);
@@ -107,7 +109,7 @@ export class NewsService {
   async update(
     id: string,
     dto: UpdateNewsDto,
-    user?: JwtPayload,
+    user?: { companyId?: number; isSuperAdmin?: boolean },
   ): Promise<News> {
     const news = await this.findNewsOrFail(id, user);
 
@@ -128,7 +130,10 @@ export class NewsService {
     return savedNews;
   }
 
-  async remove(id: string, user?: JwtPayload): Promise<void> {
+  async remove(
+    id: string,
+    user?: { companyId?: number; isSuperAdmin?: boolean },
+  ): Promise<void> {
     await this.findNewsOrFail(id, user);
     await this.newsRepository.softDelete(id);
   }

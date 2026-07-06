@@ -5,10 +5,9 @@ import {
   InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
-import { EventOrganizer, EventStatus } from './entities/event.entity';
+import { EventOrganizer } from './entities/event.entity';
 import { CreateEventDto } from './dto/create-event.dto';
 import { IEventRepository } from './interfaces/i-event-repository.interface';
-import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { EventNotFoundException } from './exceptions/event-not-found.exception';
 import { Event } from './entities/event.entity';
 
@@ -49,13 +48,17 @@ export function assertOrganizadorNombre(dto: Partial<CreateEventDto>): void {
 export async function findEventOrFail(
   id: string,
   eventRepository: IEventRepository,
-  user?: JwtPayload,
+  user?: { companyId?: number; isSuperAdmin?: boolean },
 ): Promise<Event> {
   const event = await eventRepository.findOneById(id);
   if (!event) {
     throw new EventNotFoundException(id);
   }
-  if (user && !user.isSuperAdmin && event.companyId !== user.companyId) {
+  if (
+    user &&
+    !user.isSuperAdmin &&
+    Number(event.companyId) !== Number(user.companyId)
+  ) {
     throw new ForbiddenException(
       'No tienes los permisos necesarios para realizar esta acción.',
     );

@@ -12,7 +12,7 @@ export class ExchangeRatesCron {
   async handleDailyScrape() {
     this.logger.log('Starting daily exchange rates cron job at 06:00 AM...');
     try {
-      await this.exchangeRatesService.scrapeAndSaveRates();
+      await this.exchangeRatesService.scrapeAndSaveRatesForAllCompanies();
       this.logger.log('Daily exchange rates cron job completed successfully');
     } catch (error) {
       this.logger.error('Error in daily exchange rates cron job', error);

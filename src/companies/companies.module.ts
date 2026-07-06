@@ -8,15 +8,17 @@ import { CompaniesRepository } from './repositories/companies.repository';
 import { UserCompanyRepository } from './repositories/user-company.repository';
 import { UsersModule } from '../users/users.module';
 import { RolesModule } from '../roles/roles.module';
+import { CommonModule } from '../common/common.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Company, UserCompany]),
     UsersModule,
     RolesModule,
+    CommonModule,
   ],
   controllers: [CompaniesController],
   providers: [CompaniesService, CompaniesRepository, UserCompanyRepository],
-  exports: [CompaniesService, UserCompanyRepository],
+  exports: [CompaniesService, UserCompanyRepository, CompaniesRepository],
 })
 export class CompaniesModule {}
