@@ -48,7 +48,7 @@ interface AuthenticatedRequest extends Request {
   };
 }
 
-@ApiTags('companies')
+@ApiTags('Companies')
 @ApiBearerAuth()
 @Controller('companies')
 export class CompaniesController {

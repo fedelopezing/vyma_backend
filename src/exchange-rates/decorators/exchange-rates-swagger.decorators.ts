@@ -4,7 +4,7 @@ import { ExchangeRatesResponseDto, ManualScrapeResponseDto } from '../dto';
 
 export function ApiGetExchangeRates() {
   return applyDecorators(
-    ApiTags('exchange-rates'),
+    ApiTags('Exchange-rates'),
     ApiOperation({ summary: 'Obtener cotizaciones actuales' }),
     ApiQuery({
       name: 'companyUuid',
@@ -24,7 +24,7 @@ export function ApiGetExchangeRates() {
 
 export function ApiManualScrape() {
   return applyDecorators(
-    ApiTags('exchange-rates'),
+    ApiTags('Exchange-rates'),
     ApiOperation({ summary: 'Forzar scraping manual de cotizaciones' }),
     ApiResponse({
       status: 200,
