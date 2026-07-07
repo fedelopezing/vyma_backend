@@ -16,7 +16,12 @@ import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { Request } from 'express';
 
 import { CompaniesService } from './companies.service';
-import { CreateCompanyDto, UpdateCompanyDto, AddMemberDto } from './dto';
+import {
+  CreateCompanyDto,
+  UpdateCompanyDto,
+  AddMemberDto,
+  ManageModuleDto,
+} from './dto';
 import { Auth, AuthPermissions } from '../auth/decorators';
 import { Company } from './entities/company.entity';
 import { UserCompany } from './entities/user-company.entity';
@@ -27,6 +32,8 @@ import {
   ApiFindCompanyByUuid,
   ApiAddCompanyMember,
   ApiRemoveCompanyMember,
+  ApiActivateModule,
+  ApiDeactivateModule,
 } from './decorators/companies-swagger.decorators';
 
 interface AuthenticatedRequest extends Request {
@@ -85,6 +92,40 @@ export class CompaniesController {
       throw new ForbiddenException('Only superadmin can update companies');
     }
     return this.companiesService.update(uuid, dto);
+  }
+
+  @Post(':uuid/modules/activate')
+  @Auth()
+  @HttpCode(HttpStatus.OK)
+  @ApiActivateModule()
+  activateModule(
+    @Param('uuid', ParseUUIDPipe) uuid: string,
+    @Body() dto: ManageModuleDto,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<Company> {
+    if (!req.user?.isSuperAdmin) {
+      throw new ForbiddenException(
+        'Only superadmin can manage company modules',
+      );
+    }
+    return this.companiesService.activateModule(uuid, dto.module);
+  }
+
+  @Post(':uuid/modules/deactivate')
+  @Auth()
+  @HttpCode(HttpStatus.OK)
+  @ApiDeactivateModule()
+  deactivateModule(
+    @Param('uuid', ParseUUIDPipe) uuid: string,
+    @Body() dto: ManageModuleDto,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<Company> {
+    if (!req.user?.isSuperAdmin) {
+      throw new ForbiddenException(
+        'Only superadmin can manage company modules',
+      );
+    }
+    return this.companiesService.deactivateModule(uuid, dto.module);
   }
 
   // ─── Admin / SuperAdmin endpoints ─────────────────────────────────────────

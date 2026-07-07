@@ -20,6 +20,14 @@ export async function resolveActiveCompany(
   if (!companyUuid) {
     throw new BadRequestException('companyUuid is required');
   }
+
+  // Validar que sea un UUID v4 válido para evitar QueryFailedError en PostgreSQL
+  const uuidRegex =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(companyUuid)) {
+    throw new BadRequestException('Invalid companyUuid format');
+  }
+
   const company = await companiesRepository.findByUuid(companyUuid);
   if (!company || !company.isActive) {
     throw new NotFoundException('Company not found or inactive');

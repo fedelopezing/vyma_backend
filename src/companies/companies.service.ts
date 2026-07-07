@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { CompanyModule } from '../common/constants/modules.enum';
 import { CompaniesRepository } from './repositories/companies.repository';
 import { UserCompanyRepository } from './repositories/user-company.repository';
 import { UsersService } from '../users/users.service';
@@ -45,6 +46,31 @@ export class CompaniesService {
   async update(uuid: string, dto: UpdateCompanyDto): Promise<Company> {
     const company = await this.findByUuid(uuid);
     return this.companiesRepository.update(company.id, dto);
+  }
+
+  async activateModule(uuid: string, module: CompanyModule): Promise<Company> {
+    const company = await this.findByUuid(uuid);
+
+    if (company.activeModules.includes(module)) {
+      return company;
+    }
+
+    const activeModules = [...company.activeModules, module];
+    return this.companiesRepository.update(company.id, { activeModules });
+  }
+
+  async deactivateModule(
+    uuid: string,
+    module: CompanyModule,
+  ): Promise<Company> {
+    const company = await this.findByUuid(uuid);
+
+    if (!company.activeModules.includes(module)) {
+      return company;
+    }
+
+    const activeModules = company.activeModules.filter((m) => m !== module);
+    return this.companiesRepository.update(company.id, { activeModules });
   }
 
   async addMember(

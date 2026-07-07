@@ -3,7 +3,11 @@ import { IsOptional, IsNumber } from 'class-validator';
 import { ApplyMemberDto } from './apply-member.dto';
 
 export class UpdateMemberDto extends PartialType(
-  OmitType(ApplyMemberDto, ['recaptchaToken', 'companyId'] as const),
+  OmitType(ApplyMemberDto, [
+    'recaptchaToken',
+    'companyId',
+    'companyUuid',
+  ] as const),
 ) {
   @ApiPropertyOptional({
     description: 'Optimistic locking version number',

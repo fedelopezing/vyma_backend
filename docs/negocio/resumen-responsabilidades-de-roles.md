@@ -31,6 +31,8 @@ El SuperAdmin es una cuenta global con privilegios para gobernar la plataforma a
     *   Crear nuevas empresas (`POST /companies`).
     *   Listar todas las empresas registradas (`GET /companies`).
     *   Editar datos maestros de empresas (`PATCH /companies/:uuid`).
+    *   Activar módulos contratados por empresa (`POST /companies/:uuid/modules/activate`) de manera atómica.
+    *   Desactivar módulos de empresa (`POST /companies/:uuid/modules/deactivate`) de manera atómica.
     *   Asociar usuarios a empresas asignándoles un rol local (`POST /companies/:uuid/members`).
     *   Desvincular usuarios de empresas (`DELETE /companies/:uuid/members/:userUuid`).
 *   **Contexto del Token:** Su token JWT inicial tiene `companyId: undefined`. El sistema le permite realizar bypass del `TenantGuard` para operaciones de administración general.
@@ -65,7 +67,19 @@ Para iniciar a operar una nueva empresa en la plataforma, el SuperAdmin realiza 
         ```
     *   *El backend devuelve la empresa creada con su `uuid` público.*
 
-2.  **Asociar el Administrador de la Empresa (Manager):**
+2.  **Activar Módulos Contratados (Licenciamiento):**
+    El SuperAdmin configura los módulos habilitados para el inquilino de forma atómica:
+    *   **Endpoint:** `POST /companies/<company_uuid>/modules/activate`
+    *   **Headers:** `Authorization: Bearer <SuperAdmin_Token>`
+    *   **Body:**
+        ```json
+        {
+          "module": "NEWS"
+        }
+        ```
+    *   *Esto actualiza la base de datos e invalida inmediatamente la caché de la compañía en RAM.*
+
+3.  **Asociar el Administrador de la Empresa (Manager):**
     El SuperAdmin asocia a un usuario existente (o a sí mismo si desea administrarla temporalmente) como **Manager** de esa empresa:
     *   **Endpoint:** `POST /companies/<company_uuid>/members`
     *   **Headers:** `Authorization: Bearer <SuperAdmin_Token>`
@@ -115,5 +129,6 @@ El usuario asignado como Manager realiza las operaciones del día a día (por ej
 | Endpoint / Operación | Acceso SuperAdmin | Acceso Tenant Manager | Comportamiento del Filtro / Aislamiento |
 |:---|:---:|:---:|:---|
 | **CRUD de Empresas** | `SÍ` | `NO` | Acceso global sin restricción de tenant. |
+| **Administración de Módulos (Habilitar/Deshabilitar)** | `SÍ` | `NO` | Acceso global. Permite activar/desactivar módulos por UUID de empresa. |
 | **Asociación de Miembros** | `SÍ` | `NO` | Acceso global. Permite asociar cualquier usuario a cualquier empresa. |
 | **Operaciones de Negocio (News, Schedules, etc.)** | `SÍ` (con membresía) | `SÍ` | El `TenantGuard` valida que el `companyId` del token coincida con el recurso. La consulta SQL filtra por `WHERE companyId = :companyId`. |

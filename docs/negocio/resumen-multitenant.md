@@ -117,4 +117,4 @@ async findAllByCompany(companyId: number): Promise<News[]> {
 
 El flag `isSuperAdmin: boolean` ubicado en la entidad `User` permite gestionar la plataforma a nivel global:
 *   **Bypass de Aislamiento:** El `TenantGuard` le permite el acceso a cualquier recurso de cualquier empresa sin requerir una membresía explícita en `user_companies`.
-*   **Gestión de Empresas:** Solo los usuarios identificados como `isSuperAdmin` pueden crear (`POST /companies`), listar todas (`GET /companies`) y actualizar los datos maestros de las empresas (`PATCH /companies/:uuid`).
+*   **Gestión de Empresas y Módulos:** Solo los usuarios identificados como `isSuperAdmin` pueden crear (`POST /companies`), listar todas (`GET /companies`), actualizar los datos de las empresas (`PATCH /companies/:uuid`), y activar/desactivar módulos de manera atómica (`POST /companies/:uuid/modules/activate` y `POST /companies/:uuid/modules/deactivate`).

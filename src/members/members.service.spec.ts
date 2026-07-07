@@ -119,6 +119,7 @@ describe('MembersService', () => {
   describe('apply', () => {
     it('should successfully create application and emit event', async () => {
       const dto: ApplyMemberDto = {
+        companyUuid: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
         companyId: 1,
         email: 'test@company.com',
         feeType: FeeType.ANNUAL,
@@ -151,6 +152,7 @@ describe('MembersService', () => {
 
     it('should throw if create fails', async () => {
       const dto: ApplyMemberDto = {
+        companyUuid: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
         companyId: 1,
         email: 'test@company.com',
         feeType: FeeType.ANNUAL,

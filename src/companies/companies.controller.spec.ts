@@ -3,7 +3,12 @@ import { ForbiddenException } from '@nestjs/common';
 
 import { CompaniesController } from './companies.controller';
 import { CompaniesService } from './companies.service';
-import { CreateCompanyDto, UpdateCompanyDto, AddMemberDto } from './dto';
+import {
+  CreateCompanyDto,
+  UpdateCompanyDto,
+  AddMemberDto,
+  ManageModuleDto,
+} from './dto';
 import { Company } from './entities/company.entity';
 import { UserCompany } from './entities/user-company.entity';
 
@@ -31,6 +36,8 @@ describe('CompaniesController', () => {
             findAll: jest.fn(),
             findByUuid: jest.fn(),
             update: jest.fn(),
+            activateModule: jest.fn(),
+            deactivateModule: jest.fn(),
             addMember: jest.fn(),
             removeMember: jest.fn(),
           },
@@ -127,6 +134,62 @@ describe('CompaniesController', () => {
         ForbiddenException,
       );
       expect(service.update).not.toHaveBeenCalled();
+    });
+  });
+
+  // ─── activateModule ───────────────────────────────────────────────────────
+
+  describe('activateModule', () => {
+    const uuid = 'test-uuid-1234';
+    const dto: ManageModuleDto = { module: 'NEWS' as any };
+
+    it('should delegate to service.activateModule() and return company', async () => {
+      const company = { id: 1, name: 'Company' } as Company;
+      service.activateModule.mockResolvedValue(company);
+
+      const result = await controller.activateModule(
+        uuid,
+        dto,
+        mockSuperAdminReq,
+      );
+
+      expect(result).toEqual(company);
+      expect(service.activateModule).toHaveBeenCalledWith(uuid, dto.module);
+    });
+
+    it('should throw ForbiddenException if user is not superadmin', () => {
+      expect(() =>
+        controller.activateModule(uuid, dto, mockNonAdminReq),
+      ).toThrow(ForbiddenException);
+      expect(service.activateModule).not.toHaveBeenCalled();
+    });
+  });
+
+  // ─── deactivateModule ─────────────────────────────────────────────────────
+
+  describe('deactivateModule', () => {
+    const uuid = 'test-uuid-1234';
+    const dto: ManageModuleDto = { module: 'NEWS' as any };
+
+    it('should delegate to service.deactivateModule() and return company', async () => {
+      const company = { id: 1, name: 'Company' } as Company;
+      service.deactivateModule.mockResolvedValue(company);
+
+      const result = await controller.deactivateModule(
+        uuid,
+        dto,
+        mockSuperAdminReq,
+      );
+
+      expect(result).toEqual(company);
+      expect(service.deactivateModule).toHaveBeenCalledWith(uuid, dto.module);
+    });
+
+    it('should throw ForbiddenException if user is not superadmin', () => {
+      expect(() =>
+        controller.deactivateModule(uuid, dto, mockNonAdminReq),
+      ).toThrow(ForbiddenException);
+      expect(service.deactivateModule).not.toHaveBeenCalled();
     });
   });
 
