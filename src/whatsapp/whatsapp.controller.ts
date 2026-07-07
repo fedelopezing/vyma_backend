@@ -13,7 +13,7 @@ import { WhatsappMessagingService } from './whatsapp-messaging.service';
 import { SendMessageDto } from './dto/send-message.dto';
 import { getErrorMessage } from '../common/helpers/errors.helper';
 
-@ApiTags('whatsapp')
+@ApiTags('WhatsApp')
 @ApiBearerAuth()
 @UseGuards(AuthGuard('jwt'))
 @Controller('whatsapp')

@@ -1,4 +1,5 @@
 import { Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { ExchangeRatesService } from './exchange-rates.service';
 import {
@@ -15,6 +16,8 @@ import { CompanyModule } from '../common/constants/modules.enum';
 import { CompaniesRepository } from '../companies/repositories/companies.repository';
 import { resolveActiveCompany } from '../common/helpers/company-resolver.helper';
 
+@ApiTags('Exchange Rates')
+@ApiBearerAuth()
 @Controller('exchange-rates')
 export class ExchangeRatesController {
   constructor(

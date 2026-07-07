@@ -29,6 +29,10 @@ async function bootstrap() {
   SwaggerModule.setup('api/v1/docs', app, document, {
     customCssUrl:
       'https://cdn.jsdelivr.net/npm/swagger-themes@1.4.3/themes/dark.min.css',
+    swaggerOptions: {
+      tagsSorter: 'alpha',
+      operationsSorter: 'alpha',
+    },
   });
 
   await app.listen(process.env.PORT);
