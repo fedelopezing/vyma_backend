@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { CompanyModule } from '../common/constants/modules.enum';
 import { CompaniesService } from './companies.service';
 import { CompaniesRepository } from './repositories/companies.repository';
 import { UserCompanyRepository } from './repositories/user-company.repository';
@@ -251,6 +252,92 @@ describe('CompaniesService', () => {
       await expect(
         service.removeMember('company-uuid', 'non-existent'),
       ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('activateModule', () => {
+    it('should add the module and update the company if not already active', async () => {
+      const company = {
+        id: 1,
+        uuid: 'company-uuid',
+        activeModules: [CompanyModule.NEWS],
+      } as Company;
+      const updatedCompany = {
+        ...company,
+        activeModules: [CompanyModule.NEWS, CompanyModule.ADS],
+      } as Company;
+      companiesRepo.findByUuid.mockResolvedValue(company);
+      companiesRepo.update.mockResolvedValue(updatedCompany);
+
+      const result = await service.activateModule(
+        'company-uuid',
+        CompanyModule.ADS,
+      );
+
+      expect(result).toEqual(updatedCompany);
+      expect(companiesRepo.update).toHaveBeenCalledWith(1, {
+        activeModules: [CompanyModule.NEWS, CompanyModule.ADS],
+      });
+    });
+
+    it('should return the company without updating if module is already active', async () => {
+      const company = {
+        id: 1,
+        uuid: 'company-uuid',
+        activeModules: [CompanyModule.NEWS],
+      } as Company;
+      companiesRepo.findByUuid.mockResolvedValue(company);
+
+      const result = await service.activateModule(
+        'company-uuid',
+        CompanyModule.NEWS,
+      );
+
+      expect(result).toEqual(company);
+      expect(companiesRepo.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('deactivateModule', () => {
+    it('should remove the module and update the company if it is active', async () => {
+      const company = {
+        id: 1,
+        uuid: 'company-uuid',
+        activeModules: [CompanyModule.NEWS, CompanyModule.ADS],
+      } as Company;
+      const updatedCompany = {
+        ...company,
+        activeModules: [CompanyModule.NEWS],
+      } as Company;
+      companiesRepo.findByUuid.mockResolvedValue(company);
+      companiesRepo.update.mockResolvedValue(updatedCompany);
+
+      const result = await service.deactivateModule(
+        'company-uuid',
+        CompanyModule.ADS,
+      );
+
+      expect(result).toEqual(updatedCompany);
+      expect(companiesRepo.update).toHaveBeenCalledWith(1, {
+        activeModules: [CompanyModule.NEWS],
+      });
+    });
+
+    it('should return the company without updating if module is already inactive', async () => {
+      const company = {
+        id: 1,
+        uuid: 'company-uuid',
+        activeModules: [CompanyModule.NEWS],
+      } as Company;
+      companiesRepo.findByUuid.mockResolvedValue(company);
+
+      const result = await service.deactivateModule(
+        'company-uuid',
+        CompanyModule.ADS,
+      );
+
+      expect(result).toEqual(company);
+      expect(companiesRepo.update).not.toHaveBeenCalled();
     });
   });
 });

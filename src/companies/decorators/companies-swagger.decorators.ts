@@ -85,3 +85,35 @@ export function ApiRemoveCompanyMember() {
     ApiResponse({ status: 404, description: 'Company or user not found.' }),
   );
 }
+
+export function ApiActivateModule() {
+  return applyDecorators(
+    ApiOperation({
+      summary: 'Activate a module for a company (SuperAdmin only)',
+    }),
+    ApiParam({ name: 'uuid', description: 'Company UUID' }),
+    ApiResponse({
+      status: 200,
+      description: 'Module activated successfully.',
+      type: Company,
+    }),
+    ApiResponse({ status: 403, description: 'Forbidden — SuperAdmin only.' }),
+    ApiResponse({ status: 404, description: 'Company not found.' }),
+  );
+}
+
+export function ApiDeactivateModule() {
+  return applyDecorators(
+    ApiOperation({
+      summary: 'Deactivate a module for a company (SuperAdmin only)',
+    }),
+    ApiParam({ name: 'uuid', description: 'Company UUID' }),
+    ApiResponse({
+      status: 200,
+      description: 'Module deactivated successfully.',
+      type: Company,
+    }),
+    ApiResponse({ status: 403, description: 'Forbidden — SuperAdmin only.' }),
+    ApiResponse({ status: 404, description: 'Company not found.' }),
+  );
+}
