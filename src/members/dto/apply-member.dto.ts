@@ -8,7 +8,7 @@ import {
   IsUrl,
   IsObject,
   ValidateNested,
-  IsNumber,
+  IsUUID,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { FeeType } from '../entities/member.entity';
@@ -40,12 +40,14 @@ class MarketingContactDto {
 
 export class ApplyMemberDto {
   @ApiProperty({
-    description: 'ID of the company (Tenant) to apply for',
-    example: 1,
+    description: 'UUID of the company (Tenant) to apply for',
+    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
   })
-  @IsNumber()
+  @IsUUID()
   @IsNotEmpty()
-  companyId: number;
+  companyUuid: string;
+
+  companyId?: number;
 
   @ApiProperty({
     description: 'Email of the applying company',

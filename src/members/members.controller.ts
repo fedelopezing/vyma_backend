@@ -49,6 +49,11 @@ export class MembersController {
   @Post('apply')
   @ApiApplyMember()
   async apply(@Body() applyMemberDto: ApplyMemberDto) {
+    const company = await resolveActiveCompany(
+      applyMemberDto.companyUuid,
+      this.companiesRepository,
+    );
+    applyMemberDto.companyId = company.id;
     const member = await this.membersService.apply(applyMemberDto);
     return MemberResponseDto.fromEntity(member);
   }

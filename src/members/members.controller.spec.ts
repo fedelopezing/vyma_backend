@@ -116,7 +116,7 @@ describe('MembersController', () => {
   describe('apply', () => {
     it('should submit application and return mapped DTO', async () => {
       const dto: ApplyMemberDto = {
-        companyId: 1,
+        companyUuid: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
         email: 'info@company.com',
         feeType: FeeType.ANNUAL,
         companyName: 'Company Name',
