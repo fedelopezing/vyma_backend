@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Company } from './entities/company.entity';
 import { UserCompany } from './entities/user-company.entity';
@@ -14,7 +14,7 @@ import { CommonModule } from '../common/common.module';
   imports: [
     TypeOrmModule.forFeature([Company, UserCompany]),
     UsersModule,
-    RolesModule,
+    forwardRef(() => RolesModule),
     CommonModule,
   ],
   controllers: [CompaniesController],

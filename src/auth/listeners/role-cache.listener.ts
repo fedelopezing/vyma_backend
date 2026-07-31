@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
-import { UsersService } from '../../users/users.service';
+import { UserCompanyRepository } from '../../companies/repositories/user-company.repository';
 import { CacheService } from '../../common/services/cache.service';
 import { RoleUpdatedEvent } from '../events/role-updated.event';
 import { AuthCacheKeys } from '../constants/cache-keys.constant';
@@ -11,7 +11,7 @@ export class RoleCacheListener {
   private readonly logger = new Logger(RoleCacheListener.name);
 
   constructor(
-    private readonly usersService: UsersService,
+    private readonly userCompanyRepository: UserCompanyRepository,
     private readonly cacheService: CacheService,
   ) {}
 
@@ -19,7 +19,9 @@ export class RoleCacheListener {
   async handleRoleUpdatedEvent(event: RoleUpdatedEvent) {
     this.logger.log(`Handling role.updated event for roleId: ${event.roleId}`);
     try {
-      const users = await this.usersService.findUsersByRoleId(event.roleId);
+      const users = await this.userCompanyRepository.findUsersByRoleId(
+        event.roleId,
+      );
 
       for (const user of users) {
         const cacheKey = AuthCacheKeys.userPermissions(user.id);

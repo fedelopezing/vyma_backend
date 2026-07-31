@@ -4,8 +4,6 @@ import {
   MinLength,
   MaxLength,
   IsEmail,
-  IsInt,
-  IsPositive,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -27,12 +25,4 @@ export class CreateUserDto {
   @IsEmail()
   @IsNotEmpty()
   email: string;
-
-  @ApiProperty({
-    description: 'The ID of the role assigned to the user',
-    example: 1,
-  })
-  @IsInt()
-  @IsPositive()
-  roleId: number;
 }

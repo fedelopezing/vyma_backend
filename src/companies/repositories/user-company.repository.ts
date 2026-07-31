@@ -75,4 +75,32 @@ export class UserCompanyRepository {
     await repo.delete({ userId, companyId });
     this.cacheService.delete(`company:membership:${userId}:${companyId}`);
   }
+
+  async findUsersByRoleId(roleId: number): Promise<{ id: number }[]> {
+    const memberships = await this.repository.find({
+      where: { roleId },
+      select: ['userId'],
+    });
+    const uniqueUserIds = Array.from(
+      new Set(memberships.map((m) => Number(m.userId))),
+    );
+    return uniqueUserIds.map((id) => ({ id }));
+  }
+
+  async findPermissionsByUserId(userId: number): Promise<string[]> {
+    const memberships = await this.repository.find({
+      where: { userId, isActive: true },
+      relations: ['role', 'role.permissions'],
+    });
+
+    const permissions = new Set<string>();
+    for (const m of memberships) {
+      if (m.role?.permissions) {
+        for (const p of m.role.permissions) {
+          permissions.add(p.action);
+        }
+      }
+    }
+    return Array.from(permissions);
+  }
 }

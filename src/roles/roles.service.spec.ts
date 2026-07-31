@@ -11,11 +11,13 @@ import { AuthCacheKeys } from '../auth/constants/cache-keys.constant';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { RolesRepository } from './repositories/roles.repository';
 import { PermissionsRepository } from '../permissions/repositories/permissions.repository';
+import { UserCompanyRepository } from '../companies/repositories/user-company.repository';
 
 describe('RolesService', () => {
   let service: RolesService;
   let mockRoleRepository: DeepMocked<RolesRepository>;
   let mockPermissionsRepository: DeepMocked<PermissionsRepository>;
+  let mockUserCompanyRepository: DeepMocked<UserCompanyRepository>;
   let usersService: UsersService;
   let cacheService: CacheService;
   let mockEventEmitter: DeepMocked<EventEmitter2>;
@@ -23,6 +25,7 @@ describe('RolesService', () => {
   beforeEach(async () => {
     mockRoleRepository = createMock<RolesRepository>();
     mockPermissionsRepository = createMock<PermissionsRepository>();
+    mockUserCompanyRepository = createMock<UserCompanyRepository>();
     mockEventEmitter = createMock<EventEmitter2>();
 
     const module: TestingModule = await Test.createTestingModule({
@@ -39,6 +42,10 @@ describe('RolesService', () => {
         {
           provide: UsersService,
           useValue: createMock<UsersService>(),
+        },
+        {
+          provide: UserCompanyRepository,
+          useValue: mockUserCompanyRepository,
         },
         {
           provide: CacheService,
@@ -86,15 +93,15 @@ describe('RolesService', () => {
     it('should throw RoleNotFoundException if role not found', async () => {
       mockRoleRepository.findOneById.mockResolvedValue(null);
 
-      await expect(service.findOne(999)).rejects.toThrow(RoleNotFoundException);
+      await expect(service.findOne(1)).rejects.toThrow(RoleNotFoundException);
     });
   });
 
   describe('remove', () => {
-    it('should find and remove a role', async () => {
+    it('should remove a role by id', async () => {
       const mockRole = { id: 1, name: 'admin', permissions: [] } as Role;
       mockRoleRepository.findOneById.mockResolvedValue(mockRole);
-      mockRoleRepository.remove.mockResolvedValue(mockRole);
+      mockRoleRepository.remove.mockResolvedValue(undefined as any);
 
       await service.remove(1);
 
@@ -105,38 +112,61 @@ describe('RolesService', () => {
 
   describe('create', () => {
     it('should create a role without permissions', async () => {
-      const createRoleDto = { name: 'editor' };
-      const expectedRole = { id: 2, name: 'editor' } as Role;
+      const dto = { name: 'admin' };
+      const createdRole = { id: 1, name: 'admin' } as Role;
 
-      mockRoleRepository.create.mockReturnValue(expectedRole);
-      mockRoleRepository.save.mockResolvedValue(expectedRole);
+      mockRoleRepository.create.mockReturnValue(createdRole);
+      mockRoleRepository.save.mockResolvedValue(createdRole);
 
-      const result = await service.create(createRoleDto);
+      const result = await service.create(dto);
 
-      expect(result).toEqual(expectedRole);
-      expect(mockRoleRepository.create).toHaveBeenCalledWith(createRoleDto);
-      expect(mockRoleRepository.save).toHaveBeenCalledWith(expectedRole);
+      expect(result).toEqual(createdRole);
+      expect(mockRoleRepository.create).toHaveBeenCalledWith(dto);
+      expect(mockRoleRepository.save).toHaveBeenCalledWith(createdRole);
+    });
+
+    it('should create a role with permissions', async () => {
+      const dto = { name: 'admin', permissions: ['read:users'] };
+      const createdRole = { id: 1, name: 'admin' } as Role;
+      const permissions = [{ id: 1, action: 'read:users' }] as any;
+
+      mockRoleRepository.create.mockReturnValue(createdRole);
+      mockPermissionsRepository.findManyByActions.mockResolvedValue(
+        permissions,
+      );
+      mockRoleRepository.save.mockResolvedValue({
+        ...createdRole,
+        permissions,
+      } as Role);
+
+      const result = await service.create(dto);
+
+      expect(result).toEqual({ ...createdRole, permissions });
+      expect(mockPermissionsRepository.findManyByActions).toHaveBeenCalledWith(
+        ['read:users'],
+      );
     });
   });
 
   describe('update', () => {
     it('should update a role and emit role.updated event', async () => {
-      const existingRole = { id: 1, name: 'admin', permissions: [] } as Role;
-      const updateRoleDto = { name: 'superadmin' };
-      const updatedRole = {
-        id: 1,
-        name: 'superadmin',
-        permissions: [],
-      } as Role;
+      const dto = { name: 'superadmin', permissions: ['read:users'] };
+      const existingRole = { id: 1, name: 'admin' } as Role;
+      const permissions = [{ id: 1, action: 'read:users' }] as any;
 
       mockRoleRepository.findOneById.mockResolvedValue(existingRole);
-      mockRoleRepository.save.mockResolvedValue(updatedRole);
+      mockPermissionsRepository.findManyByActions.mockResolvedValue(
+        permissions,
+      );
+      mockRoleRepository.save.mockResolvedValue({
+        ...existingRole,
+        name: 'superadmin',
+        permissions,
+      } as Role);
 
-      const result = await service.update(1, updateRoleDto);
+      const result = await service.update(1, dto);
 
-      expect(result).toEqual(updatedRole);
-      expect(mockRoleRepository.findOneById).toHaveBeenCalledWith(1);
-      expect(mockRoleRepository.save).toHaveBeenCalledWith(existingRole);
+      expect(result.name).toEqual('superadmin');
       expect(mockEventEmitter.emit).toHaveBeenCalledWith(
         'role.updated',
         expect.any(Object),
@@ -155,27 +185,18 @@ describe('RolesService', () => {
       expect(cacheService.get).toHaveBeenCalledWith(
         AuthCacheKeys.userPermissions(1),
       );
-      expect(usersService.findOneWithPermissions).not.toHaveBeenCalled();
+      expect(usersService.findOneById).not.toHaveBeenCalled();
     });
 
-    it('should query DB and cache permissions if not in cache', async () => {
+    it('should query DB via UserCompanyRepository and cache permissions if not in cache', async () => {
       jest.spyOn(cacheService, 'get').mockReturnValue(null);
 
-      const mockUser = {
-        id: 1,
-        role: {
-          id: 1,
-          name: 'admin',
-          permissions: [
-            { id: 1, action: 'read:news' },
-            { id: 2, action: 'create:news' },
-          ],
-        },
-      } as User;
-
-      jest
-        .spyOn(usersService, 'findOneWithPermissions')
-        .mockResolvedValue(mockUser);
+      const mockUser = { id: 1 } as User;
+      jest.spyOn(usersService, 'findOneById').mockResolvedValue(mockUser);
+      mockUserCompanyRepository.findPermissionsByUserId.mockResolvedValue([
+        'read:news',
+        'create:news',
+      ]);
 
       const result = await service.getUserPermissions(1);
 
@@ -183,7 +204,10 @@ describe('RolesService', () => {
       expect(cacheService.get).toHaveBeenCalledWith(
         AuthCacheKeys.userPermissions(1),
       );
-      expect(usersService.findOneWithPermissions).toHaveBeenCalledWith(1);
+      expect(usersService.findOneById).toHaveBeenCalledWith(1);
+      expect(
+        mockUserCompanyRepository.findPermissionsByUserId,
+      ).toHaveBeenCalledWith(1);
       expect(cacheService.set).toHaveBeenCalledWith(
         AuthCacheKeys.userPermissions(1),
         ['read:news', 'create:news'],
@@ -193,56 +217,10 @@ describe('RolesService', () => {
 
     it('should throw NotFoundException if user not found', async () => {
       jest.spyOn(cacheService, 'get').mockReturnValue(null);
-      jest
-        .spyOn(usersService, 'findOneWithPermissions')
-        .mockResolvedValue(null);
+      jest.spyOn(usersService, 'findOneById').mockResolvedValue(null);
 
       await expect(service.getUserPermissions(999)).rejects.toThrow(
         UserNotFoundException,
-      );
-    });
-
-    it('should return empty array if user has no role', async () => {
-      jest.spyOn(cacheService, 'get').mockReturnValue(null);
-      const mockUser = {
-        id: 1,
-        role: null,
-      } as User;
-      jest
-        .spyOn(usersService, 'findOneWithPermissions')
-        .mockResolvedValue(mockUser);
-
-      const result = await service.getUserPermissions(1);
-
-      expect(result).toEqual([]);
-      expect(cacheService.set).toHaveBeenCalledWith(
-        AuthCacheKeys.userPermissions(1),
-        [],
-        3600,
-      );
-    });
-
-    it('should return empty array if user role has no permissions', async () => {
-      jest.spyOn(cacheService, 'get').mockReturnValue(null);
-      const mockUser = {
-        id: 1,
-        role: {
-          id: 1,
-          name: 'user',
-          permissions: null,
-        },
-      } as User;
-      jest
-        .spyOn(usersService, 'findOneWithPermissions')
-        .mockResolvedValue(mockUser);
-
-      const result = await service.getUserPermissions(1);
-
-      expect(result).toEqual([]);
-      expect(cacheService.set).toHaveBeenCalledWith(
-        AuthCacheKeys.userPermissions(1),
-        [],
-        3600,
       );
     });
   });

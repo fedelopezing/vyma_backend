@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { RoleCacheListener } from './role-cache.listener';
-import { UsersService } from '../../users/users.service';
+import { UserCompanyRepository } from '../../companies/repositories/user-company.repository';
 import { CacheService } from '../../common/services/cache.service';
 import { createMock } from '@golevelup/ts-jest';
 import { RoleUpdatedEvent } from '../events/role-updated.event';
@@ -8,7 +8,7 @@ import { AuthCacheKeys } from '../constants/cache-keys.constant';
 
 describe('RoleCacheListener', () => {
   let listener: RoleCacheListener;
-  let usersService: jest.Mocked<UsersService>;
+  let userCompanyRepository: jest.Mocked<UserCompanyRepository>;
   let cacheService: jest.Mocked<CacheService>;
 
   beforeEach(async () => {
@@ -16,8 +16,8 @@ describe('RoleCacheListener', () => {
       providers: [
         RoleCacheListener,
         {
-          provide: UsersService,
-          useValue: createMock<UsersService>(),
+          provide: UserCompanyRepository,
+          useValue: createMock<UserCompanyRepository>(),
         },
         {
           provide: CacheService,
@@ -27,7 +27,7 @@ describe('RoleCacheListener', () => {
     }).compile();
 
     listener = module.get<RoleCacheListener>(RoleCacheListener);
-    usersService = module.get(UsersService);
+    userCompanyRepository = module.get(UserCompanyRepository);
     cacheService = module.get(CacheService);
   });
 
@@ -35,13 +35,15 @@ describe('RoleCacheListener', () => {
     const roleId = 1;
     const mockUsers = [{ id: 10 }, { id: 20 }];
 
-    usersService.findUsersByRoleId.mockResolvedValue(
+    userCompanyRepository.findUsersByRoleId.mockResolvedValue(
       mockUsers as unknown as { id: number }[],
     );
 
     await listener.handleRoleUpdatedEvent(new RoleUpdatedEvent(roleId));
 
-    expect(usersService.findUsersByRoleId).toHaveBeenCalledWith(roleId);
+    expect(userCompanyRepository.findUsersByRoleId).toHaveBeenCalledWith(
+      roleId,
+    );
     expect(cacheService.delete).toHaveBeenCalledTimes(2);
     expect(cacheService.delete).toHaveBeenCalledWith(
       AuthCacheKeys.userPermissions(10),
@@ -53,7 +55,9 @@ describe('RoleCacheListener', () => {
 
   it('should catch errors and not throw', async () => {
     const roleId = 1;
-    usersService.findUsersByRoleId.mockRejectedValue(new Error('DB Error'));
+    userCompanyRepository.findUsersByRoleId.mockRejectedValue(
+      new Error('DB Error'),
+    );
 
     await expect(
       listener.handleRoleUpdatedEvent(new RoleUpdatedEvent(roleId)),

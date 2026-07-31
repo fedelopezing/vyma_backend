@@ -256,7 +256,7 @@ export class AuthService {
       sub: user.id,
       uuid: user.uuid,
       email: user.email,
-      role: user.role?.name || membership?.role?.name || 'client',
+      role: membership?.role?.name || 'client',
       companyId: membership?.companyId,
       companyUuid: membership?.company?.uuid,
       isSuperAdmin: user.isSuperAdmin ?? false,
@@ -288,7 +288,7 @@ export class AuthService {
         uuid: user.uuid,
         name: user.name,
         email: user.email,
-        role: user.role?.name,
+        role: membership?.role?.name,
         company: membership?.company
           ? {
               id: membership.company.id,
@@ -309,7 +309,7 @@ export class AuthService {
       sub: user.id,
       uuid: user.uuid,
       email: user.email,
-      role: user.role?.name || 'client',
+      role: 'client',
       isSuperAdmin: user.isSuperAdmin ?? false,
     };
 

@@ -7,7 +7,7 @@ import { Request } from 'express';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { RolesService } from '../roles/roles.service';
 import { ForbiddenException } from '@nestjs/common';
-import { User } from '../users/entities/user.entity';
+import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 
 describe('ProfilesController', () => {
   let controller: ProfilesController;
@@ -34,7 +34,13 @@ describe('ProfilesController', () => {
   describe('update', () => {
     it('should update profile if user is the owner', async () => {
       const dto = new UpdateProfileDto();
-      const mockUser = { id: 1, role: { name: 'user' } } as User;
+      const mockUser: JwtPayload = {
+        sub: 1,
+        uuid: 'uuid-1',
+        email: 'test@example.com',
+        role: 'user',
+        isSuperAdmin: false,
+      };
       const req = { user: mockUser } as unknown as Request;
 
       profilesService.findOne.mockResolvedValue({
@@ -52,7 +58,13 @@ describe('ProfilesController', () => {
 
     it('should update profile if user is admin', async () => {
       const dto = new UpdateProfileDto();
-      const mockUser = { id: 2, role: { name: 'admin' } } as User;
+      const mockUser: JwtPayload = {
+        sub: 2,
+        uuid: 'uuid-2',
+        email: 'admin@example.com',
+        role: 'admin',
+        isSuperAdmin: false,
+      };
       const req = { user: mockUser } as unknown as Request;
 
       profilesService.findOne.mockResolvedValue({
@@ -68,7 +80,13 @@ describe('ProfilesController', () => {
 
     it('should throw ForbiddenException if user is not owner and not admin', async () => {
       const dto = new UpdateProfileDto();
-      const mockUser = { id: 2, role: { name: 'user' } } as User;
+      const mockUser: JwtPayload = {
+        sub: 2,
+        uuid: 'uuid-2',
+        email: 'user2@example.com',
+        role: 'user',
+        isSuperAdmin: false,
+      };
       const req = { user: mockUser } as unknown as Request;
 
       profilesService.findOne.mockResolvedValue({

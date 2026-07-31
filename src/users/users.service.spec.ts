@@ -75,7 +75,6 @@ describe('UsersService', () => {
       const userData: CreateUserDto = {
         name: faker.person.fullName(),
         email: faker.internet.email(),
-        roleId: 1,
       };
       const user = createFakeUser();
 
@@ -109,7 +108,6 @@ describe('UsersService', () => {
       const userData: CreateUserDto = {
         name: faker.person.fullName(),
         email: faker.internet.email(),
-        roleId: 1,
       };
       const mockManager = createMock<EntityManager>();
 
@@ -163,26 +161,15 @@ describe('UsersService', () => {
     });
   });
 
-  describe('findOneWithPermissions', () => {
-    it('should find and return user with permissions', async () => {
-      const user = createFakeUser();
-      const id = user.id;
-      mockUsersRepository.findOneWithPermissions.mockResolvedValue(user);
+  describe('findAll', () => {
+    it('should find and return all users', async () => {
+      const users = [createFakeUser(), createFakeUser()];
+      mockUsersRepository.findAll.mockResolvedValue(users);
 
-      const result = await service.findOneWithPermissions(id);
+      const result = await service.findAll();
 
-      expect(result).toEqual(user);
-      expect(mockUsersRepository.findOneWithPermissions).toHaveBeenCalledWith(
-        id,
-      );
-    });
-  });
-
-  describe('findUsersByRoleId', () => {
-    it('should find users by roleId', async () => {
-      mockUsersRepository.findUsersByRoleId.mockResolvedValue([{ id: 1 }]);
-      const result = await service.findUsersByRoleId(1);
-      expect(result).toEqual([{ id: 1 }]);
+      expect(result).toEqual(users);
+      expect(mockUsersRepository.findAll).toHaveBeenCalled();
     });
   });
 });

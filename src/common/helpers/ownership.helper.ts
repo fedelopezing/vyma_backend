@@ -16,13 +16,13 @@ export function checkOwnershipOrAdmin(
   resourceOwnerId: number,
 ): void {
   const currentUserId = 'sub' in currentUser ? currentUser.sub : currentUser.id;
-  const roleName =
-    'sub' in currentUser ? currentUser.role : currentUser.role?.name;
+  const roleName = 'role' in currentUser ? currentUser.role : undefined;
 
   const isOwner = resourceOwnerId === currentUserId;
-  const hasAdminPrivileges = [ValidRoles.admin].includes(
-    roleName as ValidRoles,
-  );
+  const isSuperAdmin =
+    'isSuperAdmin' in currentUser ? Boolean(currentUser.isSuperAdmin) : false;
+  const hasAdminPrivileges =
+    isSuperAdmin || [ValidRoles.admin].includes(roleName as ValidRoles);
 
   if (!isOwner && !hasAdminPrivileges) {
     throw new ForbiddenException(
