@@ -142,9 +142,9 @@ describe('RolesService', () => {
       const result = await service.create(dto);
 
       expect(result).toEqual({ ...createdRole, permissions });
-      expect(mockPermissionsRepository.findManyByActions).toHaveBeenCalledWith(
-        ['read:users'],
-      );
+      expect(mockPermissionsRepository.findManyByActions).toHaveBeenCalledWith([
+        'read:users',
+      ]);
     });
   });
 

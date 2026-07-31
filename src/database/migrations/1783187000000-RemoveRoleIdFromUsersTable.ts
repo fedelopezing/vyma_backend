@@ -9,7 +9,9 @@ export class RemoveRoleIdFromUsersTable1783187000000
     await queryRunner.query(
       `ALTER TABLE "users" DROP CONSTRAINT IF EXISTS "FK_a2cecd1a3531c0b041e29ba46e1"`,
     );
-    await queryRunner.query(`ALTER TABLE "users" DROP COLUMN IF EXISTS "role_id"`);
+    await queryRunner.query(
+      `ALTER TABLE "users" DROP COLUMN IF EXISTS "role_id"`,
+    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {

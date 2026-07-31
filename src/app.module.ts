@@ -24,6 +24,7 @@ import { ExchangeRatesModule } from './exchange-rates/exchange-rates.module';
 import { MembersModule } from './members/members.module';
 import { EventsModule } from './events/events.module';
 import { AdsModule } from './ads/ads.module';
+import { MediaModule } from './media/media.module';
 
 import { validateEnv } from './config/env.validation';
 
@@ -69,6 +70,7 @@ import { validateEnv } from './config/env.validation';
     MembersModule,
     EventsModule,
     AdsModule,
+    MediaModule,
   ],
   controllers: [],
   providers: [
