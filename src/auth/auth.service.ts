@@ -294,6 +294,7 @@ export class AuthService {
               id: membership.company.id,
               uuid: membership.company.uuid,
               name: membership.company.name,
+              role: membership.role?.name,
             }
           : undefined,
       },
@@ -323,11 +324,17 @@ export class AuthService {
         id: m.company.id,
         uuid: m.company.uuid,
         name: m.company.name,
+        role: m.role?.name,
       }));
 
     return {
       requiresCompanySelection: true,
       selectionToken,
+      user: {
+        uuid: user.uuid,
+        name: user.name,
+        email: user.email,
+      },
       companies,
     };
   }

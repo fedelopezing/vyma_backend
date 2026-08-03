@@ -7,4 +7,5 @@ export enum CompanyModule {
   SCHEDULES = 'SCHEDULES',
   SCHEDULE_BREAKS = 'SCHEDULE_BREAKS',
   SERVICES = 'SERVICES',
+  STAFF = 'STAFF',
 }

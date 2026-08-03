@@ -2,6 +2,7 @@ export interface CompanyPreview {
   id: number;
   uuid: string;
   name: string;
+  role?: string;
 }
 
 export interface LoginResponse {
@@ -20,6 +21,11 @@ export interface LoginResponse {
 export interface SelectionResponse {
   requiresCompanySelection: true;
   selectionToken: string;
+  user: {
+    uuid: string;
+    name: string;
+    email: string;
+  };
   companies: CompanyPreview[];
 }
 

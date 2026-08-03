@@ -38,7 +38,7 @@ export class PermissionsGuard implements CanActivate {
 
     const roleName = user.role;
 
-    if (roleName === 'admin') {
+    if (user.isSuperAdmin || roleName === 'admin') {
       return true;
     }
 
