@@ -41,7 +41,10 @@ describe('ClientsController', () => {
   });
 
   it('should get clients', async () => {
-    const mockResult = { data: [], meta: { total: 0, page: 1, limit: 10, totalPages: 0 } };
+    const mockResult = {
+      data: [],
+      meta: { total: 0, page: 1, limit: 10, totalPages: 0 },
+    };
     jest.spyOn(service, 'getClients').mockResolvedValueOnce(mockResult);
 
     const result = await controller.getClients(1, {});

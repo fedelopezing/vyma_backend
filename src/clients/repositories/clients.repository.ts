@@ -8,6 +8,8 @@ import { Establishment } from '../entities/establishment.entity';
 import { Contract } from '../entities/contract.entity';
 import { StaffEstablishmentAssignment } from '../entities/staff-establishment-assignment.entity';
 
+import { QueryClientDto } from '../dto/client/query-client.dto';
+
 @Injectable()
 export class ClientsRepository implements IClientsRepository {
   constructor(
@@ -24,8 +26,14 @@ export class ClientsRepository implements IClientsRepository {
   ) {}
 
   // --- Client ---
-  async findByCompanyId(companyId: number, page: number, limit: number, filters?: any): Promise<[Client[], number]> {
-    const query = this.clientRepo.createQueryBuilder('client')
+  async findByCompanyId(
+    companyId: number,
+    page: number,
+    limit: number,
+    filters?: QueryClientDto,
+  ): Promise<[Client[], number]> {
+    const query = this.clientRepo
+      .createQueryBuilder('client')
       .where('client.companyId = :companyId', { companyId });
 
     if (filters?.type) {
@@ -35,12 +43,14 @@ export class ClientsRepository implements IClientsRepository {
       query.andWhere('client.ruc ILIKE :ruc', { ruc: `%${filters.ruc}%` });
     }
     if (filters?.fantasyName) {
-      query.andWhere('client.fantasyName ILIKE :fantasyName', { fantasyName: `%${filters.fantasyName}%` });
+      query.andWhere('client.fantasyName ILIKE :fantasyName', {
+        fantasyName: `%${filters.fantasyName}%`,
+      });
     }
-    
+
     // Si no se especifica, por defecto traemos los que no están eliminados (typeorm ya maneja deleteDate con DeleteDateColumn, pero si hay isActive podemos usarlo)
     // El RFC dice que la eliminación lógica es manejada por TypeORM con @DeleteDateColumn
-    
+
     return query
       .skip((page - 1) * limit)
       .take(limit)
@@ -56,7 +66,10 @@ export class ClientsRepository implements IClientsRepository {
     return this.clientRepo.findOne({ where: { companyId, ruc } });
   }
 
-  async findClientWithRelations(id: string, companyId: number): Promise<Client | null> {
+  async findClientWithRelations(
+    id: string,
+    companyId: number,
+  ): Promise<Client | null> {
     return this.clientRepo.findOne({
       where: { id, companyId },
       relations: ['representatives', 'establishments'],
@@ -68,7 +81,11 @@ export class ClientsRepository implements IClientsRepository {
     return this.clientRepo.save(client);
   }
 
-  async updateClient(id: string, companyId: number, updateData: Partial<Client>): Promise<Client> {
+  async updateClient(
+    id: string,
+    companyId: number,
+    updateData: Partial<Client>,
+  ): Promise<Client> {
     await this.clientRepo.update({ id, companyId }, updateData);
     return this.findById(id, companyId) as Promise<Client>;
   }
@@ -78,18 +95,28 @@ export class ClientsRepository implements IClientsRepository {
   }
 
   // --- Representatives ---
-  async findRepresentativesByClientId(clientId: string): Promise<ClientRepresentative[]> {
+  async findRepresentativesByClientId(
+    clientId: string,
+  ): Promise<ClientRepresentative[]> {
     return this.representativeRepo.find({ where: { clientId } });
   }
 
-  async createRepresentative(representativeData: Partial<ClientRepresentative>): Promise<ClientRepresentative> {
+  async createRepresentative(
+    representativeData: Partial<ClientRepresentative>,
+  ): Promise<ClientRepresentative> {
     const rep = this.representativeRepo.create(representativeData);
     return this.representativeRepo.save(rep);
   }
 
-  async updateRepresentative(id: string, clientId: string, updateData: Partial<ClientRepresentative>): Promise<ClientRepresentative> {
+  async updateRepresentative(
+    id: string,
+    clientId: string,
+    updateData: Partial<ClientRepresentative>,
+  ): Promise<ClientRepresentative> {
     await this.representativeRepo.update({ id, clientId }, updateData);
-    return this.representativeRepo.findOne({ where: { id, clientId } }) as Promise<ClientRepresentative>;
+    return this.representativeRepo.findOne({
+      where: { id, clientId },
+    }) as Promise<ClientRepresentative>;
   }
 
   async deleteRepresentative(id: string, clientId: string): Promise<void> {
@@ -97,27 +124,45 @@ export class ClientsRepository implements IClientsRepository {
   }
 
   // --- Establishments ---
-  async findEstablishmentsByClientId(clientId: string): Promise<Establishment[]> {
+  async findEstablishmentsByClientId(
+    clientId: string,
+  ): Promise<Establishment[]> {
     return this.establishmentRepo.find({ where: { clientId } });
   }
 
-  async findEstablishmentById(id: string, clientId: string): Promise<Establishment | null> {
+  async findEstablishmentById(
+    id: string,
+    clientId: string,
+  ): Promise<Establishment | null> {
     return this.establishmentRepo.findOne({ where: { id, clientId } });
   }
 
-  async findEstablishmentWithStaff(id: string, clientId: string): Promise<Establishment | null> {
+  async findEstablishmentWithStaff(
+    id: string,
+    clientId: string,
+  ): Promise<Establishment | null> {
     return this.establishmentRepo.findOne({
       where: { id, clientId },
-      relations: ['contracts', 'staffAssignments', 'staffAssignments.staffMember'],
+      relations: [
+        'contracts',
+        'staffAssignments',
+        'staffAssignments.staffMember',
+      ],
     });
   }
 
-  async createEstablishment(establishmentData: Partial<Establishment>): Promise<Establishment> {
+  async createEstablishment(
+    establishmentData: Partial<Establishment>,
+  ): Promise<Establishment> {
     const est = this.establishmentRepo.create(establishmentData);
     return this.establishmentRepo.save(est);
   }
 
-  async updateEstablishment(id: string, clientId: string, updateData: Partial<Establishment>): Promise<Establishment> {
+  async updateEstablishment(
+    id: string,
+    clientId: string,
+    updateData: Partial<Establishment>,
+  ): Promise<Establishment> {
     await this.establishmentRepo.update({ id, clientId }, updateData);
     return this.findEstablishmentById(id, clientId) as Promise<Establishment>;
   }
@@ -127,11 +172,16 @@ export class ClientsRepository implements IClientsRepository {
   }
 
   // --- Contracts ---
-  async findContractsByEstablishmentId(establishmentId: string): Promise<Contract[]> {
+  async findContractsByEstablishmentId(
+    establishmentId: string,
+  ): Promise<Contract[]> {
     return this.contractRepo.find({ where: { establishmentId } });
   }
 
-  async findContractById(id: string, establishmentId: string): Promise<Contract | null> {
+  async findContractById(
+    id: string,
+    establishmentId: string,
+  ): Promise<Contract | null> {
     return this.contractRepo.findOne({ where: { id, establishmentId } });
   }
 
@@ -140,7 +190,11 @@ export class ClientsRepository implements IClientsRepository {
     return this.contractRepo.save(contract);
   }
 
-  async updateContract(id: string, establishmentId: string, updateData: Partial<Contract>): Promise<Contract> {
+  async updateContract(
+    id: string,
+    establishmentId: string,
+    updateData: Partial<Contract>,
+  ): Promise<Contract> {
     await this.contractRepo.update({ id, establishmentId }, updateData);
     return this.findContractById(id, establishmentId) as Promise<Contract>;
   }
@@ -150,26 +204,35 @@ export class ClientsRepository implements IClientsRepository {
   }
 
   // --- Staff Assignments ---
-  async findStaffByEstablishmentId(establishmentId: string): Promise<StaffEstablishmentAssignment[]> {
+  async findStaffByEstablishmentId(
+    establishmentId: string,
+  ): Promise<StaffEstablishmentAssignment[]> {
     return this.assignmentRepo.find({
       where: { establishmentId },
       relations: ['staffMember'],
     });
   }
 
-  async findActiveAssignments(establishmentId: string): Promise<StaffEstablishmentAssignment[]> {
+  async findActiveAssignments(
+    establishmentId: string,
+  ): Promise<StaffEstablishmentAssignment[]> {
     return this.assignmentRepo.find({
       where: { establishmentId, endDate: IsNull() },
       relations: ['staffMember'],
     });
   }
 
-  async assignStaffToEstablishment(assignmentData: Partial<StaffEstablishmentAssignment>): Promise<StaffEstablishmentAssignment> {
+  async assignStaffToEstablishment(
+    assignmentData: Partial<StaffEstablishmentAssignment>,
+  ): Promise<StaffEstablishmentAssignment> {
     const assignment = this.assignmentRepo.create(assignmentData);
     return this.assignmentRepo.save(assignment);
   }
 
-  async unassignStaffFromEstablishment(staffMemberId: number, establishmentId: string): Promise<void> {
+  async unassignStaffFromEstablishment(
+    staffMemberId: number,
+    establishmentId: string,
+  ): Promise<void> {
     await this.assignmentRepo.update(
       { staffMemberId, establishmentId, endDate: IsNull() },
       { endDate: new Date() },

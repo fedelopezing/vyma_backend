@@ -1,13 +1,28 @@
-import { IsEnum, IsString, IsOptional, MaxLength, ValidateIf, IsDateString, IsEmail } from 'class-validator';
+import {
+  IsEnum,
+  IsString,
+  IsOptional,
+  MaxLength,
+  ValidateIf,
+  IsDateString,
+  IsEmail,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ClientType, TaxCondition, BusinessForm } from '../../constants/clients-enums';
+import {
+  ClientType,
+  TaxCondition,
+  BusinessForm,
+} from '../../constants/clients-enums';
 
 export class CreateClientDto {
   @ApiProperty({ enum: ClientType, example: ClientType.PERSONA_JURIDICA })
   @IsEnum(ClientType)
   clientType: ClientType;
 
-  @ApiProperty({ example: '80012345-6', description: 'RUC con dígito verificador' })
+  @ApiProperty({
+    example: '80012345-6',
+    description: 'RUC con dígito verificador',
+  })
   @IsString()
   @MaxLength(20)
   ruc: string;
@@ -45,7 +60,11 @@ export class CreateClientDto {
   @MaxLength(100)
   lastName?: string;
 
-  @ApiPropertyOptional({ type: String, format: 'date', description: 'Requerido para PERSONA_FISICA' })
+  @ApiPropertyOptional({
+    type: String,
+    format: 'date',
+    description: 'Requerido para PERSONA_FISICA',
+  })
   @ValidateIf((o) => o.clientType === ClientType.PERSONA_FISICA)
   @IsDateString()
   birthDate?: string;

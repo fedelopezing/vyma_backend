@@ -1,4 +1,11 @@
-import { IsString, IsOptional, MaxLength, IsBoolean, IsNumber, IsArray } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  MaxLength,
+  IsBoolean,
+  IsNumber,
+  IsArray,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateEstablishmentDto {

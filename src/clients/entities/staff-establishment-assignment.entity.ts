@@ -30,7 +30,9 @@ export class StaffEstablishmentAssignment {
   @Column({ type: 'uuid' })
   establishmentId: string;
 
-  @ManyToOne(() => Establishment, (e) => e.staffAssignments, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Establishment, (e) => e.staffAssignments, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'establishmentId' })
   establishment: Establishment;
 

@@ -1,4 +1,12 @@
-import { IsEnum, IsNumber, IsString, IsOptional, MaxLength, Min, IsDateString } from 'class-validator';
+import {
+  IsEnum,
+  IsNumber,
+  IsString,
+  IsOptional,
+  MaxLength,
+  Min,
+  IsDateString,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ContractType } from '../../constants/clients-enums';
 

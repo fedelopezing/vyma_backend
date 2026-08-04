@@ -1,5 +1,9 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ClientType, TaxCondition, BusinessForm } from '../../constants/clients-enums';
+import {
+  ClientType,
+  TaxCondition,
+  BusinessForm,
+} from '../../constants/clients-enums';
 import { EstablishmentResponseDto } from '../establishment/establishment-response.dto';
 import { ClientRepresentativeResponseDto } from '../representative/client-representative-response.dto';
 

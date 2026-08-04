@@ -11,7 +11,11 @@ import {
   OneToMany,
 } from 'typeorm';
 import { Company } from '../../companies/entities/company.entity';
-import { ClientType, TaxCondition, BusinessForm } from '../constants/clients-enums';
+import {
+  ClientType,
+  TaxCondition,
+  BusinessForm,
+} from '../constants/clients-enums';
 import { ClientRepresentative } from './client-representative.entity';
 import { Establishment } from './establishment.entity';
 

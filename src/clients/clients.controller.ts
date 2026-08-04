@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  Query,
+} from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { ClientsService } from './clients.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -119,7 +129,11 @@ export class ClientsController {
     @Param('clientId') clientId: string,
     @Body() createDto: CreateClientRepresentativeDto,
   ) {
-    return this.clientsService.createRepresentative(companyId, clientId, createDto);
+    return this.clientsService.createRepresentative(
+      companyId,
+      clientId,
+      createDto,
+    );
   }
 
   @Patch(':clientId/representatives/:id')
@@ -131,7 +145,12 @@ export class ClientsController {
     @Param('id') id: string,
     @Body() updateDto: UpdateClientRepresentativeDto,
   ) {
-    return this.clientsService.updateRepresentative(companyId, clientId, id, updateDto);
+    return this.clientsService.updateRepresentative(
+      companyId,
+      clientId,
+      id,
+      updateDto,
+    );
   }
 
   @Delete(':clientId/representatives/:id')
@@ -175,7 +194,11 @@ export class ClientsController {
     @Param('clientId') clientId: string,
     @Body() createDto: CreateEstablishmentDto,
   ) {
-    return this.clientsService.createEstablishment(companyId, clientId, createDto);
+    return this.clientsService.createEstablishment(
+      companyId,
+      clientId,
+      createDto,
+    );
   }
 
   @Patch(':clientId/establishments/:id')
@@ -187,7 +210,12 @@ export class ClientsController {
     @Param('id') id: string,
     @Body() updateDto: UpdateEstablishmentDto,
   ) {
-    return this.clientsService.updateEstablishment(companyId, clientId, id, updateDto);
+    return this.clientsService.updateEstablishment(
+      companyId,
+      clientId,
+      id,
+      updateDto,
+    );
   }
 
   @Delete(':clientId/establishments/:id')
@@ -210,7 +238,11 @@ export class ClientsController {
     @Param('clientId') clientId: string,
     @Param('establishmentId') establishmentId: string,
   ) {
-    return this.clientsService.getContracts(companyId, clientId, establishmentId);
+    return this.clientsService.getContracts(
+      companyId,
+      clientId,
+      establishmentId,
+    );
   }
 
   @Post(':clientId/establishments/:establishmentId/contracts')
@@ -222,7 +254,12 @@ export class ClientsController {
     @Param('establishmentId') establishmentId: string,
     @Body() createDto: CreateContractDto,
   ) {
-    return this.clientsService.createContract(companyId, clientId, establishmentId, createDto);
+    return this.clientsService.createContract(
+      companyId,
+      clientId,
+      establishmentId,
+      createDto,
+    );
   }
 
   @Get(':clientId/establishments/:establishmentId/contracts/:id')
@@ -234,7 +271,12 @@ export class ClientsController {
     @Param('establishmentId') establishmentId: string,
     @Param('id') id: string,
   ) {
-    return this.clientsService.getContractById(companyId, clientId, establishmentId, id);
+    return this.clientsService.getContractById(
+      companyId,
+      clientId,
+      establishmentId,
+      id,
+    );
   }
 
   @Patch(':clientId/establishments/:establishmentId/contracts/:id')
@@ -247,7 +289,13 @@ export class ClientsController {
     @Param('id') id: string,
     @Body() updateDto: UpdateContractDto,
   ) {
-    return this.clientsService.updateContract(companyId, clientId, establishmentId, id, updateDto);
+    return this.clientsService.updateContract(
+      companyId,
+      clientId,
+      establishmentId,
+      id,
+      updateDto,
+    );
   }
 
   @Delete(':clientId/establishments/:establishmentId/contracts/:id')
@@ -259,7 +307,12 @@ export class ClientsController {
     @Param('establishmentId') establishmentId: string,
     @Param('id') id: string,
   ) {
-    return this.clientsService.deleteContract(companyId, clientId, establishmentId, id);
+    return this.clientsService.deleteContract(
+      companyId,
+      clientId,
+      establishmentId,
+      id,
+    );
   }
 
   // --- Staff Assignments ---
@@ -271,7 +324,11 @@ export class ClientsController {
     @Param('clientId') clientId: string,
     @Param('establishmentId') establishmentId: string,
   ) {
-    return this.clientsService.getEstablishmentStaff(companyId, clientId, establishmentId);
+    return this.clientsService.getEstablishmentStaff(
+      companyId,
+      clientId,
+      establishmentId,
+    );
   }
 
   @Post(':clientId/establishments/:establishmentId/staff')
@@ -283,7 +340,12 @@ export class ClientsController {
     @Param('establishmentId') establishmentId: string,
     @Body() body: { staffMemberId: number; startDate: string },
   ) {
-    return this.clientsService.assignStaffToEstablishment(companyId, clientId, establishmentId, body);
+    return this.clientsService.assignStaffToEstablishment(
+      companyId,
+      clientId,
+      establishmentId,
+      body,
+    );
   }
 
   @Delete(':clientId/establishments/:establishmentId/staff/:staffId')
@@ -295,6 +357,11 @@ export class ClientsController {
     @Param('establishmentId') establishmentId: string,
     @Param('staffId') staffId: number,
   ) {
-    return this.clientsService.unassignStaffFromEstablishment(companyId, clientId, establishmentId, staffId);
+    return this.clientsService.unassignStaffFromEstablishment(
+      companyId,
+      clientId,
+      establishmentId,
+      staffId,
+    );
   }
 }

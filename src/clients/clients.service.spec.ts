@@ -2,7 +2,10 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ClientsService } from './clients.service';
 import { CLIENTS_REPOSITORY } from './interfaces/i-clients-repository.interface';
 import { ClientType, TaxCondition } from './constants/clients-enums';
-import { ClientDuplicateRucException, ClientNotFoundException } from './exceptions';
+import {
+  ClientDuplicateRucException,
+  ClientNotFoundException,
+} from './exceptions';
 
 const mockClientsRepository = {
   findByCompanyId: jest.fn(),
@@ -86,11 +89,15 @@ describe('ClientsService', () => {
   describe('getClientById', () => {
     it('should throw an error if client not found', async () => {
       mockClientsRepository.findClientWithRelations.mockResolvedValueOnce(null);
-      await expect(service.getClientById(1, 'non-existing')).rejects.toThrow(ClientNotFoundException);
+      await expect(service.getClientById(1, 'non-existing')).rejects.toThrow(
+        ClientNotFoundException,
+      );
     });
 
     it('should return client if found', async () => {
-      mockClientsRepository.findClientWithRelations.mockResolvedValueOnce({ id: 'exist' });
+      mockClientsRepository.findClientWithRelations.mockResolvedValueOnce({
+        id: 'exist',
+      });
       const res = await service.getClientById(1, 'exist');
       expect(res).toEqual({ id: 'exist' });
     });

@@ -87,7 +87,12 @@ export class StaffMember {
   terminationDate: Date | null;
 
   // @deprecated Use staff_establishment_assignments table instead
-  @Column({ type: 'varchar', length: 255, nullable: true, comment: 'DEPRECATED: use staff_establishment_assignments' })
+  @Column({
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+    comment: 'DEPRECATED: use staff_establishment_assignments',
+  })
   assignedLocation: string | null; // Sucursal / Cliente de limpieza asignado
 
   // Parámetros Salariales y Bancarios
@@ -113,9 +118,9 @@ export class StaffMember {
   @Column({ type: 'jsonb', nullable: true })
   documentUrls: Array<{ title: string; url: string; category: string }> | null;
 
-  @CreateDateColumn({ type: 'timestamp' })
+  @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 
-  @UpdateDateColumn({ type: 'timestamp' })
+  @UpdateDateColumn({ type: 'timestamptz' })
   updatedAt: Date;
 }

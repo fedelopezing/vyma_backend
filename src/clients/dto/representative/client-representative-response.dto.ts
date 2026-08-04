@@ -1,5 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { RepresentativeRole, DocumentType } from '../../constants/clients-enums';
+import {
+  RepresentativeRole,
+  DocumentType,
+} from '../../constants/clients-enums';
 
 export class ClientRepresentativeResponseDto {
   @ApiProperty()

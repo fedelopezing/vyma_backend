@@ -28,7 +28,11 @@ export class Contract {
   @Column({ type: 'enum', enum: ContractType })
   contractType: ContractType;
 
-  @Column({ type: 'enum', enum: ContractStatus, default: ContractStatus.ACTIVO })
+  @Column({
+    type: 'enum',
+    enum: ContractStatus,
+    default: ContractStatus.ACTIVO,
+  })
   status: ContractStatus;
 
   // Términos Económicos — Abono Fijo (requerido en MVP)
