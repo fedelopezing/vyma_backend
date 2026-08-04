@@ -194,7 +194,7 @@ src/clients/
 ```typescript
 import {
   Entity, PrimaryGeneratedColumn, Column,
-  CreateDateColumn, UpdateDateColumn,
+  CreateDateColumn, UpdateDateColumn, DeleteDateColumn,
   Index, ManyToOne, JoinColumn, OneToMany,
 } from 'typeorm';
 import { Company } from '../companies/entities/company.entity';
@@ -224,12 +224,8 @@ export enum BusinessForm {
 
 @Entity('clients')
 export class Client {
-  @PrimaryGeneratedColumn('increment', { type: 'bigint' })
-  id: number;
-
-  @Index({ unique: true })
-  @Column({ type: 'uuid', generated: 'uuid' })
-  uuid: string;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   // Tenant dueño del registro
   @Index()
@@ -297,10 +293,6 @@ export class Client {
   @Column({ type: 'varchar', length: 255, nullable: true })
   fiscalAddress: string | null;
 
-  // Estado
-  @Column({ type: 'boolean', default: true })
-  isActive: boolean;
-
   // Relaciones
   @OneToMany(() => ClientRepresentative, (r) => r.client, { cascade: true })
   representatives: ClientRepresentative[];
@@ -308,11 +300,14 @@ export class Client {
   @OneToMany(() => Establishment, (e) => e.client, { cascade: true })
   establishments: Establishment[];
 
-  @CreateDateColumn({ type: 'timestamp' })
+  @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 
-  @UpdateDateColumn({ type: 'timestamp' })
+  @UpdateDateColumn({ type: 'timestamptz' })
   updatedAt: Date;
+
+  @DeleteDateColumn({ type: 'timestamptz' })
+  deletedAt: Date;
 }
 ```
 
@@ -336,12 +331,12 @@ export enum DocumentType {
 
 @Entity('client_representatives')
 export class ClientRepresentative {
-  @PrimaryGeneratedColumn('increment', { type: 'bigint' })
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @Index()
-  @Column({ type: 'bigint' })
-  clientId: number;
+  @Column({ type: 'uuid' })
+  clientId: string;
 
   @ManyToOne(() => Client, (c) => c.representatives, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'clientId' })
@@ -396,10 +391,10 @@ export class ClientRepresentative {
   @Column({ type: 'decimal', precision: 14, scale: 2, nullable: true })
   totalSharesValue: number | null;
 
-  @CreateDateColumn({ type: 'timestamp' })
+  @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 
-  @UpdateDateColumn({ type: 'timestamp' })
+  @UpdateDateColumn({ type: 'timestamptz' })
   updatedAt: Date;
 }
 ```
@@ -411,16 +406,12 @@ export class ClientRepresentative {
 ```typescript
 @Entity('establishments')
 export class Establishment {
-  @PrimaryGeneratedColumn('increment', { type: 'bigint' })
-  id: number;
-
-  @Index({ unique: true })
-  @Column({ type: 'uuid', generated: 'uuid' })
-  uuid: string;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @Index()
-  @Column({ type: 'bigint' })
-  clientId: number;
+  @Column({ type: 'uuid' })
+  clientId: string;
 
   @ManyToOne(() => Client, (c) => c.establishments, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'clientId' })
@@ -473,9 +464,6 @@ export class Establishment {
   @Column({ type: 'jsonb', nullable: true })
   requiredPpe: string[] | null;           // Listado EPP requerido
 
-  @Column({ type: 'boolean', default: true })
-  isActive: boolean;
-
   // Relaciones
   @OneToMany(() => Contract, (c) => c.establishment, { cascade: true })
   contracts: Contract[];
@@ -483,11 +471,14 @@ export class Establishment {
   @OneToMany(() => StaffEstablishmentAssignment, (a) => a.establishment)
   staffAssignments: StaffEstablishmentAssignment[];
 
-  @CreateDateColumn({ type: 'timestamp' })
+  @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 
-  @UpdateDateColumn({ type: 'timestamp' })
+  @UpdateDateColumn({ type: 'timestamptz' })
   updatedAt: Date;
+
+  @DeleteDateColumn({ type: 'timestamptz' })
+  deletedAt: Date;
 }
 ```
 
@@ -511,16 +502,12 @@ export enum ContractStatus {
 
 @Entity('contracts')
 export class Contract {
-  @PrimaryGeneratedColumn('increment', { type: 'bigint' })
-  id: number;
-
-  @Index({ unique: true })
-  @Column({ type: 'uuid', generated: 'uuid' })
-  uuid: string;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @Index()
-  @Column({ type: 'bigint' })
-  establishmentId: number;
+  @Column({ type: 'uuid' })
+  establishmentId: string;
 
   @ManyToOne(() => Establishment, (e) => e.contracts, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'establishmentId' })
@@ -557,14 +544,14 @@ export class Contract {
   @Column({ type: 'text', nullable: true })
   notes: string | null;
 
-  @Column({ type: 'boolean', default: true })
-  isActive: boolean;
-
-  @CreateDateColumn({ type: 'timestamp' })
+  @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 
-  @UpdateDateColumn({ type: 'timestamp' })
+  @UpdateDateColumn({ type: 'timestamptz' })
   updatedAt: Date;
+
+  @DeleteDateColumn({ type: 'timestamptz' })
+  deletedAt: Date;
 }
 ```
 
@@ -579,10 +566,10 @@ import { StaffMember } from '../staff/entities/staff-member.entity';
 import { Establishment } from './establishment.entity';
 
 @Entity('staff_establishment_assignments')
-@Index(['staffMemberId', 'establishmentId', 'isActive'])   // Índice compuesto para queries de cobertura
+@Index(['staffMemberId', 'establishmentId'])   // Índice compuesto para queries de cobertura
 export class StaffEstablishmentAssignment {
-  @PrimaryGeneratedColumn('increment', { type: 'bigint' })
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @Index()
   @Column({ type: 'bigint' })
@@ -593,8 +580,8 @@ export class StaffEstablishmentAssignment {
   staffMember: StaffMember;
 
   @Index()
-  @Column({ type: 'bigint' })
-  establishmentId: number;
+  @Column({ type: 'uuid' })
+  establishmentId: string;
 
   @ManyToOne(() => Establishment, (e) => e.staffAssignments, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'establishmentId' })
@@ -606,14 +593,14 @@ export class StaffEstablishmentAssignment {
   @Column({ type: 'date', nullable: true })
   endDate: Date | null;                   // null = asignación vigente
 
-  @Column({ type: 'boolean', default: true })
-  isActive: boolean;
-
-  @CreateDateColumn({ type: 'timestamp' })
+  @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 
-  @UpdateDateColumn({ type: 'timestamp' })
+  @UpdateDateColumn({ type: 'timestamptz' })
   updatedAt: Date;
+
+  @DeleteDateColumn({ type: 'timestamptz' })
+  deletedAt: Date;
 }
 ```
 
