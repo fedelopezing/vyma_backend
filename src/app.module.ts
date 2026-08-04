@@ -26,6 +26,7 @@ import { EventsModule } from './events/events.module';
 import { AdsModule } from './ads/ads.module';
 import { MediaModule } from './media/media.module';
 import { StaffModule } from './staff/staff.module';
+import { ClientsModule } from './clients/clients.module';
 
 import { validateEnv } from './config/env.validation';
 
@@ -73,6 +74,7 @@ import { validateEnv } from './config/env.validation';
     AdsModule,
     MediaModule,
     StaffModule,
+    ClientsModule,
   ],
   controllers: [],
   providers: [
