@@ -8,6 +8,8 @@ import {
   Delete,
   Query,
   ParseIntPipe,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { StaffService } from './staff.service';
@@ -28,8 +30,21 @@ import {
   ApiDeleteStaffMember,
 } from './decorators/staff-swagger.decorators';
 
+import { UseGuards } from '@nestjs/common';
+import { TenantGuard } from '../common/guards/tenant.guard';
+import { ModuleAccessGuard } from '../common/guards/module-access.guard';
+import { RequireModule } from '../common/decorators/require-module.decorator';
+import { CompanyModule } from '../common/constants/modules.enum';
+
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { Role } from '../roles/enums/role.enum';
+
 @ApiTags('Staff')
 @ApiBearerAuth()
+@UseGuards(JwtAuthGuard, TenantGuard, ModuleAccessGuard, RolesGuard)
+@RequireModule(CompanyModule.STAFF)
 @Controller('staff')
 export class StaffController {
   constructor(private readonly staffService: StaffService) {}
@@ -49,10 +64,11 @@ export class StaffController {
   @Get(':id')
   @AuthPermissions('read:staff')
   @ApiGetStaffMember()
-  async findOne(@Param('id', ParseIntPipe) id: number) {
-    // Optionally check if the staff member belongs to the active company
-    // inside the service to prevent cross-tenant data leaks.
-    return this.staffService.findById(id);
+  async findOne(
+    @Param('id', ParseIntPipe) id: number,
+    @ActiveCompanyId() companyId: number,
+  ) {
+    return this.staffService.findById(id, companyId);
   }
 
   @Post()
@@ -82,14 +98,20 @@ export class StaffController {
   async changeStatus(
     @Param('id', ParseIntPipe) id: number,
     @Body('status') status: StaffStatus,
+    @ActiveCompanyId() companyId: number,
   ) {
-    return this.staffService.changeStatus(id, status);
+    return this.staffService.changeStatus(id, status, companyId);
   }
 
   @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Roles(Role.ADMIN, Role.MANAGER)
   @AuthPermissions('write:staff')
   @ApiDeleteStaffMember()
-  async remove(@Param('id', ParseIntPipe) id: number) {
-    return this.staffService.remove(id);
+  async remove(
+    @Param('id', ParseIntPipe) id: number,
+    @ActiveCompanyId() companyId: number,
+  ) {
+    return this.staffService.remove(id, companyId);
   }
 }

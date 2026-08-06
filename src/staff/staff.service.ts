@@ -11,6 +11,7 @@ import {
   StaffMemberResponseDto,
   PaginatedStaffResponseDto,
 } from './dto';
+import { StaffMember } from './entities/staff-member.entity';
 import { StaffMemberNotFoundException } from './exceptions/staff-member-not-found.exception';
 import { StaffMemberDuplicateCiException } from './exceptions/staff-member-duplicate-ci.exception';
 import { StaffStatus } from './constants/staff-enums';
@@ -45,9 +46,12 @@ export class StaffService {
     }
   }
 
-  async findById(id: number): Promise<StaffMemberResponseDto> {
+  async findById(
+    id: number,
+    companyId?: number,
+  ): Promise<StaffMemberResponseDto> {
     try {
-      const staffMember = await this.staffRepository.findById(id);
+      const staffMember = await this.staffRepository.findById(id, companyId);
       if (!staffMember) {
         throw new StaffMemberNotFoundException(id);
       }
@@ -98,7 +102,7 @@ export class StaffService {
     companyId: number,
   ): Promise<StaffMemberResponseDto> {
     try {
-      const staffMember = await this.staffRepository.findById(id);
+      const staffMember = await this.staffRepository.findById(id, companyId);
       if (!staffMember) {
         throw new StaffMemberNotFoundException(id);
       }
@@ -137,14 +141,22 @@ export class StaffService {
   async changeStatus(
     id: number,
     status: StaffStatus,
+    companyId: number,
   ): Promise<StaffMemberResponseDto> {
     try {
-      const staffMember = await this.staffRepository.findById(id);
+      const staffMember = await this.staffRepository.findById(id, companyId);
       if (!staffMember) {
         throw new StaffMemberNotFoundException(id);
       }
 
-      const updated = await this.staffRepository.update(id, { status });
+      const updateData: Partial<StaffMember> = { status };
+      if (status === StaffStatus.TERMINATED) {
+        updateData.terminationDate = new Date();
+      } else {
+        updateData.terminationDate = null;
+      }
+
+      const updated = await this.staffRepository.update(id, updateData);
 
       this.eventEmitter.emit('staff.status_changed', {
         staffId: updated.id,
@@ -163,14 +175,14 @@ export class StaffService {
     }
   }
 
-  async remove(id: number): Promise<void> {
+  async remove(id: number, companyId: number): Promise<void> {
     try {
-      const staffMember = await this.staffRepository.findById(id);
+      const staffMember = await this.staffRepository.findById(id, companyId);
       if (!staffMember) {
         throw new StaffMemberNotFoundException(id);
       }
 
-      // We perform a logical delete by changing status to TERMINATED and optionally isActive = false (done in repo)
+      // We perform a logical delete by changing status to TERMINATED and removing/updating
       await this.staffRepository.remove(id);
 
       this.eventEmitter.emit('staff.deleted', {

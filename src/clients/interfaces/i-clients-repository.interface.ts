@@ -26,7 +26,7 @@ export interface IClientsRepository {
     id: string,
     companyId: number,
     updateData: Partial<Client>,
-  ): Promise<Client>;
+  ): Promise<Client | null>;
   deleteClient(id: string, companyId: number): Promise<void>;
 
   // --- Representatives ---
@@ -40,7 +40,7 @@ export interface IClientsRepository {
     id: string,
     clientId: string,
     updateData: Partial<ClientRepresentative>,
-  ): Promise<ClientRepresentative>;
+  ): Promise<ClientRepresentative | null>;
   deleteRepresentative(id: string, clientId: string): Promise<void>;
 
   // --- Establishments ---
@@ -60,7 +60,7 @@ export interface IClientsRepository {
     id: string,
     clientId: string,
     updateData: Partial<Establishment>,
-  ): Promise<Establishment>;
+  ): Promise<Establishment | null>;
   deleteEstablishment(id: string, clientId: string): Promise<void>;
 
   // --- Contracts ---
@@ -74,7 +74,7 @@ export interface IClientsRepository {
     id: string,
     establishmentId: string,
     updateData: Partial<Contract>,
-  ): Promise<Contract>;
+  ): Promise<Contract | null>;
   deleteContract(id: string, establishmentId: string): Promise<void>;
 
   // --- Staff Assignments ---

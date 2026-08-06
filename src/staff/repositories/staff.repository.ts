@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, FindOptionsWhere } from 'typeorm';
 import { StaffMember } from '../entities/staff-member.entity';
 import { IStaffRepository } from '../interfaces/i-staff-repository.interface';
 import {
@@ -27,9 +27,16 @@ export class StaffRepository implements IStaffRepository {
     }
 
     if (search) {
+      const term = `%${search.trim()}%`;
       qb.andWhere(
-        '(staff.firstName ILIKE :search OR staff.lastName ILIKE :search OR staff.nationalId ILIKE :search)',
-        { search: `%${search}%` },
+        `(
+          unaccent(staff.firstName) ILIKE unaccent(:term) OR
+          unaccent(staff.lastName) ILIKE unaccent(:term) OR
+          unaccent(CONCAT(staff.firstName, ' ', staff.lastName)) ILIKE unaccent(:term) OR
+          unaccent(CONCAT(staff.lastName, ' ', staff.firstName)) ILIKE unaccent(:term) OR
+          staff.nationalId ILIKE :term
+        )`,
+        { term },
       );
     }
 
@@ -48,8 +55,12 @@ export class StaffRepository implements IStaffRepository {
     return qb.getManyAndCount();
   }
 
-  async findById(id: number): Promise<StaffMember | null> {
-    return this.repo.findOne({ where: { id } });
+  async findById(id: number, companyId?: number): Promise<StaffMember | null> {
+    const where: FindOptionsWhere<StaffMember> = { id };
+    if (companyId) {
+      where.companyId = companyId;
+    }
+    return this.repo.findOne({ where });
   }
 
   async findByNationalIdAndCompany(
@@ -67,12 +78,12 @@ export class StaffRepository implements IStaffRepository {
     return this.repo.save(staff);
   }
 
-  async update(id: number, data: UpdateStaffMemberDto): Promise<StaffMember> {
+  async update(id: number, data: Partial<StaffMember>): Promise<StaffMember> {
     await this.repo.update(id, data);
     return this.repo.findOneOrFail({ where: { id } });
   }
 
   async remove(id: number): Promise<void> {
-    await this.repo.delete(id);
+    await this.repo.softDelete(id);
   }
 }

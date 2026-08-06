@@ -1,4 +1,10 @@
-import { Injectable, Inject, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
+import { buildPaginatedResponse } from '../common/helpers';
 import { Client } from './entities/client.entity';
 import { ClientRepresentative } from './entities/client-representative.entity';
 import { Contract } from './entities/contract.entity';
@@ -17,6 +23,7 @@ import {
   UpdateEstablishmentDto,
   CreateContractDto,
   UpdateContractDto,
+  AssignStaffDto,
 } from './dto';
 import {
   ClientNotFoundException,
@@ -25,19 +32,21 @@ import {
   ContractNotFoundException,
   RepresentativeNotFoundException,
 } from './exceptions/index';
+import { StaffService } from '../staff/staff.service';
 
 @Injectable()
 export class ClientsService {
   constructor(
     @Inject(CLIENTS_REPOSITORY)
     private readonly clientsRepository: IClientsRepository,
+    private readonly staffService: StaffService,
   ) {}
 
   // --- Client ---
   async getClients(companyId: number, query: QueryClientDto) {
     try {
       const page = query.page || 1;
-      const limit = query.limit || 10;
+      const limit = query.limit || 20;
       const [data, total] = await this.clientsRepository.findByCompanyId(
         companyId,
         page,
@@ -45,15 +54,7 @@ export class ClientsService {
         query,
       );
 
-      return {
-        data,
-        meta: {
-          total,
-          page,
-          limit,
-          totalPages: Math.ceil(total / limit),
-        },
-      };
+      return buildPaginatedResponse(data, total, page, limit);
     } catch (error) {
       throw error;
     }
@@ -461,16 +462,37 @@ export class ClientsService {
     companyId: number,
     clientId: string,
     establishmentId: string,
-    payload: { staffMemberId: number; startDate: string },
+    dto: AssignStaffDto,
   ) {
     try {
       await this.getEstablishmentById(companyId, clientId, establishmentId);
-      return await this.clientsRepository.assignStaffToEstablishment({
-        staffMemberId: payload.staffMemberId,
-        establishmentId,
-        startDate: new Date(payload.startDate),
-      });
+
+      const staffMemberId = Number(dto.staffMemberId);
+      if (isNaN(staffMemberId)) {
+        throw new BadRequestException('staffMemberId must be a valid number');
+      }
+
+      await this.staffService.findById(staffMemberId, companyId);
+
+      const assignment =
+        await this.clientsRepository.assignStaffToEstablishment({
+          staffMemberId,
+          establishmentId,
+          startDate: new Date(dto.startDate),
+        });
+
+      return {
+        ...assignment,
+        staffMemberId,
+        isActive:
+          assignment.endDate === null || assignment.endDate === undefined,
+      };
     } catch (error) {
+      if (error?.code === '23503') {
+        throw new NotFoundException(
+          `StaffMember with id ${dto.staffMemberId} not found`,
+        );
+      }
       throw error;
     }
   }
@@ -483,8 +505,12 @@ export class ClientsService {
   ) {
     try {
       await this.getEstablishmentById(companyId, clientId, establishmentId);
+      const parsedStaffId = Number(staffMemberId);
+      if (isNaN(parsedStaffId)) {
+        throw new BadRequestException('staffMemberId must be a valid number');
+      }
       await this.clientsRepository.unassignStaffFromEstablishment(
-        staffMemberId,
+        parsedStaffId,
         establishmentId,
       );
     } catch (error) {

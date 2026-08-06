@@ -9,11 +9,42 @@ import { ContractResponseDto } from '../dto/contract/contract-response.dto';
 export function ApiGetClientList() {
   return applyDecorators(
     ApiOperation({ summary: 'Obtener lista de clientes paginada' }),
-    ApiQuery({ name: 'page', required: false, type: Number }),
-    ApiQuery({ name: 'limit', required: false, type: Number }),
-    ApiQuery({ name: 'type', required: false, type: String }),
-    ApiQuery({ name: 'ruc', required: false, type: String }),
-    ApiQuery({ name: 'fantasyName', required: false, type: String }),
+    ApiQuery({
+      name: 'page',
+      required: false,
+      type: Number,
+      example: 1,
+      description: 'Número de página a consultar',
+    }),
+    ApiQuery({
+      name: 'limit',
+      required: false,
+      type: Number,
+      example: 10,
+      description: 'Cantidad de resultados por página',
+    }),
+    ApiQuery({
+      name: 'type',
+      required: false,
+      enum: ['PERSONA_FISICA', 'PERSONA_JURIDICA'],
+      description:
+        'Filtrar por tipo de cliente (PERSONA_FISICA / PERSONA_JURIDICA)',
+    }),
+    ApiQuery({
+      name: 'ruc',
+      required: false,
+      type: String,
+      example: '80012345-6',
+      description: 'Filtrar por RUC (búsqueda parcial con ILIKE)',
+    }),
+    ApiQuery({
+      name: 'fantasyName',
+      required: false,
+      type: String,
+      example: 'Puntocode',
+      description:
+        'Filtrar por Nombre de Fantasía (búsqueda parcial con ILIKE)',
+    }),
     ApiResponse({
       status: 200,
       description: 'Lista de clientes obtenida correctamente.',

@@ -10,6 +10,7 @@ export * from './representative/client-representative-response.dto';
 export * from './establishment/create-establishment.dto';
 export * from './establishment/update-establishment.dto';
 export * from './establishment/establishment-response.dto';
+export * from './establishment/assign-staff.dto';
 
 export * from './contract/create-contract.dto';
 export * from './contract/update-contract.dto';

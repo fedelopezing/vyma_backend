@@ -10,6 +10,7 @@ import { Establishment } from './entities/establishment.entity';
 import { Contract } from './entities/contract.entity';
 import { StaffEstablishmentAssignment } from './entities/staff-establishment-assignment.entity';
 import { StaffModule } from '../staff/staff.module';
+import { CompaniesModule } from '../companies/companies.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { StaffModule } from '../staff/staff.module';
       StaffEstablishmentAssignment,
     ]),
     StaffModule,
+    CompaniesModule,
   ],
   controllers: [ClientsController],
   providers: [

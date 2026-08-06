@@ -73,9 +73,6 @@ export class StaffMemberResponseDto {
   @ApiProperty({ example: '2025-01-01', nullable: true })
   terminationDate: Date | null;
 
-  @ApiProperty({ example: 'Sucursal Centro', nullable: true })
-  assignedLocation: string | null;
-
   @ApiProperty({ example: 2798309 })
   baseSalary: number;
 
@@ -121,7 +118,6 @@ export class StaffMemberResponseDto {
     this.status = entity.status;
     this.hireDate = entity.hireDate;
     this.terminationDate = entity.terminationDate;
-    this.assignedLocation = entity.assignedLocation;
     this.baseSalary = Number(entity.baseSalary);
     this.paymentType = entity.paymentType;
     this.hourlyRate = entity.hourlyRate ? Number(entity.hourlyRate) : null;

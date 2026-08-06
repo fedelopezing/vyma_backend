@@ -8,6 +8,9 @@ import {
   Delete,
   UseGuards,
   Query,
+  HttpCode,
+  HttpStatus,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { ClientsService } from './clients.service';
@@ -26,6 +29,7 @@ import {
   UpdateEstablishmentDto,
   CreateContractDto,
   UpdateContractDto,
+  AssignStaffDto,
 } from './dto';
 import {
   ApiGetClientList,
@@ -51,10 +55,16 @@ import {
   ApiUnassignStaff,
 } from './decorators/clients-swagger.decorators';
 
+import { TenantGuard } from '../common/guards/tenant.guard';
+import { ModuleAccessGuard } from '../common/guards/module-access.guard';
+import { RequireModule } from '../common/decorators/require-module.decorator';
+import { CompanyModule } from '../common/constants/modules.enum';
+
 @ApiTags('Clients')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Controller('api/v1/clients')
+@UseGuards(JwtAuthGuard, TenantGuard, ModuleAccessGuard, RolesGuard)
+@RequireModule(CompanyModule.CLIENTS)
+@Controller('clients')
 export class ClientsController {
   constructor(private readonly clientsService: ClientsService) {}
 
@@ -101,7 +111,8 @@ export class ClientsController {
   }
 
   @Delete(':id')
-  @Roles(Role.ADMIN)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Roles(Role.ADMIN, Role.MANAGER)
   @ApiDeleteClient()
   async deleteClient(
     @ActiveCompanyId() companyId: number,
@@ -154,6 +165,7 @@ export class ClientsController {
   }
 
   @Delete(':clientId/representatives/:id')
+  @HttpCode(HttpStatus.NO_CONTENT)
   @Roles(Role.ADMIN, Role.MANAGER)
   @ApiDeleteRepresentative()
   async deleteRepresentative(
@@ -219,7 +231,8 @@ export class ClientsController {
   }
 
   @Delete(':clientId/establishments/:id')
-  @Roles(Role.ADMIN)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Roles(Role.ADMIN, Role.MANAGER)
   @ApiDeleteEstablishment()
   async deleteEstablishment(
     @ActiveCompanyId() companyId: number,
@@ -299,7 +312,8 @@ export class ClientsController {
   }
 
   @Delete(':clientId/establishments/:establishmentId/contracts/:id')
-  @Roles(Role.ADMIN)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Roles(Role.ADMIN, Role.MANAGER)
   @ApiDeleteContract()
   async deleteContract(
     @ActiveCompanyId() companyId: number,
@@ -338,24 +352,25 @@ export class ClientsController {
     @ActiveCompanyId() companyId: number,
     @Param('clientId') clientId: string,
     @Param('establishmentId') establishmentId: string,
-    @Body() body: { staffMemberId: number; startDate: string },
+    @Body() dto: AssignStaffDto,
   ) {
     return this.clientsService.assignStaffToEstablishment(
       companyId,
       clientId,
       establishmentId,
-      body,
+      dto,
     );
   }
 
   @Delete(':clientId/establishments/:establishmentId/staff/:staffId')
+  @HttpCode(HttpStatus.NO_CONTENT)
   @Roles(Role.ADMIN, Role.MANAGER)
   @ApiUnassignStaff()
   async unassignStaffFromEstablishment(
     @ActiveCompanyId() companyId: number,
     @Param('clientId') clientId: string,
     @Param('establishmentId') establishmentId: string,
-    @Param('staffId') staffId: number,
+    @Param('staffId', ParseIntPipe) staffId: number,
   ) {
     return this.clientsService.unassignStaffFromEstablishment(
       companyId,

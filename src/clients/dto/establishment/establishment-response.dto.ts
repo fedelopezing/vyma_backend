@@ -60,5 +60,5 @@ export class EstablishmentResponseDto {
   contracts?: ContractResponseDto[];
 
   @ApiPropertyOptional()
-  staffAssignments?: any[]; // To be typed later with StaffAssignmentResponseDto
+  staffAssignments?: Record<string, unknown>[];
 }

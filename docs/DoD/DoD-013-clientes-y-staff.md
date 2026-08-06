@@ -39,11 +39,11 @@ npm run typeorm:run
 #            staff_establishment_assignments, staff_members
 ```
 
-- [ ] El servidor arranca sin errores en consola.
-- [ ] Las 5 tablas nuevas existen en la BD (`\dt` en psql).
-- [ ] La tabla `staff_members` ya **no tiene** el campo `assignedLocation` (o está marcado como DEPRECATED).
-- [ ] Swagger disponible en `http://localhost:3000/api/docs` con los endpoints de `/clients` y `/staff` documentados.
-- [ ] Se tiene un token JWT válido con rol `ADMIN` y otro con rol `MANAGER` del mismo tenant.
+- [x] El servidor arranca sin errores en consola.
+- [x] Las 5 tablas nuevas existen en la BD (`\dt` en psql).
+- [x] La tabla `staff_members` ya **no tiene** el campo `assignedLocation` (o está marcado como DEPRECATED).
+- [x] Swagger disponible en `http://localhost:3000/api/docs` con los endpoints de `/clients` y `/staff` documentados.
+- [x] Se tiene un token JWT válido con rol `ADMIN` y otro con rol `MANAGER` del mismo tenant.
 
 ```bash
 # Obtener tokens (adaptar con credenciales del seed)
@@ -80,9 +80,9 @@ Content-Type: application/json
 }
 ```
 
-- [ ] Respuesta `201 Created` con `id`, `uuid` y todos los campos enviados.
-- [ ] `status` por defecto es `ACTIVE`.
-- [ ] `companyId` en la respuesta coincide con el tenant del token.
+- [x] Respuesta `201 Created` con `id`, `uuid` y todos los campos enviados.
+- [x] `status` por defecto es `ACTIVE`.
+- [x] `companyId` en la respuesta coincide con el tenant del token.
 
 ---
 
@@ -93,25 +93,44 @@ POST /api/v1/staff
 # Mismo payload que A1 (mismo nationalId)
 ```
 
-- [ ] Respuesta `409 Conflict` con mensaje descriptivo (sin exponer stack trace).
+- [x] Respuesta `409 Conflict` con mensaje descriptivo (sin exponer stack trace).
 
 ---
 
 ### A3. Listar Staff con filtros y paginación
 
+#### 1. Paginación y Estado
 ```http
 GET /api/v1/staff?page=1&limit=10&status=ACTIVE
 Authorization: Bearer $TOKEN_MANAGER
+X-Company-Id: $COMPANY_UUID
 ```
+- [x] Respuesta `200 OK` con estructura `{ data: [...], total: N, page: 1, limit: 10 }`.
+- [x] Solo devuelve staff del tenant del token (aislamiento multi-tenant).
 
-- [ ] Respuesta `200 OK` con estructura `{ data: [...], total: N, page: 1, limit: 10 }`.
-- [ ] Solo devuelve staff del tenant del token (aislamiento multi-tenant).
-
+#### 2. Búsqueda por Texto (`search`: Nombre, Apellido o Cédula/CI)
 ```http
-GET /api/v1/staff?nationalId=4123456
+GET /api/v1/staff?search=4123456
+Authorization: Bearer $TOKEN_MANAGER
+X-Company-Id: $COMPANY_UUID
 ```
+- [x] Devuelve únicamente los miembros cuya Cédula, Nombre o Apellido coincidan con el término ingresado (`ILIKE` insensible a acentos y búsqueda por nombre completo).
 
-- [ ] Devuelve exactamente el staff member creado en A1.
+#### 3. Filtro por Cargo / Posición (`position`)
+```http
+GET /api/v1/staff?position=Personal%20de%20Limpieza
+Authorization: Bearer $TOKEN_MANAGER
+X-Company-Id: $COMPANY_UUID
+```
+- [x] Devuelve únicamente el personal que coincida exactamente con el cargo indicado.
+
+#### 4. Combinación Múltiple de Filtros
+```http
+GET /api/v1/staff?page=1&limit=5&status=ACTIVE&search=Ana&position=Personal%20de%20Limpieza
+Authorization: Bearer $TOKEN_MANAGER
+X-Company-Id: $COMPANY_UUID
+```
+- [x] Devuelve la lista filtrada de manera combinada respetando la paginación y el orden descendente por fecha de creación (`createdAt DESC`).
 
 ---
 
@@ -120,10 +139,12 @@ GET /api/v1/staff?nationalId=4123456
 ```http
 GET /api/v1/staff/:id
 Authorization: Bearer $TOKEN_MANAGER
+X-Company-Id: $COMPANY_UUID
 ```
 
-- [ ] Respuesta `200 OK` con todos los campos del legajo.
-- [ ] `GET /api/v1/staff/99999` → `404 Not Found`.
+- [x] Respuesta `200 OK` con todos los campos del legajo del tenant activo.
+- [x] `GET /api/v1/staff/99999` → `404 Not Found`.
+- [x] Acceder al ID de un miembro de staff perteneciente a otro tenant (`X-Company-Id` distinto) → `404 Not Found` (Aislamiento estricto multi-tenant sin fuga de información).
 
 ---
 
@@ -141,8 +162,8 @@ Content-Type: application/json
 }
 ```
 
-- [ ] Respuesta `200 OK` con campos actualizados.
-- [ ] Campos no enviados (`firstName`, `nationalId`, etc.) permanecen sin cambios.
+- [x] Respuesta `200 OK` con campos actualizados.
+- [x] Campos no enviados (`firstName`, `nationalId`, etc.) permanecen sin cambios.
 
 ---
 
@@ -156,14 +177,14 @@ Content-Type: application/json
 { "status": "ON_LEAVE" }
 ```
 
-- [ ] Respuesta `200 OK` con `status: "ON_LEAVE"`.
+- [x] Respuesta `200 OK` con `status: "ON_LEAVE"`.
 
 ```http
 PATCH /api/v1/staff/:id/status
 { "status": "TERMINATED" }
 ```
 
-- [ ] Respuesta `200 OK` con `status: "TERMINATED"` y `terminationDate` seteado a hoy.
+- [x] Respuesta `200 OK` con `status: "TERMINATED"` y `terminationDate` seteado a hoy.
 
 ---
 
@@ -174,9 +195,9 @@ DELETE /api/v1/staff/:id
 Authorization: Bearer $TOKEN_ADMIN
 ```
 
-- [ ] Respuesta `204 No Content`.
-- [ ] `GET /api/v1/staff/:id` → `404 Not Found` (excluido de queries activos).
-- [ ] El registro **sigue existiendo** en la BD con `isActive: false` / `status: TERMINATED`.
+- [x] Respuesta `204 No Content`.
+- [x] `GET /api/v1/staff/:id` → `404 Not Found` (excluido de queries activos).
+- [x] El registro **sigue existiendo** en la BD con `status: TERMINATED` y `terminationDate` seteado a hoy.
 
 ---
 
@@ -205,9 +226,9 @@ Content-Type: application/json
 }
 ```
 
-- [ ] Respuesta `201 Created` con `id`, `uuid` y todos los campos.
-- [ ] `companyId` coincide con el tenant del token.
-- [ ] Campos exclusivos de PF (`firstName`, `lastName`, `birthDate`) están `null`.
+- [x] Respuesta `201 Created` con `id`, `uuid` y todos los campos.
+- [x] `companyId` coincide con el tenant del token.
+- [x] Campos exclusivos de PF (`firstName`, `lastName`, `birthDate`) están `null`.
 
 ---
 
@@ -228,7 +249,7 @@ POST /api/v1/clients
 }
 ```
 
-- [ ] Respuesta `201 Created`.
+- [x] Respuesta `201 Created`.
 
 ```http
 # Persona Física sin firstName (campo obligatorio para PF)
@@ -236,7 +257,7 @@ POST /api/v1/clients
 { "clientType": "PERSONA_FISICA", "ruc": "9999999-1", "businessName": "Sin nombre" }
 ```
 
-- [ ] Respuesta `400 Bad Request` indicando que `firstName` y `lastName` son requeridos para `PERSONA_FISICA`.
+- [x] Respuesta `400 Bad Request` indicando que `firstName` y `lastName` son requeridos para `PERSONA_FISICA`.
 
 ---
 
@@ -247,7 +268,7 @@ POST /api/v1/clients
 # Mismo ruc que B1 (80012345-6)
 ```
 
-- [ ] Respuesta `409 Conflict`.
+- [x] Respuesta `409 Conflict`.
 
 ---
 
@@ -258,7 +279,7 @@ GET /api/v1/clients?page=1&limit=10
 Authorization: Bearer $TOKEN_MANAGER
 ```
 
-- [ ] `200 OK` con estructura paginada. Solo clientes del tenant del token.
+- [x] `200 OK` con estructura paginada. Solo clientes del tenant del token.
 
 ```http
 GET /api/v1/clients?ruc=80012345-6
@@ -266,7 +287,7 @@ GET /api/v1/clients?clientType=PERSONA_JURIDICA
 GET /api/v1/clients?isActive=true
 ```
 
-- [ ] Cada filtro devuelve resultados correctos.
+- [x] Cada filtro devuelve resultados correctos.
 
 ---
 
@@ -277,8 +298,8 @@ GET /api/v1/clients/:id
 Authorization: Bearer $TOKEN_MANAGER
 ```
 
-- [ ] `200 OK` con arrays `representatives` y `establishments` incluidos (pueden estar vacíos `[]`).
-- [ ] `GET /api/v1/clients/99999` → `404 Not Found`.
+- [x] `200 OK` con arrays `representatives` y `establishments` incluidos (pueden estar vacíos `[]`).
+- [x] `GET /api/v1/clients/99999` → `404 Not Found`.
 
 ---
 
@@ -299,20 +320,20 @@ Authorization: Bearer $TOKEN_ADMIN
 }
 ```
 
-- [ ] `201 Created` con `clientId` correcto.
+- [x] `201 Created` con `clientId` correcto.
 
 ```http
 GET /api/v1/clients/:clientId/representatives
 ```
 
-- [ ] `200 OK` con array que contiene el representante creado.
+- [x] `200 OK` con array que contiene el representante creado.
 
 ```http
 PATCH /api/v1/clients/:clientId/representatives/:id
 { "profession": "Contador Público" }
 ```
 
-- [ ] `200 OK` con `profession` actualizada.
+- [x] `200 OK` con `profession` actualizada.
 
 ```http
 # Representante tipo SOCIO — campos adicionales requeridos
@@ -329,14 +350,14 @@ POST /api/v1/clients/:clientId/representatives
 }
 ```
 
-- [ ] `201 Created` con `sharesCount`, `shareValue` y `totalSharesValue` correctos.
+- [x] `201 Created` con `sharesCount`, `shareValue` y `totalSharesValue` correctos.
 
 ```http
 DELETE /api/v1/clients/:clientId/representatives/:id
 Authorization: Bearer $TOKEN_MANAGER
 ```
 
-- [ ] `204 No Content`.
+- [x] `204 No Content`.
 
 ---
 
@@ -355,8 +376,8 @@ Authorization: Bearer $TOKEN_ADMIN
 }
 ```
 
-- [ ] `201 Created` con `clientId` correcto. `latitude`, `longitude`, `geofenceRadiusMeters` son `null`.
-
+- [x] `201 Created` con `clientId` correcto. `latitude`, `longitude`, `geofenceRadiusMeters` son `null`.
+ 
 ```http
 # Sede con geocerca
 POST /api/v1/clients/:clientId/establishments
@@ -370,26 +391,26 @@ POST /api/v1/clients/:clientId/establishments
 }
 ```
 
-- [ ] `201 Created` con `latitude`, `longitude` y `geofenceRadiusMeters` correctos (precisión decimal).
+- [x] `201 Created` con `latitude`, `longitude` y `geofenceRadiusMeters` correctos (precisión decimal).
 
 ```http
 GET /api/v1/clients/:clientId/establishments
 ```
 
-- [ ] `200 OK` con array de 2 establecimientos.
+- [x] `200 OK` con array de 2 establecimientos.
 
 ```http
 GET /api/v1/clients/:clientId/establishments/:id
 ```
 
-- [ ] `200 OK` con arrays `contracts` y `staffAssignments` incluidos (pueden ser `[]`).
+- [x] `200 OK` con arrays `contracts` y `staffAssignments` incluidos (pueden ser `[]`).
 
 ```http
 PATCH /api/v1/clients/:clientId/establishments/:id
 { "geofenceRadiusMeters": 200 }
 ```
 
-- [ ] `200 OK` con el radio actualizado.
+- [x] `200 OK` con el radio actualizado.
 
 ---
 
@@ -408,7 +429,7 @@ Authorization: Bearer $TOKEN_ADMIN
 }
 ```
 
-- [ ] `201 Created` con `status: "ACTIVO"` por defecto.
+- [x] `201 Created` con `status: "ACTIVO"` por defecto.
 
 ```http
 # Contrato tipo BOLSA_HORAS
@@ -423,28 +444,28 @@ POST .../contracts
 }
 ```
 
-- [ ] `201 Created` con `hoursBundleTotal: 80` y `hourlyRate: 25000`.
+- [x] `201 Created` con `hoursBundleTotal: 80` y `hourlyRate: 25000`.
 
 ```http
 GET .../contracts
 ```
 
-- [ ] `200 OK` con array de 2 contratos del establecimiento.
+- [x] `200 OK` con array de 2 contratos del establecimiento.
 
 ```http
 PATCH .../contracts/:id
 { "status": "RENOVANDO", "notes": "En proceso de renovación para 2026" }
 ```
 
-- [ ] `200 OK` con campos actualizados.
+- [x] `200 OK` con campos actualizados.
 
 ```http
 DELETE .../contracts/:id
 Authorization: Bearer $TOKEN_ADMIN
 ```
 
-- [ ] `204 No Content`.
-- [ ] El contrato ya no aparece en `GET .../contracts` (eliminación lógica: `isActive: false`).
+- [x] `204 No Content`.
+- [x] El contrato ya no aparece en `GET .../contracts` (eliminación lógica: `isActive: false`).
 
 ---
 
@@ -463,8 +484,8 @@ Authorization: Bearer $TOKEN_ADMIN
 }
 ```
 
-- [ ] `201 Created` con `staffMemberId`, `establishmentId`, `startDate` y `isActive: true`.
-- [ ] `endDate` es `null`.
+- [x] `201 Created` con `staffMemberId`, `establishmentId`, `startDate` y `isActive: true`.
+- [x] `endDate` es `null`.
 
 ---
 
@@ -475,8 +496,8 @@ GET /api/v1/clients/:clientId/establishments/:id/staff
 Authorization: Bearer $TOKEN_MANAGER
 ```
 
-- [ ] `200 OK` con el staff member del paso C1.
-- [ ] La respuesta incluye al menos `staffMemberId`, `startDate`, `isActive`.
+- [x] `200 OK` con el staff member del paso C1.
+- [x] La respuesta incluye al menos `staffMemberId`, `startDate`, `isActive`.
 
 ---
 
@@ -486,7 +507,7 @@ Authorization: Bearer $TOKEN_MANAGER
 GET /api/v1/clients/:clientId/establishments/:id
 ```
 
-- [ ] `staffAssignments` en la respuesta contiene la asignación creada en C1.
+- [x] `staffAssignments` en la respuesta contiene la asignación creada en C1.
 
 ---
 
@@ -501,7 +522,7 @@ POST /api/v1/clients/:clientId/establishments/:id2/staff
 }
 ```
 
-- [ ] `201 Created` — un staff puede estar asignado a múltiples sedes en Fase 1 (la restricción de concurrencia geolocalizada se activa en Fase 2).
+- [x] `201 Created` — un staff puede estar asignado a múltiples sedes en Fase 1 (la restricción de concurrencia geolocalizada se activa en Fase 2).
 
 ---
 
@@ -512,9 +533,9 @@ DELETE /api/v1/clients/:clientId/establishments/:id/staff/:staffId
 Authorization: Bearer $TOKEN_ADMIN
 ```
 
-- [ ] `204 No Content`.
-- [ ] En BD: el registro en `staff_establishment_assignments` tiene `isActive: false` y `endDate` seteado a la fecha de hoy.
-- [ ] `GET .../establishments/:id/staff` ya no muestra esa asignación activa.
+- [x] `204 No Content`.
+- [x] En BD: el registro en `staff_establishment_assignments` tiene `isActive: false` y `endDate` seteado a la fecha de hoy.
+- [x] `GET .../establishments/:id/staff` ya no muestra esa asignación activa.
 
 ---
 
@@ -528,15 +549,15 @@ SELECT
   e.name AS establishment,
   sea."startDate",
   sea."endDate",
-  sea."isActive"
+  (sea."endDate" IS NULL) AS "isActive"
 FROM staff_establishment_assignments sea
 JOIN staff_members sm ON sm.id = sea."staffMemberId"
 JOIN establishments e ON e.id = sea."establishmentId"
 ORDER BY sea.id;
 ```
 
-- [ ] Los registros creados en C1 y C4 están presentes.
-- [ ] El registro desasignado en C5 tiene `isActive = false` y `endDate` correcta.
+- [x] Los registros creados en C1 y C4 están presentes.
+- [x] El registro desasignado en C5 tiene `isActive = false` y `endDate` correcta.
 
 ---
 

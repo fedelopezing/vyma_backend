@@ -14,6 +14,7 @@ export enum BusinessForm {
   EIRL = 'EIRL',
   CONDOMINIO = 'CONDOMINIO',
   SUCESION = 'SUCESION',
+  UNIPERSONAL = 'UNIPERSONAL',
   // Persona Jurídica
   SA = 'SA',
   SRL = 'SRL',

@@ -117,12 +117,12 @@ export class CreateStaffMemberDto {
   hireDate: Date;
 
   @ApiPropertyOptional({
-    description: 'Assigned location or client',
-    example: 'Sucursal Centro',
+    description: 'Termination date',
+    example: '2026-08-04',
   })
   @IsOptional()
-  @IsString()
-  assignedLocation?: string;
+  @IsDateString()
+  terminationDate?: Date;
 
   @ApiPropertyOptional({ description: 'Base salary in GS', example: 2798309 })
   @IsOptional()

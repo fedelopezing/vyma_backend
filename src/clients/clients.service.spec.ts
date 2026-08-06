@@ -6,6 +6,7 @@ import {
   ClientDuplicateRucException,
   ClientNotFoundException,
 } from './exceptions';
+import { StaffService } from '../staff/staff.service';
 
 const mockClientsRepository = {
   findByCompanyId: jest.fn(),
@@ -35,6 +36,10 @@ const mockClientsRepository = {
   unassignStaffFromEstablishment: jest.fn(),
 };
 
+const mockStaffService = {
+  findById: jest.fn(),
+};
+
 describe('ClientsService', () => {
   let service: ClientsService;
 
@@ -45,6 +50,10 @@ describe('ClientsService', () => {
         {
           provide: CLIENTS_REPOSITORY,
           useValue: mockClientsRepository,
+        },
+        {
+          provide: StaffService,
+          useValue: mockStaffService,
         },
       ],
     }).compile();

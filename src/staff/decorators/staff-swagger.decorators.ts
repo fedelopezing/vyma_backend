@@ -8,6 +8,8 @@ import {
   ApiBearerAuth,
   ApiParam,
   ApiBody,
+  ApiQuery,
+  ApiNoContentResponse,
 } from '@nestjs/swagger';
 import {
   StaffMemberResponseDto,
@@ -17,10 +19,46 @@ import { StaffStatus } from '../constants/staff-enums';
 
 export const ApiGetStaffList = () =>
   applyDecorators(
-    ApiOperation({ summary: 'Get paginated staff members list' }),
+    ApiOperation({ summary: 'Obtener lista paginada de personal (Staff)' }),
     ApiBearerAuth(),
+    ApiQuery({
+      name: 'page',
+      required: false,
+      type: Number,
+      example: 1,
+      description: 'Número de página a consultar',
+    }),
+    ApiQuery({
+      name: 'limit',
+      required: false,
+      type: Number,
+      example: 20,
+      description: 'Resultados por página',
+    }),
+    ApiQuery({
+      name: 'search',
+      required: false,
+      type: String,
+      example: 'Ana González',
+      description:
+        'Búsqueda por Nombre, Apellido, Nombre Completo o Cédula (CI) (insensible a acentos/tildes)',
+    }),
+    ApiQuery({
+      name: 'status',
+      required: false,
+      enum: StaffStatus,
+      description:
+        'Filtrar por estado del personal (ACTIVE, INACTIVE, ON_LEAVE, TERMINATED)',
+    }),
+    ApiQuery({
+      name: 'position',
+      required: false,
+      type: String,
+      example: 'Personal de Limpieza',
+      description: 'Filtrar por cargo o posición laboral',
+    }),
     ApiOkResponse({
-      description: 'Returns paginated staff list',
+      description: 'Retorna la lista paginada de personal',
       type: PaginatedStaffResponseDto,
     }),
   );
@@ -87,9 +125,17 @@ export const ApiChangeStaffStatus = () =>
 
 export const ApiDeleteStaffMember = () =>
   applyDecorators(
-    ApiOperation({ summary: 'Delete (or terminate) a staff member' }),
+    ApiOperation({
+      summary: 'Eliminar (eliminación lógica) un miembro de staff',
+    }),
     ApiBearerAuth(),
-    ApiParam({ name: 'id', description: 'Staff Member ID', type: Number }),
-    ApiOkResponse({ description: 'Staff member removed successfully' }),
-    ApiNotFoundResponse({ description: 'Staff member not found' }),
+    ApiParam({
+      name: 'id',
+      description: 'ID del Miembro de Staff',
+      type: Number,
+    }),
+    ApiNoContentResponse({
+      description: 'Miembro de staff eliminado correctamente',
+    }),
+    ApiNotFoundResponse({ description: 'Miembro de staff no encontrado' }),
   );

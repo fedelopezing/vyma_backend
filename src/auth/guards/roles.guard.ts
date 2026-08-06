@@ -16,9 +16,25 @@ export class RolesGuard implements CanActivate {
       return true;
     }
     const { user } = context.switchToHttp().getRequest();
-    // Dummy implementation assuming user.role exists
-    return requiredRoles.some(
-      (role) => user?.role === role || user?.roles?.includes(role),
-    );
+
+    if (!user) {
+      return false;
+    }
+
+    if (user.isSuperAdmin || user.role === 'admin' || user.role === 'ADMIN') {
+      return true;
+    }
+
+    const userRoleUpper = user.role?.toUpperCase();
+    const userRolesUpper =
+      user.roles?.map((r: string) => r.toUpperCase()) || [];
+
+    return requiredRoles.some((role) => {
+      const requiredUpper = role.toUpperCase();
+      return (
+        userRoleUpper === requiredUpper ||
+        userRolesUpper.includes(requiredUpper)
+      );
+    });
   }
 }

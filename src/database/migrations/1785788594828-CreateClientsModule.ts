@@ -65,9 +65,6 @@ export class CreateClientsModule1785788594828 implements MigrationInterface {
       `CREATE INDEX "IDX_47057fc79204af9b478ea05f29" ON "staff_establishment_assignments" ("staffMemberId", "establishmentId") `,
     );
     await queryRunner.query(
-      `COMMENT ON COLUMN "staff_members"."assignedLocation" IS 'DEPRECATED: use staff_establishment_assignments'`,
-    );
-    await queryRunner.query(
       `ALTER TABLE "client_representatives" ADD CONSTRAINT "FK_bb1256e7e8dd76005dbaec436e6" FOREIGN KEY ("clientId") REFERENCES "clients"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
     );
     await queryRunner.query(
@@ -105,9 +102,6 @@ export class CreateClientsModule1785788594828 implements MigrationInterface {
     );
     await queryRunner.query(
       `ALTER TABLE "client_representatives" DROP CONSTRAINT "FK_bb1256e7e8dd76005dbaec436e6"`,
-    );
-    await queryRunner.query(
-      `COMMENT ON COLUMN "staff_members"."assignedLocation" IS NULL`,
     );
     await queryRunner.query(
       `DROP INDEX "public"."IDX_47057fc79204af9b478ea05f29"`,

@@ -4,6 +4,7 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  DeleteDateColumn,
   Index,
   ManyToOne,
   JoinColumn,
@@ -86,15 +87,6 @@ export class StaffMember {
   @Column({ type: 'date', nullable: true })
   terminationDate: Date | null;
 
-  // @deprecated Use staff_establishment_assignments table instead
-  @Column({
-    type: 'varchar',
-    length: 255,
-    nullable: true,
-    comment: 'DEPRECATED: use staff_establishment_assignments',
-  })
-  assignedLocation: string | null; // Sucursal / Cliente de limpieza asignado
-
   // Parámetros Salariales y Bancarios
   @Column({ type: 'decimal', precision: 12, scale: 2, default: 0.0 })
   baseSalary: number;
@@ -123,4 +115,7 @@ export class StaffMember {
 
   @UpdateDateColumn({ type: 'timestamptz' })
   updatedAt: Date;
+
+  @DeleteDateColumn({ type: 'timestamptz', nullable: true })
+  deletedAt: Date | null;
 }
