@@ -82,7 +82,20 @@ describe('PermissionsGuard', () => {
       .mockReturnValue(['read:users', 'write:users']);
     const context = createMock<ExecutionContext>({
       switchToHttp: () => ({
-        getRequest: () => ({ user: { id: 1, role: { name: 'admin' } } }),
+        getRequest: () => ({ user: { id: 1, role: 'admin' } }),
+      }),
+    } as never);
+
+    expect(await guard.canActivate(context)).toBe(true);
+  });
+
+  it('should return true if user isSuperAdmin is true, bypassing permission checks', async () => {
+    jest
+      .spyOn(reflector, 'getAllAndOverride')
+      .mockReturnValue(['read:users', 'write:users']);
+    const context = createMock<ExecutionContext>({
+      switchToHttp: () => ({
+        getRequest: () => ({ user: { id: 1, isSuperAdmin: true } }),
       }),
     } as never);
 

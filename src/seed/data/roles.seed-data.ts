@@ -28,6 +28,10 @@ export const SEED_PERMISSIONS = [
   'create:ads',
   'update:ads',
   'delete:ads',
+  'read:staff',
+  'write:staff',
+  'read:clients',
+  'write:clients',
 ] as const;
 
 export type SeedPermission = (typeof SEED_PERMISSIONS)[number];
@@ -95,11 +99,17 @@ const ADS_PERMS: SeedPermission[] = [
   'delete:ads',
 ];
 
+const STAFF_PERMS: SeedPermission[] = ['read:staff', 'write:staff'];
+
+const CLIENT_PERMS: SeedPermission[] = ['read:clients', 'write:clients'];
+
 const ALL_PERMS = [
   ...BASIC_PERMS,
   ...NEWS_PERMS,
   ...EVENTS_PERMS,
   ...ADS_PERMS,
+  ...STAFF_PERMS,
+  ...CLIENT_PERMS,
   'read:users',
   'write:users',
   'write:professions',
@@ -120,6 +130,6 @@ export const SEED_ROLES_CONFIG: SeedRoleConfig[] = [
   { name: ValidRoles.user, permissions: BASIC_PERMS },
   {
     name: ValidRoles.manager,
-    permissions: [...BASIC_PERMS, ...NEWS_PERMS, ...EVENTS_PERMS, ...ADS_PERMS],
+    permissions: [...STAFF_PERMS, ...CLIENT_PERMS],
   },
 ];

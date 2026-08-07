@@ -6,15 +6,12 @@ import {
   Entity,
   Generated,
   Index,
-  JoinColumn,
-  ManyToOne,
   OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { Profile } from '../../profiles/entities/profile.entity';
-import { Role } from '../../roles/entities/role.entity';
 import { UserCompany } from '../../companies/entities/user-company.entity';
 
 @Entity('users')
@@ -68,10 +65,6 @@ export class User {
     comment: 'Fecha de expiración del token de acceso (opcional)',
   })
   tokenExpiry: Date | null;
-
-  @ManyToOne(() => Role)
-  @JoinColumn({ name: 'role_id' })
-  role: Role;
 
   @Column('boolean', { default: true })
   isActive: boolean;

@@ -7,12 +7,14 @@ import { UsersModule } from '../users/users.module';
 import { CommonModule } from '../common/common.module';
 import { PermissionsModule } from '../permissions/permissions.module';
 import { RolesRepository } from './repositories/roles.repository';
+import { CompaniesModule } from '../companies/companies.module';
 
 @Global()
 @Module({
   imports: [
     TypeOrmModule.forFeature([Role]),
     forwardRef(() => PermissionsModule),
+    forwardRef(() => CompaniesModule),
     UsersModule,
     CommonModule,
   ],

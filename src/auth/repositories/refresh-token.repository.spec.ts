@@ -34,7 +34,7 @@ describe('RefreshTokenRepository', () => {
     await repository.findOneByTokenWithUser('token123');
     expect(mockRepo.findOne).toHaveBeenCalledWith({
       where: { uuid: 'token123' },
-      relations: ['user', 'user.role'],
+      relations: ['user'],
     });
   });
 

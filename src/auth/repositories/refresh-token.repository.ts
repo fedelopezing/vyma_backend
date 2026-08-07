@@ -15,7 +15,7 @@ export class RefreshTokenRepository {
   async findOneByTokenWithUser(token: string): Promise<RefreshToken | null> {
     return this.repo.findOne({
       where: { uuid: token },
-      relations: ['user', 'user.role'],
+      relations: ['user'],
     });
   }
 

@@ -1,14 +1,43 @@
-import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  HttpCode,
+  HttpStatus,
+  Req,
+  ForbiddenException,
+} from '@nestjs/common';
+import { Request } from 'express';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto';
-import { AuthPermissions } from '../auth/decorators';
-import { ApiTags } from '@nestjs/swagger';
-import { ApiCreateUser } from './decorators/users-swagger.decorators';
+import { Auth, AuthPermissions } from '../auth/decorators';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiCreateUser,
+  ApiFindAllUsers,
+} from './decorators/users-swagger.decorators';
+import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
+
+interface AuthenticatedRequest extends Request {
+  user: JwtPayload;
+}
 
 @ApiTags('Users')
+@ApiBearerAuth()
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
+
+  @Get()
+  @Auth()
+  @ApiFindAllUsers()
+  async findAll(@Req() req: AuthenticatedRequest) {
+    if (!req.user?.isSuperAdmin) {
+      throw new ForbiddenException('Only superadmin can list all users');
+    }
+    return this.usersService.findAll();
+  }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -21,7 +50,6 @@ export class UsersController {
       name: user.name,
       email: user.email,
       isActive: user.isActive,
-      role: user.role,
       createdAt: user.createdAt,
     };
   }

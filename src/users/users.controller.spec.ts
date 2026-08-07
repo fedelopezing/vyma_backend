@@ -3,7 +3,7 @@ import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
-import { ConflictException } from '@nestjs/common';
+import { ConflictException, ForbiddenException } from '@nestjs/common';
 import { User } from './entities/user.entity';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
 
@@ -39,7 +39,6 @@ describe('UsersController', () => {
       const dto: CreateUserDto = {
         name: 'Test User',
         email: 'test@example.com',
-        roleId: 1,
       };
 
       const date = new Date();
@@ -48,7 +47,6 @@ describe('UsersController', () => {
         name: 'Test User',
         email: 'test@example.com',
         isActive: false,
-        role: { id: 1, name: 'admin' },
         createdAt: date,
         passwordHash: 'hidden',
         id: 1,
@@ -65,7 +63,6 @@ describe('UsersController', () => {
         name: mockUser.name,
         email: mockUser.email,
         isActive: mockUser.isActive,
-        role: mockUser.role,
         createdAt: mockUser.createdAt,
       });
       // Ensure no extra fields like passwordHash leaked
@@ -77,7 +74,6 @@ describe('UsersController', () => {
       const dto: CreateUserDto = {
         name: 'Test User',
         email: 'test@example.com',
-        roleId: 1,
       };
 
       mockUsersService.create.mockRejectedValue(
@@ -85,6 +81,31 @@ describe('UsersController', () => {
       );
 
       await expect(controller.create(dto)).rejects.toThrow(ConflictException);
+    });
+  });
+
+  describe('findAll', () => {
+    it('should return all users if request user is superadmin', async () => {
+      const users = [{ id: 1, email: 'user@example.com' }] as User[];
+      mockUsersService.findAll.mockResolvedValue(users);
+
+      const req = {
+        user: { sub: 1, isSuperAdmin: true },
+      } as any;
+
+      const result = await controller.findAll(req);
+
+      expect(result).toEqual(users);
+      expect(mockUsersService.findAll).toHaveBeenCalled();
+    });
+
+    it('should throw ForbiddenException if request user is not superadmin', async () => {
+      const req = {
+        user: { sub: 2, isSuperAdmin: false },
+      } as any;
+
+      await expect(controller.findAll(req)).rejects.toThrow(ForbiddenException);
+      expect(mockUsersService.findAll).not.toHaveBeenCalled();
     });
   });
 });

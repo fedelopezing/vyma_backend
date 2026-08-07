@@ -295,7 +295,10 @@ describe('AuthService', () => {
 
       expect(result).toHaveProperty('requiresCompanySelection', true);
       expect(result).toHaveProperty('selectionToken', 'selection-token');
-      expect((result as { companies: unknown[] }).companies).toHaveLength(2);
+      expect(result).toHaveProperty('user');
+      const selectionRes = result as any;
+      expect(selectionRes.companies).toHaveLength(2);
+      expect(selectionRes.companies[0]).toHaveProperty('role', 'admin');
     });
   });
 

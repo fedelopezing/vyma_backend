@@ -28,7 +28,6 @@ export class UsersService {
         {
           name: createUserDto.name,
           email: createUserDto.email,
-          role: { id: createUserDto.roleId },
           isActive: false,
           passwordHash,
         },
@@ -66,11 +65,7 @@ export class UsersService {
     return this.usersRepository.findOneByUuid(uuid);
   }
 
-  async findOneWithPermissions(id: number): Promise<User | null> {
-    return this.usersRepository.findOneWithPermissions(id);
-  }
-
-  async findUsersByRoleId(roleId: number): Promise<{ id: number }[]> {
-    return this.usersRepository.findUsersByRoleId(roleId);
+  async findAll(): Promise<User[]> {
+    return this.usersRepository.findAll();
   }
 }

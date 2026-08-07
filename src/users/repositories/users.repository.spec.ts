@@ -117,7 +117,7 @@ describe('UsersRepository', () => {
       expect(typeOrmRepository.findOne).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { email },
-          relations: ['profile', 'role'],
+          relations: ['profile'],
         }),
       );
       expect(result).toEqual(user);
@@ -125,7 +125,7 @@ describe('UsersRepository', () => {
   });
 
   describe('findOneById', () => {
-    it('should return a user by id with role relation', async () => {
+    it('should return a user by id', async () => {
       const id = 1;
       const user = { id } as User;
 
@@ -135,44 +135,23 @@ describe('UsersRepository', () => {
 
       expect(typeOrmRepository.findOne).toHaveBeenCalledWith({
         where: { id },
-        relations: ['role'],
       });
       expect(result).toEqual(user);
     });
   });
 
-  describe('findOneWithPermissions', () => {
-    it('should return a user with role and permissions', async () => {
-      const id = 1;
-      const user = { id } as User;
+  describe('findAll', () => {
+    it('should return all users ordered by createdAt DESC', async () => {
+      const users = [{ id: 1 }, { id: 2 }] as User[];
+      jest.spyOn(typeOrmRepository, 'find').mockResolvedValue(users);
 
-      jest.spyOn(typeOrmRepository, 'findOne').mockResolvedValue(user);
+      const result = await repository.findAll();
 
-      const result = await repository.findOneWithPermissions(id);
-
-      expect(typeOrmRepository.findOne).toHaveBeenCalledWith(
+      expect(typeOrmRepository.find).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { id },
-          relations: ['role', 'role.permissions'],
+          order: { createdAt: 'DESC' },
         }),
       );
-      expect(result).toEqual(user);
-    });
-  });
-
-  describe('findUsersByRoleId', () => {
-    it('should return users with a specific role ID', async () => {
-      const roleId = 1;
-      const users = [{ id: 1 }, { id: 2 }];
-
-      jest.spyOn(typeOrmRepository, 'find').mockResolvedValue(users as User[]);
-
-      const result = await repository.findUsersByRoleId(roleId);
-
-      expect(typeOrmRepository.find).toHaveBeenCalledWith({
-        where: { role: { id: roleId } },
-        select: ['id'],
-      });
       expect(result).toEqual(users);
     });
   });

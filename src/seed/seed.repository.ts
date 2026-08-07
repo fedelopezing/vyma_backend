@@ -108,14 +108,13 @@ export class SeedRepository {
 
   async createAdminUser(
     qr: QueryRunner,
-    rolesMap: Record<string, Role>,
+    _rolesMap: Record<string, Role>,
   ): Promise<User> {
     const passwordHash = await bcrypt.hash('Admin123!', 10);
     const user = qr.manager.create(User, {
       email: 'admin@mail.com',
       name: 'System Admin',
       passwordHash,
-      role: rolesMap[ValidRoles.admin],
       provider: 'local' as const,
       isActive: true,
       isSuperAdmin: true,
@@ -136,7 +135,6 @@ export class SeedRepository {
       email: 'ccps@mail.com',
       name: 'CCPS Manager',
       passwordHash,
-      role: rolesMap[ValidRoles.manager],
       provider: 'local' as const,
       isActive: true,
     });
@@ -155,7 +153,6 @@ export class SeedRepository {
       email: 'fede@mail.com',
       name: 'Fede Manager',
       passwordHash,
-      role: rolesMap[ValidRoles.manager],
       provider: 'local' as const,
       isActive: true,
     });
@@ -182,7 +179,6 @@ export class SeedRepository {
       email: 'user@mail.com',
       name: 'Regular User',
       passwordHash,
-      role: rolesMap[ValidRoles.user],
       provider: 'local' as const,
       isActive: true,
     });

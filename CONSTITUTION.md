@@ -589,17 +589,82 @@ No traer todas las columnas cuando no son necesarias:
 await this.userRepo.find({ select: ['id', 'email', 'name'] });
 ```
 
-### Paginación Obligatoria en Listados
+### Paginación, Ordenamiento y Búsqueda Obligatorios en Listados (`findAll`)
 
-Todo endpoint que retorne una lista de recursos **debe** implementar paginación. Nunca retornar todos los registros sin límite:
+Todo endpoint que retorne una lista de recursos (`findAll`) **debe** extender o utilizar la estructura estándar de parámetros de consulta y paginación. Nunca retornar todos los registros sin límite ni omitir la posibilidad de paginar y ordenar.
+
+#### Parámetros Base Obligatorios para Endpoints `findAll`
+
+Todo DTO de consulta para listados debe incluir como base los siguientes 5 campos:
+
+| Campo | Tipo | Requerido | Default | Descripción / Validación |
+|:---|:---|:---|:---|:---|
+| `page` | `number` | Opcional | `1` | Número de página (`@Type(() => Number)`, `@IsInt()`, `@Min(1)`). |
+| `limit` | `number` | Opcional | `10` / `20` | Tamaño de página (`@Type(() => Number)`, `@IsInt()`, `@Min(1)`, `@Max(100)`). |
+| `order` | `string` (`ASC` \| `DESC`) | Opcional | `'DESC'` | Dirección de ordenamiento (`@IsEnum(SortOrder)` o `@IsIn(['ASC', 'DESC'])`). |
+| `orderBy` | `string` | Opcional | `'createdAt'` | Campo objetivo para el ordenamiento (ej: `'createdAt'`, `'id'`, `'name'`). |
+| `search` / `q` | `string` | Opcional | `undefined` | Término de búsqueda libre por texto (`@IsString()`, `@IsOptional()`). |
+
+#### DTO Base Estándar (`BasePaginationDto`)
 
 ```typescript
-// Patrón de paginación estándar
-async findAll(page: number = 1, limit: number = 20): Promise<[User[], number]> {
-  return this.repo.findAndCount({
-    skip: (page - 1) * limit,
-    take: limit,
-  });
+export enum SortOrder {
+  ASC = 'ASC',
+  DESC = 'DESC',
+}
+
+export class BasePaginationDto {
+  @ApiPropertyOptional({ default: 1, minimum: 1, description: 'Número de página' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number = 1;
+
+  @ApiPropertyOptional({ default: 20, minimum: 1, maximum: 100, description: 'Cantidad de elementos por página' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  limit?: number = 20;
+
+  @ApiPropertyOptional({ enum: SortOrder, default: SortOrder.DESC, description: 'Dirección del ordenamiento' })
+  @IsOptional()
+  @IsEnum(SortOrder)
+  order?: SortOrder = SortOrder.DESC;
+
+  @ApiPropertyOptional({ default: 'createdAt', description: 'Campo por el cual ordenar' })
+  @IsOptional()
+  @IsString()
+  orderBy?: string = 'createdAt';
+
+  @ApiPropertyOptional({ description: 'Término de búsqueda global' })
+  @IsOptional()
+  @IsString()
+  search?: string;
+}
+```
+
+#### Patrón de Implementación en Repositorio / Servicio
+
+```typescript
+async findAll(query: BasePaginationDto): Promise<PaginatedResponse<User>> {
+  const { page = 1, limit = 20, order = SortOrder.DESC, orderBy = 'createdAt', search } = query;
+
+  const queryBuilder = this.repo.createQueryBuilder('user')
+    .orderBy(`user.${orderBy}`, order)
+    .skip((page - 1) * limit)
+    .take(limit);
+
+  if (search) {
+    queryBuilder.andWhere('user.name ILIKE :search OR user.email ILIKE :search', {
+      search: `%${search}%`,
+    });
+  }
+
+  const [data, total] = await queryBuilder.getManyAndCount();
+  return buildPaginatedResponse(data, total, page, limit);
 }
 ```
 
@@ -965,7 +1030,7 @@ MANEJO DE ERRORES
 
 RENDIMIENTO
   [ ] No hay N+1 queries en los repositorios
-  [ ] Los endpoints de listado tienen paginación
+  [ ] Los endpoints de listado (findAll) soportan paginación, ordenamiento y búsqueda (page, limit, order, orderBy, search)
   [ ] Las columnas consultadas frecuentemente tienen @Index()
 
 TESTING

@@ -46,41 +46,34 @@ export class UsersRepository {
         id: true,
         name: true,
         isSuperAdmin: true,
-        role: { id: true, name: true },
       },
-      relations: ['profile', 'role'],
+      relations: ['profile'],
     });
   }
 
   async findOneById(id: number): Promise<User | null> {
-    return this.repository.findOne({ where: { id }, relations: ['role'] });
+    return this.repository.findOne({ where: { id } });
   }
 
   async findOneByUuid(uuid: string): Promise<User | null> {
     return this.repository.findOne({ where: { uuid } });
   }
 
-  async findOneWithPermissions(id: number): Promise<User | null> {
-    return this.repository.findOne({
-      where: { id },
-      relations: ['role', 'role.permissions'],
+  async findAll(): Promise<User[]> {
+    return this.repository.find({
       select: {
         id: true,
-        role: {
-          id: true,
-          permissions: {
-            id: true, // Fix: Added id for proper array projection
-            action: true,
-          },
-        },
+        uuid: true,
+        name: true,
+        email: true,
+        provider: true,
+        providerId: true,
+        isActive: true,
+        isSuperAdmin: true,
+        createdAt: true,
+        updatedAt: true,
       },
-    });
-  }
-
-  async findUsersByRoleId(roleId: number): Promise<{ id: number }[]> {
-    return this.repository.find({
-      where: { role: { id: roleId } },
-      select: ['id'],
+      order: { createdAt: 'DESC' },
     });
   }
 }

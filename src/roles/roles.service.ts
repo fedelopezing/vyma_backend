@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject, forwardRef } from '@nestjs/common';
 import { RolesRepository } from './repositories/roles.repository';
 import { PermissionsRepository } from '../permissions/repositories/permissions.repository';
 import { Role } from './entities/role.entity';
@@ -11,6 +11,7 @@ import { RoleNotFoundException } from './exceptions/role-not-found.exception';
 import { UserNotFoundException } from '../users/exceptions/user-not-found.exception';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { RoleUpdatedEvent } from '../auth/events/role-updated.event';
+import { UserCompanyRepository } from '../companies/repositories/user-company.repository';
 
 @Injectable()
 export class RolesService {
@@ -18,6 +19,8 @@ export class RolesService {
     private readonly rolesRepository: RolesRepository,
     private readonly permissionsRepository: PermissionsRepository,
     private readonly usersService: UsersService,
+    @Inject(forwardRef(() => UserCompanyRepository))
+    private readonly userCompanyRepository: UserCompanyRepository,
     private readonly cacheService: CacheService,
     private readonly eventEmitter: EventEmitter2,
   ) {}
@@ -78,13 +81,14 @@ export class RolesService {
       return cachedPermissions;
     }
 
-    const user = await this.usersService.findOneWithPermissions(userId);
+    const user = await this.usersService.findOneById(userId);
 
     if (!user) {
       throw new UserNotFoundException(userId);
     }
 
-    const permissions = user.role?.permissions?.map((p) => p.action) || [];
+    const permissions =
+      await this.userCompanyRepository.findPermissionsByUserId(userId);
 
     // Set cache with TTL of 1 hour (3600 seconds)
     this.cacheService.set(cacheKey, permissions, 3600);
