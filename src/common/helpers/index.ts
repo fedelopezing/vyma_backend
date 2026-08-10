@@ -3,3 +3,4 @@ export { slugify } from './slugify.helper';
 export { resolveUniqueSlug, resolveNewsSlugs } from './slug-resolver.helper';
 export { runInTransaction } from './transaction.helper';
 export { buildPaginatedResponse } from './pagination.helper';
+export { getCorsOptions } from './cors.helper';

@@ -4,38 +4,14 @@ import { AppModule } from './app.module';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
+import { getCorsOptions } from './common/helpers';
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const logger = new Logger('Bootstrap');
 
   // Configuración de CORS para el frontend (HTTPS y credenciales)
-  const rawOrigins = process.env.ALLOWED_ORIGINS || '';
-  const allowedOrigins = rawOrigins
-    .split(',')
-    .map((o) => o.trim())
-    .filter((o) => o.length > 0);
-
-  app.enableCors({
-    origin: (origin, callback) => {
-      if (
-        !origin ||
-        allowedOrigins.length === 0 ||
-        allowedOrigins.includes(origin)
-      ) {
-        callback(null, true);
-      } else {
-        callback(null, true);
-      }
-    },
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    credentials: true,
-    allowedHeaders: [
-      'Content-Type',
-      'Authorization',
-      'X-Requested-With',
-      'Accept',
-    ],
-  });
+  app.enableCors(getCorsOptions());
 
   app.setGlobalPrefix('api/v1');
 
