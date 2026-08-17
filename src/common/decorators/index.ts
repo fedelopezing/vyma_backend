@@ -4,3 +4,4 @@ export * from './parse-boolean-query.decorator';
 export * from './sanitize-html.decorator';
 export * from './active-company-id.decorator';
 export * from './require-module.decorator';
+export * from './trim-to-undefined.decorator';
