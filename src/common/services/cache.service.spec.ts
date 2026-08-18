@@ -5,14 +5,14 @@ describe('CacheService', () => {
   let service: CacheService;
 
   beforeEach(async () => {
+    // Mock Date.now and timers for predictable TTL testing
+    jest.useFakeTimers();
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [CacheService],
     }).compile();
 
     service = module.get<CacheService>(CacheService);
-
-    // Mock Date.now for predictable TTL testing
-    jest.useFakeTimers();
   });
 
   afterEach(() => {
@@ -57,5 +57,17 @@ describe('CacheService', () => {
     // Fast-forward 2 more seconds (total 6 seconds)
     jest.advanceTimersByTime(2000);
     expect(service.get('key')).toBeNull();
+  });
+
+  it('should sweep expired keys periodically', () => {
+    // Set a key with 5 second TTL and another key with no TTL
+    service.set('keyExpires', 'value1', 5);
+    service.set('keyPermanent', 'value2');
+
+    // Advance timer past 10 minutes to trigger sweep interval
+    jest.advanceTimersByTime(11 * 60 * 1000);
+
+    expect(service.get('keyExpires')).toBeNull();
+    expect(service.get('keyPermanent')).toBe('value2');
   });
 });

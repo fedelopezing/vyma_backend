@@ -86,6 +86,13 @@ describe('CompaniesService', () => {
         CompanyAlreadyExistsException,
       );
     });
+
+    it('should rethrow unknown errors on create', async () => {
+      const dto = { name: 'Test Company', taxId: '123' };
+      companiesRepo.create.mockRejectedValue(new Error('DB Timeout'));
+
+      await expect(service.create(dto)).rejects.toThrow('DB Timeout');
+    });
   });
 
   describe('findAll', () => {
@@ -198,6 +205,34 @@ describe('CompaniesService', () => {
           roleId: 2,
         }),
       ).rejects.toThrow(MemberAlreadyExistsException);
+    });
+
+    it('should rethrow unknown errors on addMember', async () => {
+      const company = {
+        id: 1,
+        uuid: 'company-uuid',
+        name: 'Company A',
+      } as Company;
+      const user = {
+        id: 10,
+        uuid: 'user-uuid',
+        email: 'user@test.com',
+      } as User;
+      const role = { id: 2, name: 'admin' } as Role;
+
+      companiesRepo.findByUuid.mockResolvedValue(company);
+      usersService.findOneByUuid.mockResolvedValue(user);
+      rolesService.findOne.mockResolvedValue(role);
+      userCompanyRepo.addMember.mockRejectedValue(
+        new Error('Connection dropped'),
+      );
+
+      await expect(
+        service.addMember('company-uuid', {
+          userUuid: 'user-uuid',
+          roleId: 2,
+        }),
+      ).rejects.toThrow('Connection dropped');
     });
 
     it('should throw NotFoundException when user is not found', async () => {

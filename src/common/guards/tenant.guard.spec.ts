@@ -54,6 +54,16 @@ describe('TenantGuard', () => {
 
   afterEach(() => jest.clearAllMocks());
 
+  it('should throw ForbiddenException if user is not authenticated', async () => {
+    const ctx = createMockExecutionContext(undefined, {
+      'x-company-id': 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+    });
+
+    await expect(guard.canActivate(ctx)).rejects.toThrow(
+      new ForbiddenException('User is not authenticated'),
+    );
+  });
+
   // ─── SuperAdmin bypass ────────────────────────────────────────────────────
 
   it('should return true for superadmin without calling isActiveMember, but calling findByUuid', async () => {
@@ -74,6 +84,28 @@ describe('TenantGuard', () => {
     expect(companiesRepository.findByUuid).toHaveBeenCalledWith(
       'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
     );
+  });
+
+  it('should attach empty array for activeModules if company.activeModules is undefined', async () => {
+    const mockRequest: Record<string, any> = {
+      user: { sub: 1, isSuperAdmin: true },
+      headers: { 'x-company-id': 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11' },
+    };
+    const ctx = {
+      switchToHttp: () => ({
+        getRequest: () => mockRequest,
+      }),
+    } as unknown as ExecutionContext;
+
+    companiesRepository.findByUuid.mockResolvedValue({
+      id: 5,
+      isActive: true,
+    } as any);
+
+    const result = await guard.canActivate(ctx);
+
+    expect(result).toBe(true);
+    expect(mockRequest.activeModules).toEqual([]);
   });
 
   // ─── Active member ────────────────────────────────────────────────────────
@@ -146,7 +178,18 @@ describe('TenantGuard', () => {
     expect(userCompanyRepository.isActiveMember).not.toHaveBeenCalled();
   });
 
-  // ─── Inactive Company ─────────────────────────────────────────────────────
+  // ─── Inactive or Not Found Company ────────────────────────────────────────
+
+  it('should throw ForbiddenException when company is not found', async () => {
+    companiesRepository.findByUuid.mockResolvedValue(null);
+
+    const ctx = createMockExecutionContext(
+      { sub: 10, isSuperAdmin: false },
+      { 'x-company-id': 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22' },
+    );
+
+    await expect(guard.canActivate(ctx)).rejects.toThrow(ForbiddenException);
+  });
 
   it('should throw ForbiddenException when company is inactive', async () => {
     companiesRepository.findByUuid.mockResolvedValue({

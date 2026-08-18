@@ -47,6 +47,13 @@ describe('ModuleAccessGuard', () => {
     expect(result).toBe(true);
   });
 
+  it('should return true if required modules metadata is empty array', () => {
+    reflector.getAllAndOverride.mockReturnValue([]);
+    const ctx = createMockExecutionContext({ sub: 10 });
+    const result = guard.canActivate(ctx);
+    expect(result).toBe(true);
+  });
+
   it('should return true if user is superadmin', () => {
     reflector.getAllAndOverride.mockReturnValue([CompanyModule.NEWS]);
     const ctx = createMockExecutionContext({ sub: 1, isSuperAdmin: true }, []);
@@ -77,6 +84,15 @@ describe('ModuleAccessGuard', () => {
       'NEWS',
       'EVENTS',
     ]);
+    expect(() => guard.canActivate(ctx)).toThrow(ForbiddenException);
+  });
+
+  it('should throw ForbiddenException if activeModules is undefined in request', () => {
+    reflector.getAllAndOverride.mockReturnValue([CompanyModule.NEWS]);
+    const ctx = createMockExecutionContext(
+      { sub: 10, isSuperAdmin: false },
+      undefined,
+    );
     expect(() => guard.canActivate(ctx)).toThrow(ForbiddenException);
   });
 });

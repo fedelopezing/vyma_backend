@@ -1,4 +1,4 @@
-import * as sanitizeHtml from 'sanitize-html';
+import sanitizeHtml from 'sanitize-html';
 import {
   ALLOWED_HTML_TAGS,
   ALLOWED_HTML_ATTRIBUTES,
@@ -17,20 +17,7 @@ export function SanitizeHtml() {
       return value;
     }
 
-    const sanitizeFn = (
-      typeof sanitizeHtml === 'function'
-        ? sanitizeHtml
-        : (
-            sanitizeHtml as unknown as {
-              default?: (
-                text: string,
-                options?: Record<string, unknown>,
-              ) => string;
-            }
-          ).default || sanitizeHtml
-    ) as (text: string, options?: Record<string, unknown>) => string;
-
-    return sanitizeFn(value, {
+    return sanitizeHtml(value, {
       allowedTags: ALLOWED_HTML_TAGS,
       allowedAttributes: ALLOWED_HTML_ATTRIBUTES,
       allowedSchemes: ALLOWED_HTML_SCHEMES,

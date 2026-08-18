@@ -81,6 +81,31 @@ describe('AstroWebhookListener', () => {
     );
   });
 
+  it('✅ Webhook maneja slugEn indefinido usando "N/A"', async () => {
+    configService.get.mockImplementation((key: string) => {
+      if (key === 'ASTRO_WEBHOOK_URL') return 'http://test.com/revalidate';
+      return null;
+    });
+
+    const eventWithoutSlugEn = new NewsPublishedEvent(
+      'uuid-456',
+      'slug-es-solo',
+      undefined as any,
+      NewsStatus.PUBLICADO,
+    );
+
+    const mockResponse = { ok: true, status: 200 } as Response;
+    (global.fetch as jest.Mock).mockResolvedValueOnce(mockResponse);
+
+    await expect(
+      listener.handleNewsPublishedEvent(eventWithoutSlugEn),
+    ).resolves.not.toThrow();
+
+    expect(loggerLogSpy).toHaveBeenCalledWith(
+      expect.stringContaining('EN[N/A]'),
+    );
+  });
+
   it('❌ Webhook falla con error de red: Captura el error, lo registra en el logger y NO relanza la excepción', async () => {
     configService.get.mockReturnValue('http://test.com/revalidate');
 

@@ -71,7 +71,7 @@ describe('UsersService', () => {
   });
 
   describe('create', () => {
-    it('should create a user, generate token, and emit event', async () => {
+    it('should create a user, generate token, and emit event with provided manager', async () => {
       const userData: CreateUserDto = {
         name: faker.person.fullName(),
         email: faker.internet.email(),
@@ -102,6 +102,30 @@ describe('UsersService', () => {
         user,
         activationToken: 'raw-token',
       });
+    });
+
+    it('should run transaction when manager is not provided', async () => {
+      const userData: CreateUserDto = {
+        name: 'Jane Doe',
+        email: 'jane@test.com',
+      };
+      const user = createFakeUser();
+      const mockManager = createMock<EntityManager>();
+
+      mockUsersRepository.runTransaction.mockImplementation(async (cb) => {
+        return cb(mockManager);
+      });
+      mockUsersRepository.create.mockResolvedValue(user);
+      mockActivationTokensService.createToken.mockResolvedValue('raw-token-2');
+
+      const result = await service.create(userData);
+
+      expect(result).toEqual(user);
+      expect(mockUsersRepository.runTransaction).toHaveBeenCalled();
+      expect(mockUsersRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'Jane Doe' }),
+        mockManager,
+      );
     });
 
     it('should throw ConflictException if email is duplicated', async () => {
@@ -158,6 +182,20 @@ describe('UsersService', () => {
 
       expect(result).toEqual(user);
       expect(mockUsersRepository.findOneById).toHaveBeenCalledWith(id);
+    });
+  });
+
+  describe('findOneByUuid', () => {
+    it('should find and return user by uuid', async () => {
+      const user = createFakeUser();
+      mockUsersRepository.findOneByUuid.mockResolvedValue(user);
+
+      const result = await service.findOneByUuid('uuid-123');
+
+      expect(result).toEqual(user);
+      expect(mockUsersRepository.findOneByUuid).toHaveBeenCalledWith(
+        'uuid-123',
+      );
     });
   });
 

@@ -34,7 +34,7 @@ describe('AuthController', () => {
   });
 
   describe('login', () => {
-    it('should login a user successfully', async () => {
+    it('should login a user successfully with req.ip', async () => {
       const dto = {
         email: faker.internet.email(),
         password: faker.internet.password(),
@@ -60,6 +60,27 @@ describe('AuthController', () => {
         dto,
         '127.0.0.1',
         'test',
+      );
+    });
+
+    it('should login a user with req.connection.remoteAddress when req.ip is undefined', async () => {
+      const dto = {
+        email: faker.internet.email(),
+        password: faker.internet.password(),
+      };
+      mockAuthService.login.mockResolvedValue({} as never);
+
+      const req = {
+        ip: undefined,
+        connection: { remoteAddress: '192.168.1.1' },
+        headers: {},
+      } as unknown as Request;
+
+      await controller.login(dto, req);
+      expect(mockAuthService.login).toHaveBeenCalledWith(
+        dto,
+        '192.168.1.1',
+        undefined,
       );
     });
   });
@@ -134,6 +155,22 @@ describe('AuthController', () => {
         undefined,
       );
     });
+
+    it('should fallback to connection.remoteAddress when ip is undefined', async () => {
+      const dto = { companyUuid: faker.string.uuid() };
+      mockAuthService.selectCompany.mockResolvedValue({} as never);
+      const req = {
+        headers: {},
+        connection: { remoteAddress: '10.0.0.1' },
+      } as unknown as Request;
+      await controller.selectCompany(dto, req);
+      expect(mockAuthService.selectCompany).toHaveBeenCalledWith(
+        '',
+        dto,
+        '10.0.0.1',
+        undefined,
+      );
+    });
   });
 
   describe('refresh', () => {
@@ -155,6 +192,22 @@ describe('AuthController', () => {
         'ref-token-123',
         '127.0.0.1',
         'test-agent',
+      );
+    });
+
+    it('should fallback to connection.remoteAddress when ip is undefined in refresh', async () => {
+      const dto = { refreshToken: 'ref-token-123' };
+      mockAuthService.refreshTokens.mockResolvedValue({} as never);
+      const req = {
+        connection: { remoteAddress: '10.0.0.2' },
+        headers: {},
+      } as unknown as Request;
+
+      await controller.refresh(dto, req);
+      expect(mockAuthService.refreshTokens).toHaveBeenCalledWith(
+        'ref-token-123',
+        '10.0.0.2',
+        undefined,
       );
     });
   });
