@@ -142,6 +142,13 @@ describe('ServicesService', () => {
         service.update(999, { name: faker.commerce.productName() }),
       ).rejects.toThrow(ServiceNotFoundException);
     });
+
+    it('should handle db errors on update', async () => {
+      mockRepository.update.mockRejectedValue({ code: '23505' });
+      await expect(
+        service.update(1, { name: 'Duplicate Name' }),
+      ).rejects.toThrow(ConflictException);
+    });
   });
 
   describe('remove', () => {
@@ -157,6 +164,14 @@ describe('ServicesService', () => {
         'El servicio fue eliminado correctamente!',
       );
       expect(mockRepository.softRemove).toHaveBeenCalledWith(s);
+    });
+
+    it('should handle db errors on remove', async () => {
+      const s = createFakeService();
+      mockRepository.findOneById.mockResolvedValue(s);
+      mockRepository.softRemove.mockRejectedValue({ code: '23505' });
+
+      await expect(service.remove(s.id)).rejects.toThrow(ConflictException);
     });
   });
 });

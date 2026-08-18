@@ -1,0 +1,95 @@
+name: Deploy Backend NestJS (CentOS 7)
+
+on:
+  push:
+    branches: ['main']
+
+jobs:
+  build-and-deploy:
+    name: Build & Deploy NestJS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Instalar dependencias completas
+        run: npm ci
+
+      - name: Compilar NestJS en GitHub
+        run: npm run build
+
+      - name: Generar .env de producción
+        run: |
+          cat << 'EOF' > .env
+          STAGE=prod
+          NODE_ENV=production
+
+          DB_PASSWORD="${{ secrets.DB_PASSWORD }}"
+          DB_NAME="${{ secrets.DB_NAME }}"
+          DB_HOST=localhost
+          DB_PORT=5432
+          DB_USERNAME=postgres
+
+          PORT=3000
+          HOST_API="https://backend.puntocode.com.py/api"
+          JWT_SECRET="${{ secrets.JWT_SECRET }}"
+          JWT_ISSUER=
+          JWT_AUDIENCE=
+
+          RESEND_API_KEY="${{ secrets.RESEND_API_KEY }}"
+          EMAIL_BIOLIMPIEZA_TO="biolimpiezapy@gmail.com, puntocodepy@gmail.com, vazquez182@gmail.com"
+          ALLOWED_ORIGINS="http://swisschampy.puntocode.com.py, https://mail.biolimpieza.com.py, https://vyma.puntocode.com.py, http://localhost:3000"
+          WHATSAPP_TO="+595981789843"
+          EMAIL_FROM=no-reply@biolimpieza.com.py
+          ADMIN_EMAIL=puntocodepy@gmail.com
+
+          # New Relic APM Configuration
+          NEW_RELIC_ENABLED=true
+          NEW_RELIC_APP_NAME=vyma-backend
+
+          # Cloudinary
+          CLOUDINARY_CLOUD_NAME=puntocode
+          CLOUDINARY_API_KEY="${{ secrets.CLOUDINARY_API_KEY }}"
+          CLOUDINARY_API_SECRET="${{ secrets.CLOUDINARY_API_SECRET }}"
+          CLOUDINARY_ROOT_FOLDER=vyma
+          EOF
+
+      - name: Limpiar build anterior en CentOS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script: |
+            rm -rf /var/www/nodejs/vyma_backend/dist
+
+      - name: Transferir archivos compilados al servidor (SCP)
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          source: "dist,package.json,package-lock.json,.env"
+          target: "/var/www/nodejs/vyma_backend"
+          overwrite: true
+
+      - name: Instalar dependencias de producción y reiniciar PM2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script: |
+            cd /var/www/nodejs/vyma_backend
+            npm ci --omit=dev
+            pm2 restart vyma_backend --update-env || pm2 start dist/main.js --name "vyma_backend"

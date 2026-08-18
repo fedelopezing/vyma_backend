@@ -122,6 +122,13 @@ describe('ProfessionsService', () => {
         service.update(faker.number.int(), { name: faker.word.noun() }),
       ).rejects.toThrow(ProfessionNotFoundException);
     });
+
+    it('should handle db errors on update', async () => {
+      mockRepository.update.mockRejectedValue({ code: '23505' });
+      await expect(
+        service.update(1, { name: 'Duplicate Name' }),
+      ).rejects.toThrow(ConflictException);
+    });
   });
 
   describe('remove', () => {
@@ -137,6 +144,16 @@ describe('ProfessionsService', () => {
         'La profesión fue eliminado correctamente!',
       );
       expect(mockRepository.softRemove).toHaveBeenCalledWith(profession);
+    });
+
+    it('should handle db errors on remove', async () => {
+      const profession = createFakeProfession();
+      mockRepository.findOneById.mockResolvedValue(profession);
+      mockRepository.softRemove.mockRejectedValue({ code: '23505' });
+
+      await expect(service.remove(profession.id)).rejects.toThrow(
+        ConflictException,
+      );
     });
   });
 });

@@ -8,6 +8,7 @@ import {
   IsEmail,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { TrimToUndefined } from '../../../common/decorators';
 import {
   ClientType,
   TaxCondition,
@@ -71,14 +72,18 @@ export class CreateClientDto {
 
   @ApiPropertyOptional({ example: 'contacto@abc.com' })
   @IsOptional()
+  @ValidateIf((o) => o.emailPrimary != null && o.emailPrimary !== '')
   @IsEmail()
   @MaxLength(150)
+  @TrimToUndefined()
   emailPrimary?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
+  @ValidateIf((o) => o.emailSecondary != null && o.emailSecondary !== '')
   @IsEmail()
   @MaxLength(150)
+  @TrimToUndefined()
   emailSecondary?: string;
 
   @ApiPropertyOptional({ example: '+59521123456' })

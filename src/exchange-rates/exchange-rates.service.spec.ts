@@ -33,6 +33,7 @@ describe('ExchangeRatesService', () => {
     };
 
     companiesRepositoryMock = {
+      findAll: jest.fn(),
       findAllActiveWithModule: jest.fn(),
     };
 
@@ -176,6 +177,25 @@ describe('ExchangeRatesService', () => {
       );
     });
 
+    it('should handle DB errors during fallback loading gracefully', async () => {
+      mockedAxios.get.mockRejectedValue(new Error('API Down'));
+      repositoryMock.findAll.mockRejectedValue(
+        new Error('DB Connection Failed'),
+      );
+
+      await service.scrapeAndSaveRates(10);
+
+      expect(eventEmitterMock.emit).toHaveBeenCalledWith(
+        'rates.scraping_failed',
+        expect.objectContaining({
+          error: 'API Down',
+        }),
+      );
+      expect(cacheManagerMock.del).toHaveBeenCalledWith(
+        'latest_exchange_rates_10',
+      );
+    });
+
     it('should handle invalid API response format, trigger fallback, and emit event', async () => {
       const apiResponse = {
         data: {
@@ -216,6 +236,53 @@ describe('ExchangeRatesService', () => {
       expect(cacheManagerMock.del).toHaveBeenCalledWith(
         'latest_exchange_rates_10',
       );
+    });
+  });
+
+  describe('scrapeAndSaveRatesForAllCompanies', () => {
+    it('should scrape rates only for companies with EXCHANGE_RATES module', async () => {
+      companiesRepositoryMock.findAll.mockResolvedValue([
+        { id: 1, activeModules: ['EXCHANGE_RATES', 'NEWS'] },
+        { id: 2, activeModules: ['NEWS'] },
+        { id: 3, activeModules: null },
+      ]);
+
+      const apiResponse = {
+        data: {
+          items: [{ isoCode: 'USD', purchasePrice: '7000', salePrice: '7100' }],
+        },
+      };
+      mockedAxios.get.mockResolvedValue(apiResponse);
+
+      await service.scrapeAndSaveRatesForAllCompanies();
+
+      expect(repositoryMock.createOrUpdate).toHaveBeenCalledWith(
+        'USD',
+        7000,
+        7100,
+        1,
+        false,
+      );
+      expect(repositoryMock.createOrUpdate).not.toHaveBeenCalledWith(
+        'USD',
+        7000,
+        7100,
+        2,
+        false,
+      );
+    });
+
+    it('should catch error for individual company scrape and continue', async () => {
+      companiesRepositoryMock.findAll.mockResolvedValue([
+        { id: 1, activeModules: ['EXCHANGE_RATES'] },
+      ]);
+      jest
+        .spyOn(service, 'scrapeAndSaveRates')
+        .mockRejectedValue(new Error('Scrape error'));
+
+      await expect(
+        service.scrapeAndSaveRatesForAllCompanies(),
+      ).resolves.toBeUndefined();
     });
   });
 });

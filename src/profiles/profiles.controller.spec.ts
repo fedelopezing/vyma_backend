@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ProfilesController } from './profiles.controller';
 import { ProfilesService } from './profiles.service';
-import { UpdateProfileDto } from './dto';
+import { CreateProfileDto, UpdateProfileDto } from './dto';
 import { Profile } from './entities/profile.entity';
 import { Request } from 'express';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
@@ -29,6 +29,41 @@ describe('ProfilesController', () => {
 
   it('should be defined', () => {
     expect(controller).toBeDefined();
+  });
+
+  describe('create', () => {
+    it('should create a profile', async () => {
+      const dto = new CreateProfileDto();
+      profilesService.create.mockResolvedValue({ id: 1 } as unknown as Profile);
+
+      const result = await controller.create(dto);
+      expect(profilesService.create).toHaveBeenCalledWith(dto);
+      expect(result).toEqual({ id: 1 });
+    });
+  });
+
+  describe('findAll', () => {
+    it('should return all profiles', async () => {
+      profilesService.findAll.mockResolvedValue([
+        { id: 1 },
+      ] as unknown as Profile[]);
+
+      const result = await controller.findAll();
+      expect(profilesService.findAll).toHaveBeenCalled();
+      expect(result).toEqual([{ id: 1 }]);
+    });
+  });
+
+  describe('findOne', () => {
+    it('should return a single profile', async () => {
+      profilesService.findOne.mockResolvedValue({
+        id: 1,
+      } as unknown as Profile);
+
+      const result = await controller.findOne(1);
+      expect(profilesService.findOne).toHaveBeenCalledWith(1);
+      expect(result).toEqual({ id: 1 });
+    });
   });
 
   describe('update', () => {
@@ -98,6 +133,15 @@ describe('ProfilesController', () => {
       );
 
       expect(profilesService.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('remove', () => {
+    it('should remove profile', async () => {
+      profilesService.remove.mockResolvedValue(undefined as never);
+
+      await controller.remove(1);
+      expect(profilesService.remove).toHaveBeenCalledWith(1);
     });
   });
 });

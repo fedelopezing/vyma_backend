@@ -12,6 +12,7 @@ import {
   HttpStatus,
   ParseIntPipe,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { ClientsService } from './clients.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -70,6 +71,7 @@ export class ClientsController {
 
   // --- Clients ---
   @Get()
+  @Throttle({ default: { limit: 120, ttl: 60000 } })
   @Roles(Role.ADMIN, Role.MANAGER)
   @ApiGetClientList()
   async getClients(
