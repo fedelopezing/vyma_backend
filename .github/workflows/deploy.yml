@@ -92,4 +92,4 @@ jobs:
           script: |
             cd /var/www/nodejs/vyma_backend
             npm ci --omit=dev
-            pm2 restart vyma_backend --update-env || pm2 start dist/main.js --name "vyma_backend"
+            pm2 reload ecosystem.config.js --update-env || pm2 start ecosystem.config.js
