@@ -64,9 +64,10 @@ export class CreateClientDto {
   @ApiPropertyOptional({
     type: String,
     format: 'date',
-    description: 'Requerido para PERSONA_FISICA',
+    description: 'Fecha de nacimiento (opcional)',
   })
-  @ValidateIf((o) => o.clientType === ClientType.PERSONA_FISICA)
+  @IsOptional()
+  @ValidateIf((o) => o.birthDate != null && o.birthDate !== '')
   @IsDateString()
   birthDate?: string;
 

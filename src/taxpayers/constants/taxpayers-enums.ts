@@ -1,0 +1,11 @@
+export enum TaxpayerType {
+  PERSONA_FISICA = 'PERSONA_FISICA',
+  PERSONA_JURIDICA = 'PERSONA_JURIDICA',
+}
+
+export enum TaxpayerStatus {
+  ACTIVO = 'ACTIVO',
+  SUSPENDIDO = 'SUSPENDIDO',
+  CANCELADO = 'CANCELADO',
+  BLOQUEADO = 'BLOQUEADO',
+}

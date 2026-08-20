@@ -27,6 +27,7 @@ import { AdsModule } from './ads/ads.module';
 import { MediaModule } from './media/media.module';
 import { StaffModule } from './staff/staff.module';
 import { ClientsModule } from './clients/clients.module';
+import { TaxpayersModule } from './taxpayers/taxpayers.module';
 
 import { validateEnv } from './config/env.validation';
 
@@ -75,6 +76,7 @@ import { validateEnv } from './config/env.validation';
     MediaModule,
     StaffModule,
     ClientsModule,
+    TaxpayersModule,
   ],
   controllers: [],
   providers: [
