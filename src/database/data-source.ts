@@ -11,8 +11,8 @@ export const AppDataSource = new DataSource({
   database: process.env.DB_NAME || 'vyma',
   username: process.env.DB_USERNAME || 'postgres',
   password: process.env.DB_PASSWORD || 'fede@123',
-  entities: [join(process.cwd(), 'src/**/*.entity.{ts,js}')], // Ruta relativa a las entidades
-  migrations: [join(process.cwd(), 'src/database/migrations/*.{ts,js}')], // Ruta relativa a las migraciones
+  entities: [join(__dirname, '..', '**', '*.entity.{ts,js}')], // Soporta src (dev) y dist (prod)
+  migrations: [join(__dirname, 'migrations', '*.{ts,js}')], // Soporta src (dev) y dist (prod)
   synchronize: false, // Desactiva en producción para evitar cambios automáticos
   logging: true,
 });
